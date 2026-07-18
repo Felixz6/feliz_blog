@@ -1,19 +1,16 @@
 ---
-import { getCollection, render } from "astro:content";
-import ArticleLayout from "@/layouts/ArticleLayout.astro";
+import { render } from "astro:content";
+import { getPublishedPostPaths } from "@/core/content/blog";
+import { ArticlePage } from "@/themes/fuyukawa-kagari";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("blog", ({ data }) => !data.draft);
-  return posts.map((post) => ({
-    params: { slug: post.id },
-    props: { post }
-  }));
+  return getPublishedPostPaths();
 }
 
 const { post } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
-<ArticleLayout frontmatter={post.data} headings={headings}>
+<ArticlePage frontmatter={post.data} headings={headings}>
   <Content />
-</ArticleLayout>
+</ArticlePage>
