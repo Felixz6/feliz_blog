@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import vm from "node:vm";
 import sharp from "sharp";
-import { chainAtlas, chainLinkPitch, chainMaterialCell, createTitleChainMaterial } from "../src/themes/kisara/lib/titleChainMaterial.ts";
+import { chainAtlas, chainLinkPitch, chainMaterialCell, chainOccludedBrightness, createTitleChainMaterial } from "../src/themes/kisara/lib/titleChainMaterial.ts";
 import { rasterChainTile } from "../scripts/lib/kisara-chain-raster.mjs";
-import { buildTitleChainRig, fitTitleChainConnector, sampleTitleChainCurve, titleChainDefinitions } from "../src/themes/kisara/lib/titleChainRig.ts";
+import { buildTitleChainRig, fitTitleChainConnector, orientTitleChainRing, partitionTitleChainRing, sampleTitleChainCurve, titleChainDefinitions } from "../src/themes/kisara/lib/titleChainRig.ts";
 
 const asset = fileURLToPath(new URL("../public/themes/kisara/assets/title-chain-steel.webp", import.meta.url));
 const home = readFileSync(new URL("../src/themes/kisara/pages/HomePage.astro", import.meta.url), "utf8");
@@ -99,9 +99,20 @@ test("heat cells stay in bounds and change monotonically", () => {
 function fixture() {
   const previousImage = Object.getOwnPropertyDescriptor(globalThis, "Image");
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
   const timers = new Map<number, Function>();
   let id = 0;
   const images: FakeImage[] = [];
+  const shadowCalls: unknown[][] = [];
+  const shadowContext = {
+    globalCompositeOperation: "source-over", fillStyle: "",
+    drawImage(...args: unknown[]) { shadowCalls.push(["image", ...args]); },
+    fillRect(...args: number[]) { shadowCalls.push(["fill", this.globalCompositeOperation, this.fillStyle, ...args]); }
+  };
+  const shadowCanvas = { width: 0, height: 0, getContext: () => shadowContext };
+  Object.defineProperty(globalThis, "document", { configurable: true, value: {
+    createElement(tag: string) { assert.equal(tag, "canvas"); return shadowCanvas; }
+  } });
   class FakeImage extends EventTarget {
     decoding = "";
     naturalWidth = 0;
@@ -132,13 +143,15 @@ function fixture() {
     drawImage(...args: unknown[]) { draws.push(args); }
   } as unknown as CanvasRenderingContext2D;
   return {
-    material, controller, image: images[0], timers, context, draws, lines,
+    material, controller, image: images[0], timers, context, draws, lines, shadowCanvas, shadowCalls,
     restore() {
       controller.abort();
       if (previousImage) Object.defineProperty(globalThis, "Image", previousImage);
       else Reflect.deleteProperty(globalThis, "Image");
       if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
       else Reflect.deleteProperty(globalThis, "window");
+      if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
+      else Reflect.deleteProperty(globalThis, "document");
     }
   };
 }
@@ -190,6 +203,55 @@ test("failed and stalled material requests use the solid fallback with bounded w
   }
 });
 
+test("occluded links reuse an alpha-preserving shadow cache across heat states and release it on abort", () => {
+  const f = fixture();
+  try {
+    f.material.prepare();
+    f.image.naturalWidth = 2448;
+    f.image.dispatchEvent(new Event("load"));
+    assert.deepEqual([f.shadowCanvas.width, f.shadowCanvas.height], [1224, 192]);
+    assert.ok(f.shadowCanvas.width * f.shadowCanvas.height * 4 < 1024 * 1024);
+    assert.equal(f.shadowCalls.length, 2);
+    assert.equal(f.shadowCalls[1][1], "source-atop");
+    assert.equal(f.shadowCalls[1][2], `rgba(0,0,0,${1 - chainOccludedBrightness})`);
+    for (const heat of [0, .5, 1]) {
+      f.material.draw(f.context, 36, false, "near", heat, true);
+      const draw = f.draws.at(-1)!;
+      const cell = chainMaterialCell(heat, false, "near");
+      assert.equal(draw[0], f.shadowCanvas);
+      assert.deepEqual(draw.slice(1, 5), [cell.x / 2, cell.y / 2, cell.width / 2, cell.height / 2]);
+      assert.equal(f.context.globalAlpha, .35, "Occlusion changes RGB, not opacity");
+    }
+    f.material.draw(f.context, 36, false, "near", 1, false);
+    assert.equal(f.draws.at(-1)![0], f.image);
+    f.image.dispatchEvent(new Event("load"));
+    assert.equal(f.shadowCalls.length, 2, "Repeated load or paint cannot recreate the cache");
+    assert.deepEqual(f.image.sources, [chainAtlas.url]);
+    f.controller.abort();
+    assert.deepEqual([f.shadowCanvas.width, f.shadowCanvas.height], [0, 0]);
+  } finally { f.restore(); }
+});
+
+test("shadow-cache allocation failure keeps the atlas usable and failed media still has a dark fallback", () => {
+  const f = fixture();
+  try {
+    f.shadowCanvas.getContext = () => { throw new Error("No extra canvas"); };
+    f.material.prepare();
+    f.image.naturalWidth = 2448;
+    f.image.dispatchEvent(new Event("load"));
+    f.material.draw(f.context, 36, false, "near", 0, true);
+    assert.equal(f.draws[0][0], f.image);
+  } finally { f.restore(); }
+  const failed = fixture();
+  try {
+    failed.material.prepare();
+    failed.image.dispatchEvent(new Event("error"));
+    failed.material.draw(failed.context, 36, false, "near", 0, true);
+    assert.equal(failed.context.strokeStyle, "rgb(46,50,54)");
+    assert.equal(failed.context.globalAlpha, .35);
+  } finally { failed.restore(); }
+});
+
 test("aborting before or after decode releases media, listeners, and pending work", () => {
   for (const loaded of [false, true]) {
     const f = fixture();
@@ -226,7 +288,8 @@ function geometryFixture(width: number, height = width * 0.22, customGaps?: numb
     },
     chainLinkUnitCache: new Map(),
     chainRig: null,
-    buildTitleChainRig, fitTitleChainConnector, sampleTitleChainCurve, titleChainDefinitions,
+    drawChainCrossings() {},
+    buildTitleChainRig, fitTitleChainConnector, orientTitleChainRing, partitionTitleChainRing, sampleTitleChainCurve, titleChainDefinitions,
     mobilePerformance: false,
     velocity: 0, burstVelocity: 0,
     fullTurn: Math.PI * 2,
@@ -252,6 +315,8 @@ test("production weave paths keep equal spacing, parity, buried tails, and stabl
       const spacing = scope.buildTitleChainLinkUnits(definition, width < 420);
       const core = spacing.records.filter((record: { distanceUnit: number }) => record.distanceUnit >= 0 && record.distanceUnit <= 1);
       const step = 1 / (core.length - 1);
+      assert.ok(spacing.totalLength * step <= chainLinkPitch(scope.getChainLinkDimensions(definition).width, width < 420) + 1e-6,
+        "N gaps need N+1 rings; the count must not silently stretch the pitch");
       for (let i = 1; i < core.length; i++) {
         assert.ok(Math.abs(core[i].distanceUnit - core[i - 1].distanceUnit - step) < 1e-9);
       }
@@ -336,8 +401,10 @@ test("asymmetric chains keep a sparse local clasp and the right chain returns to
           return scope.sampleTitleChain(definition, scope.resolveTitleChainPath(definition, 1, 0),
             crossing.units[arm], 1, 0, 0);
         });
-        assert.notEqual(samples[0].plane, samples[1].plane);
-        assert.equal(samples[crossing.overIndex].plane, "front");
+        assert.equal(crossing.ids[crossing.overIndex], crossing.overId);
+        if (samples[0].plane !== samples[1].plane) {
+          assert.equal(samples[crossing.overIndex].plane, "front");
+        }
       }
     }
   }
@@ -363,7 +430,7 @@ test("hand-authored tangents stay continuous while the left sweeps differ in spa
   const { scope } = geometryFixture(1200);
   const paths = scope.chainDefinitions.slice(0, 2).map((definition: any) => scope.resolveTitleChainPath(definition, 1, 0));
   assert.notDeepEqual(paths[0].points, paths[1].points);
-  assert.equal(paths[0].curves.length, 4);
+  assert.equal(paths[0].curves.length, 5);
   assert.equal(paths[1].curves.length, 3);
   for (const definition of scope.chainDefinitions) {
     const path = scope.resolveTitleChainPath(definition, 1, 0);
@@ -374,6 +441,19 @@ test("hand-authored tangents stay continuous while the left sweeps differ in spa
       assert.ok(Math.abs(Math.atan2(Math.sin(before.angle - after.angle), Math.cos(before.angle - after.angle))) < 0.0002);
     }
   }
+});
+
+test("the long left chain turns back into s while the right return stays behind r and the last a", () => {
+  const { scope, box } = geometryFixture(1200);
+  const left = scope.resolveTitleChainPath(scope.chainDefinitions[0], 1, 0);
+  assert.ok(left.points.at(-1).x < left.points.at(-2).x - box.width * .1);
+  assert.ok(left.points.at(-1).y > box.top + box.height * .8);
+  const right = scope.resolveTitleChainPath(scope.chainDefinitions[2], 1, 0);
+  for (let i = 0; i <= 40; i++) {
+    const sample = sampleTitleChainCurve(right, i / 100);
+    assert.equal(sample.plane, sample.x >= right.glyphBackZones[0].left ? "back" : "front");
+  }
+  assert.ok(home.includes("arcPart, heat, !isFront"));
 });
 
 test("a measured counter owns the right chain's front-to-back passage rather than a generic wave boundary", () => {
@@ -455,7 +535,7 @@ test("source fade distances stay far outside the word regardless of the authored
   }
 });
 
-test("actual rendered links interlock only at authored crossings during entry, reverse scroll, and dissolution", () => {
+test("rendered links keep connected apertures and complementary depth fragments throughout scrolling and dissolution", () => {
   for (const width of [390, 720, 1200]) {
     const { scope, state, box } = geometryFixture(width);
     let records: any[] = [];
@@ -469,14 +549,15 @@ test("actual rendered links interlock only at authored crossings during entry, r
       chainLastPaintTimestamp: 0, chainLastPaintFill: -1, chainLastPaintIntro: -1,
       chargeIntroProgress: 0, burstProgress: 0,
       randomSeed: (value: number) => { const x = Math.sin(value) * 43758.5453; return x - Math.floor(x); },
-      drawChainLayer: (_: unknown, layer: any[]) => {
-        assert.ok(layer.every(record => record.arcMode === "full"), "Do not split rings across the glyph layers");
-        records.push(...layer.filter(record => record.alpha > 0.01));
+      drawChainLayer: (_: unknown, layer: any[], isFront: boolean) => {
+        assert.ok(layer.every(record => record.arcMode === "full"), "Near/far wire arcs are independent of glyph clipping");
+        records.push(...layer.filter(record => record.alpha > 0.01).map(record => ({ ...record, paintPlane: isFront ? "front" : "back" })));
       },
       drawChainLeader() {}, drawChainShatterParticles() {}, drawChainRupture() {}, drawContractHeartImprint() {},
       clearTitleChains() {}
     });
     let framesWithBothGroups = 0;
+    let splitRings = 0;
     const fills = Array.from({ length: 61 }, (_, index) => index / 60);
     let timestamp = 100;
     for (const intro of [0, 0.08, 0.16, 0.22, 0.35]) {
@@ -484,25 +565,53 @@ test("actual rendered links interlock only at authored crossings during entry, r
       for (const fill of intro === 0 ? [...fills, ...fills.toReversed()] : [1]) {
         records = [];
         scope.drawTitleChains(timestamp += 40, fill);
+        const links = new Map(records.map(record => [`${record.definition.id}:${record.linkIndex}`, record]));
+        const fragments = new Map<string, any[]>();
+        for (const record of records) {
+          const key = `${record.definition.id}:${record.linkIndex}`;
+          const group = fragments.get(key) ?? [];
+          group.push(record);
+          fragments.set(key, group);
+        }
+        for (const group of fragments.values()) {
+          if (group.length < 2) continue;
+          splitRings++;
+          assert.ok(group.every(record => record.clip?.length >= 3));
+          const area = group.reduce((sum, record) => sum + Math.abs(record.clip.reduce((cross: number, point: any, i: number) => {
+            const next = record.clip[(i + 1) % record.clip.length];
+            return cross + point.x * next.y - next.x * point.y;
+          }, 0)) * .5, 0);
+          const record = group[0];
+          const width = scope.getChainLinkDimensions(record.definition).width * 1.16;
+          const lengthScale = record.linkIndex % 2 ? record.lengthScale : 1;
+          assert.ok(Math.abs(area - width * width * lengthScale * 1.4) < 1e-5,
+            "Depth fragments must cover the ring's paint bounds without a missing strip");
+        }
+        for (const record of records) {
+          if (record.linkIndex % 2 === 0) continue;
+          const before = links.get(`${record.definition.id}:${record.linkIndex - 1}`);
+          const after = links.get(`${record.definition.id}:${record.linkIndex + 1}`);
+          if (!before || !after) continue;
+          const width = scope.getChainLinkDimensions(record.definition).width * 1.16;
+          const halfSpan = width * record.lengthScale * .45;
+          for (const [side, neighbor] of [[-1, before], [1, after]] as const) {
+            const tipX = record.sample.x + side * Math.cos(record.sample.angle) * halfSpan;
+            const tipY = record.sample.y + side * Math.sin(record.sample.angle) * halfSpan;
+            const anchorX = neighbor.sample.x - side * neighbor.sample.tangentX * width * .34;
+            const anchorY = neighbor.sample.y - side * neighbor.sample.tangentY * width * .34;
+            assert.ok(Math.hypot(tipX - anchorX, tipY - anchorY) < .001, "A connector cannot detach during scrolling");
+          }
+          assert.ok(record.lengthScale >= .5 && record.lengthScale <= 1.16,
+            `Connector projection ${record.lengthScale} at fill ${fill}, chain ${record.definition.id}, width ${width}`);
+        }
         const left = records.filter(record => record.definition.direction > 0);
         const right = records.filter(record => record.definition.direction < 0);
         if (!left.length || !right.length) continue;
         framesWithBothGroups++;
-        for (const a of left) {
-          for (const b of right) {
-            const distance = Math.hypot(a.sample.x - b.sample.x, a.sample.y - b.sample.y);
-            if (distance > scope.getChainLinkDimensions(a.definition).width * 0.85) continue;
-            const planned = (state.chainRig as any).crossings.some((point: any) =>
-              Math.hypot(point.x - a.sample.x, point.y - a.sample.y) < scope.getChainLinkDimensions(a.definition).width * 2.5);
-            assert.ok(planned, `Unplanned collision at width ${width}, fill ${fill}, intro ${intro}`);
-            // Nearby rings can share a glyph plane; drawChainLayer must keep their complete chain groups ordered.
-            assert.equal(a.arcMode, "full");
-            assert.equal(b.arcMode, "full");
-          }
-        }
       }
     }
     assert.ok(framesWithBothGroups > 10);
+    assert.ok(splitRings > 10, "Exercise real links spanning both glyph planes, not just center-based ownership");
   }
   assert.ok(home.includes("leader.sample.plane === \"back\" ? chainBackContext : chainFrontContext"));
   assert.ok(home.includes("* destinationFade"));

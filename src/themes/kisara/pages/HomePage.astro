@@ -356,7 +356,7 @@ const gateStyle = [
   <script>
     import { createComicTransition } from "../lib/comicTransition";
     import { chainLinkPitch, createTitleChainMaterial } from "../lib/titleChainMaterial";
-    import { buildTitleChainRig, fitTitleChainConnector, sampleTitleChainCurve, titleChainDefinitions } from "../lib/titleChainRig";
+    import { buildTitleChainRig, fitTitleChainConnector, orientTitleChainRing, partitionTitleChainRing, sampleTitleChainCurve, titleChainDefinitions } from "../lib/titleChainRig";
     import { measureTitleChainCounter } from "../lib/titleChainCounter";
     import {
       gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress,
@@ -2103,16 +2103,21 @@ const gateStyle = [
           && textMetrics.actualBoundingBoxDescent >= 0
           ? textMetrics.actualBoundingBoxDescent
           : fontSize * 0.06;
-        const top = chainTitleBox.top + chainTitleBox.height * 0.08;
-        const bottom = chainTitleBox.top + chainTitleBox.height * 0.92;
-        const heightScale = (bottom - top) / Math.max(1, measuredAscent + measuredDescent);
-        const baseline = top + measuredAscent * heightScale;
+        // Match the centered liquid-title mask, including its zero-descent fallback.
+        const baseline = chainTitleBox.top + chainTitleBox.height * .5
+          + (measuredAscent - (measuredDescent || fontSize * .16)) * widthScale * .5;
+        const top = baseline - measuredAscent * widthScale;
+        const bottom = baseline + measuredDescent * widthScale;
         const gaps = [];
         const glyphBounds = [];
-        let prefixWidth = 0;
         for (let index = 0; index < text.length; index += 1) {
           const nextPrefixWidth = chainBackContext.measureText(text.slice(0, index + 1)).width;
           const glyphMetrics = chainBackContext.measureText(text[index]);
+          const origin = nextPrefixWidth - glyphMetrics.width;
+          const inkLeft = Number.isFinite(glyphMetrics.actualBoundingBoxLeft)
+            ? glyphMetrics.actualBoundingBoxLeft : 0;
+          const inkRight = Number.isFinite(glyphMetrics.actualBoundingBoxRight)
+            ? glyphMetrics.actualBoundingBoxRight : glyphMetrics.width;
           const glyphAscent = Number.isFinite(glyphMetrics.actualBoundingBoxAscent)
             && glyphMetrics.actualBoundingBoxAscent > 0
             ? glyphMetrics.actualBoundingBoxAscent
@@ -2122,15 +2127,14 @@ const gateStyle = [
             ? glyphMetrics.actualBoundingBoxDescent
             : measuredDescent;
           glyphBounds.push({
-            left: textLeft + prefixWidth * widthScale,
-            right: textLeft + nextPrefixWidth * widthScale,
-            top: baseline - glyphAscent * heightScale,
-            bottom: baseline + glyphDescent * heightScale
+            left: textLeft + (origin - inkLeft) * widthScale,
+            right: textLeft + (origin + inkRight) * widthScale,
+            top: baseline - glyphAscent * widthScale,
+            bottom: baseline + glyphDescent * widthScale
           });
           if (index < text.length - 1) {
             gaps.push(textLeft + nextPrefixWidth * widthScale);
           }
-          prefixWidth = nextPrefixWidth;
         }
         chainBackContext.restore();
         const anchorBounds = Array.from({ length: text.length + 1 }, (_, index) => {
@@ -5487,7 +5491,8 @@ const gateStyle = [
         const dimensions = getChainLinkDimensions(definition);
         const entryReferenceLength = chainTitleBox.width * 1.5;
         const entryOverscan = definition.entryOverscan * entryReferenceLength / totalLength;
-        const desiredCount = Math.round(totalLength / chainLinkPitch(dimensions.width, isMobile));
+        const desiredGaps = totalLength / chainLinkPitch(dimensions.width, isMobile);
+        const desiredCount = definition.type === "weave" ? Math.ceil(desiredGaps) + 1 : Math.round(desiredGaps);
         const minimum = definition.type === "frame"
           ? (isMobile ? definition.mobileLinks : definition.desktopLinks)
           : (isMobile
@@ -5495,7 +5500,7 @@ const gateStyle = [
               : definition.desktopLinksPerSegment) * spacingPath.segmentCount + 1;
         const maximum = definition.type === "frame"
           ? (isMobile ? 28 : 110)
-          : (isMobile ? 22 : 128);
+          : (isMobile ? 64 : 128);
         let linkCount = Math.round(clamp(desiredCount, minimum, maximum));
         if (definition.type === "frame" && linkCount % 2 !== 0) {
           linkCount += linkCount < maximum ? 1 : -1;
@@ -5577,7 +5582,9 @@ const gateStyle = [
         arcPart,
         rotationOffset = 0,
         scale = 1,
-        lengthScale = 1
+        lengthScale = 1,
+        clip = null,
+        occluded = false
       ) => {
         if (alpha * chainMaterialVisibility <= 0.002) return;
         const edgeOn = linkIndex % 2 === 1;
@@ -5595,16 +5602,23 @@ const gateStyle = [
         context.save();
         context.globalCompositeOperation = "source-over";
         context.globalAlpha = layerAlpha;
+        if (clip) {
+          context.beginPath();
+          context.moveTo(clip[0].x, clip[0].y);
+          for (let index = 1; index < clip.length; index++) context.lineTo(clip[index].x, clip[index].y);
+          context.closePath();
+          context.clip();
+        }
         context.translate(sample.x, sample.y);
         context.rotate(sample.angle + rotationOffset);
         context.scale(size * (edgeOn ? lengthScale : 1), size);
         context.imageSmoothingEnabled = true;
-        chainMaterial?.draw(context, dimensions.width * 1.16, edgeOn, arcPart, heat);
+        chainMaterial?.draw(context, dimensions.width * 1.16, edgeOn, arcPart, heat, !isFront || occluded);
         context.restore();
       };
 
       const drawChainLayer = (context, records, isFront) => {
-        if (mobilePerformance || chainTitleBox.width < 420) {
+        if (mobilePerformance) {
           for (const record of records) {
             drawChainLinkArc(
               context,
@@ -5617,7 +5631,9 @@ const gateStyle = [
               record.arcMode === "full" ? "full" : record.arcMode,
               record.rotationOffset,
               record.scale,
-              record.lengthScale
+              record.lengthScale,
+              record.clip,
+              record.occluded
             );
           }
           return;
@@ -5649,10 +5665,40 @@ const gateStyle = [
                 pass.arcPart,
                 record.rotationOffset,
                 record.scale,
-                record.lengthScale
+                record.lengthScale,
+                record.clip,
+                record.occluded
               );
             }
           }
+        }
+      };
+
+      const drawChainCrossings = (context, records, isFront) => {
+        if (!chainRig || records.length === 0) return;
+        for (const crossing of chainRig.crossings) {
+          // The base pass already paints definition IDs in ascending order.
+          if (crossing.overId === Math.max(...crossing.ids)) continue;
+          const x = Math.floor((crossing.x - crossing.radius) * chainPixelRatio) / chainPixelRatio;
+          const y = Math.floor((crossing.y - crossing.radius) * chainPixelRatio) / chainPixelRatio;
+          const size = Math.ceil(crossing.radius * 2 * chainPixelRatio + 1) / chainPixelRatio;
+          const nearby = records.filter(record => {
+            const extent = getChainLinkDimensions(record.definition).width * 1.16
+              * Math.max(1, record.lengthScale) * record.scale;
+            return record.sample.x + extent >= x && record.sample.x - extent <= x + size
+              && record.sample.y + extent >= y && record.sample.y - extent <= y + size;
+          });
+          if (!crossing.ids.every(id => nearby.some(record => record.definition.id === id))) continue;
+          nearby.sort((a, b) =>
+            Number(a.definition.id === crossing.overId) - Number(b.definition.id === crossing.overId)
+              || a.definition.id - b.definition.id);
+          context.save();
+          context.beginPath();
+          context.rect(x, y, size, size);
+          context.clip();
+          context.clearRect(x, y, size, size);
+          drawChainLayer(context, nearby, isFront);
+          context.restore();
         }
       };
 
@@ -6690,6 +6736,20 @@ const gateStyle = [
               heat: leaderHeat
             });
           }
+          const rawSamples = [];
+          const jointSamples = [];
+          const rawSampleAt = (index) => rawSamples[index + 2] ??= sampleTitleChainTravel(
+            definition, path,
+            spacing.records[0].distanceUnit + index * spacing.distanceStep + travelOffset,
+            spacing, fill, intro, timestamp
+          );
+          const jointSampleAt = (index) => {
+            if (jointSamples[index + 2]) return jointSamples[index + 2];
+            const sample = { ...rawSampleAt(index) };
+            if (index % 2 === 0) orientTitleChainRing(sample, rawSampleAt(index - 1), rawSampleAt(index + 1));
+            jointSamples[index + 2] = sample;
+            return sample;
+          };
           for (let linkIndex = 0; linkIndex < spacing.records.length; linkIndex += 1) {
             const { unit, distanceUnit } = spacing.records[linkIndex];
             let travelUnit = distanceUnit + travelOffset;
@@ -6703,15 +6763,9 @@ const gateStyle = [
             const outside = Math.max(0, -travelUnit, travelUnit - 1)
               * spacing.totalLength / spacing.entryReferenceLength;
             if (outside > definition.entryOverscan) continue;
-            const sample = sampleTitleChainTravel(
-              definition,
-              path,
-              travelUnit,
-              spacing,
-              fill,
-              intro,
-              timestamp
-            );
+            const sample = definition.type === "weave"
+              ? { ...jointSampleAt(linkIndex) }
+              : sampleTitleChainTravel(definition, path, travelUnit, spacing, fill, intro, timestamp);
             const ingressFade = 1 - smootherstep(clamp((outside - 0.04) / 0.36, 0, 1));
             const destinationFade = smootherstep(clamp(
               (definition.direction > 0 ? 1 - travelUnit : travelUnit) / spacing.terminalFeather,
@@ -6720,9 +6774,8 @@ const gateStyle = [
             ));
             let connectorLengthScale = 1;
             if (definition.type === "weave" && linkIndex % 2 === 1 && ingressFade * destinationFade > 0.002) {
-              const step = spacing.distanceStep;
-              const before = sampleTitleChainTravel(definition, path, travelUnit - step, spacing, fill, intro, timestamp);
-              const after = sampleTitleChainTravel(definition, path, travelUnit + step, spacing, fill, intro, timestamp);
+              const before = jointSampleAt(linkIndex - 1);
+              const after = jointSampleAt(linkIndex + 1);
               connectorLengthScale = fitTitleChainConnector(
                 sample, before, after, getChainLinkDimensions(definition).width * 1.16
               );
@@ -6789,6 +6842,7 @@ const gateStyle = [
             alpha *= (1 - releaseFade * 0.96)
               * resolveCanvasEdgeFade(sample)
               * resolveCenterDissolve(sample);
+            if (alpha <= .002) continue;
             const record = {
               sample,
               linkIndex,
@@ -6802,11 +6856,23 @@ const gateStyle = [
               lengthScale: definition.type === "frame" && linkIndex % 2 === 1
                 ? frameConnectorLengthScale
                 : connectorLengthScale,
-              arcMode: "full"
+              arcMode: "full",
+              occluded: chainRig?.crossings.some(crossing =>
+                crossing.ids.includes(definition.id) && crossing.overId !== definition.id
+                  && Math.hypot(sample.x - crossing.x, sample.y - crossing.y) < getChainLinkDimensions(definition).width * .9)
             };
-            const layer = sample.plane === "front" ? "front" : "back";
             const kind = record.definition.type === "frame" ? "Frame" : "Weave";
-            layerRecords[`${layer}${kind}`].push(record);
+            const fragments = definition.type === "weave"
+              ? partitionTitleChainRing(
+                  path, sample, getChainLinkDimensions(definition).width * 1.16,
+                  linkIndex % 2 === 1 ? connectorLengthScale : 1,
+                  spacing.unitAtDistance(travelUnit - spacing.distanceStep * 2),
+                  spacing.unitAtDistance(travelUnit + spacing.distanceStep * 2)
+                )
+              : [{ plane: sample.plane, clip: null }];
+            for (const fragment of fragments) {
+              layerRecords[`${fragment.plane}${kind}`].push({ ...record, clip: fragment.clip });
+            }
           }
         }
 
@@ -6814,6 +6880,8 @@ const gateStyle = [
         drawChainLayer(chainBackContext, layerRecords.backWeave, false);
         drawChainLayer(chainFrontContext, layerRecords.frontWeave, true);
         drawChainLayer(chainFrontContext, layerRecords.frontFrame, true);
+        drawChainCrossings(chainBackContext, layerRecords.backWeave, false);
+        drawChainCrossings(chainFrontContext, layerRecords.frontWeave, true);
         for (const leader of leaders) {
           drawChainLeader(leader.sample.plane === "back" ? chainBackContext : chainFrontContext, leader);
         }

@@ -70,10 +70,12 @@ export function measureTitleChainCounter(
   try {
     const counter = findGlyphCounter(context.getImageData(0, 0, size, size).data, size, size);
     if (!counter) return null;
-    const sx = (glyph.right - glyph.left) / metrics.width;
+    const inkLeft = Number.isFinite(metrics.actualBoundingBoxLeft) ? metrics.actualBoundingBoxLeft : 0;
+    const inkRight = Number.isFinite(metrics.actualBoundingBoxRight) ? metrics.actualBoundingBoxRight : metrics.width;
+    const sx = (glyph.right - glyph.left) / Math.max(1, inkLeft + inkRight);
     const sy = (glyph.bottom - glyph.top) / (ascent + descent);
     return {
-      x: glyph.left + (counter.x - 8) * sx,
+      x: glyph.left + (counter.x - 8 + inkLeft) * sx,
       y: glyph.top + (counter.y - (104 - ascent)) * sy,
       radiusX: counter.radiusX * sx,
       radiusY: counter.radiusY * sy
