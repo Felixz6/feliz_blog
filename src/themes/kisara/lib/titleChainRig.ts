@@ -33,26 +33,14 @@ type Layout = {
 };
 type Point = { x: number; y: number };
 type Curve = [Point, Point, Point, Point];
+type Knot = [number, number, number, number];
 type ChainPath = {
   type: "weave"; points: Point[]; segmentCount: number; curves: Curve[];
   route: "left-upper" | "left-lower" | "right-clasp";
+  backRanges: [number, number][];
   counter?: GlyphCounter; portalRight?: number; counterUnit?: number;
   crossings: { x: number; y: number; unit: number; radius: number; front: boolean }[];
 };
-
-function smoothCurves(points: Point[]): Curve[] {
-  return points.slice(0, -1).map((point, index) => {
-    const before = points[Math.max(0, index - 1)];
-    const end = points[index + 1];
-    const after = points[Math.min(points.length - 1, index + 2)];
-    return [
-      point,
-      { x: point.x + (end.x - before.x) / 6, y: point.y + (end.y - before.y) / 6 },
-      { x: end.x - (after.x - point.x) / 6, y: end.y - (after.y - point.y) / 6 },
-      end
-    ];
-  });
-}
 
 // Curves and crossing ownership are rebuilt only with the measured title layout.
 export function buildTitleChainRig(box: Box, layout: Layout, linkWidths: number[]) {
@@ -67,41 +55,60 @@ export function buildTitleChainRig(box: Box, layout: Layout, linkWidths: number[
     top: measuredHeight ? layout.top! : box.top,
     bottom: measuredHeight ? layout.bottom! : box.top + box.height
   };
-  const boundsAt = (index: number) => layout.anchorBounds[index] ?? fallback;
-  const glyph = layout.glyphBounds?.[3] ?? { left: gaps[2], right: gaps[3], ...boundsAt(3) };
+  const top = fallback.top, height = fallback.bottom - top;
+  const glyphAt = (index: number): GlyphBox => layout.glyphBounds?.[index] ?? {
+    left: index === 0 ? textLeft : gaps[index - 1],
+    right: index === 5 ? textRight : gaps[index],
+    ...(layout.anchorBounds[index] ?? { top: top + height * .28, bottom: fallback.bottom })
+  };
+  const glyph = glyphAt(3), sGlyph = glyphAt(2), rGlyph = glyphAt(4), lastGlyph = glyphAt(5);
   const glyphWidth = glyph.right - glyph.left;
   const glyphHeight = glyph.bottom - glyph.top;
   const counter = layout.counter ?? {
     x: glyph.left + glyphWidth * 0.39, y: glyph.top + glyphHeight * 0.7,
     radiusX: glyphWidth * 0.13, radiusY: glyphHeight * 0.15
   };
-  const top = fallback.top, height = fallback.bottom - top;
+  const counterX = (counter.x - textLeft) / width;
+  const counterY = (counter.y - top) / height;
+  const letterX = (letter: GlyphBox, ratio: number) => (letter.left - textLeft + (letter.right - letter.left) * ratio) / width;
+  const letterY = (letter: GlyphBox, ratio: number) => (letter.top - top + (letter.bottom - letter.top) * ratio) / height;
+  const letterSlope = (letter: GlyphBox, ratio: number) => (letter.bottom - letter.top) * ratio / height;
   const paths: ChainPath[] = titleChainDefinitions.map(definition => {
-    if (definition.route === "right-clasp") {
-      const hole = { x: counter.x, y: counter.y };
-      const points = [
-        { x: textLeft + width * 0.3, y: top + height * 0.33 },
-        { x: textLeft + width * 0.4, y: top + height * 0.93 },
-        { x: counter.x + glyphWidth * 0.3, y: top + height * 0.24 },
-        { x: counter.x - glyphWidth * 0.55, y: top + height * 0.46 },
-        hole,
-        { x: textLeft + width * 0.74, y: top + height * 0.82 },
-        { x: textLeft + width * 0.88, y: top + height * 0.25 },
-        { x: textRight + box.width * definition.xInset, y: top + height * 0.62 }
-      ];
-      return {
-        type: "weave", curves: smoothCurves(points), points, segmentCount: 7,
-        route: "right-clasp", counter, counterUnit: 4 / 7,
-        portalRight: glyph.right - glyphWidth * 0.12, crossings: []
-      };
-    }
-    const knots = definition.route === "left-upper"
-      ? [[-definition.xInset, 0.82], [0.18, 0.19], [0.32, 0.84], [0.49, 0.18], [0.66, 0.78], [0.75, 0.39]]
-      : [[-definition.xInset, 0.15], [0.2, 0.91], [0.37, 0.28], [0.55, 0.84], [0.84, 0.27], [0.91, 0.6]];
+    // Each knot includes its own tangent: unequal sweeps, not a repeating wave.
+    const knots: Knot[] = definition.route === "left-upper"
+      ? [[-definition.xInset, .1, .1, .26], [.205, .83, .09, .01],
+        [letterX(sGlyph, .68), letterY(sGlyph, .12), .068, -letterSlope(sGlyph, .04)],
+        [letterX(glyph, .28), letterY(glyph, .2), .025, letterSlope(glyph, .11)],
+        [.65, .87, .06, .07]]
+      : definition.route === "left-lower"
+        ? [[-definition.xInset, .88, .13, -.1], [.265, .22, .078, .015],
+          [.4, .79, .045, .025], [letterX(sGlyph, .9), letterY(sGlyph, .57), .025, -letterSlope(sGlyph, .1)]]
+        : [[letterX(lastGlyph, .42), letterY(lastGlyph, .33), -.08, letterSlope(lastGlyph, .12)],
+          [letterX(rGlyph, .44), letterY(rGlyph, .5), -.07, -letterSlope(rGlyph, .15)],
+          [letterX(glyph, .57), letterY(glyph, .06), -.06, -letterSlope(glyph, .018)],
+          [letterX(glyph, -.06), letterY(glyph, .3), 0, letterSlope(glyph, .13)],
+          [counterX, counterY, .095, .05], [1 + box.width * definition.xInset / width, .93, .13, .13]];
     const points = knots.map(([x, y]) => ({ x: textLeft + width * x, y: top + height * y }));
+    const curves: Curve[] = knots.slice(0, -1).map((knot, index) => {
+      const end = knots[index + 1];
+      return [
+        points[index],
+        { x: points[index].x + knot[2] * width, y: points[index].y + knot[3] * height },
+        { x: points[index + 1].x - end[2] * width, y: points[index + 1].y - end[3] * height },
+        points[index + 1]
+      ];
+    });
+    const backRanges: [number, number][] = definition.route === "left-upper"
+      ? [[.12, .22], [.43, .56], [.93, 1]]
+      : definition.route === "left-lower"
+        ? [[.34, .48], [.91, 1]]
+        : [[0, .13]];
     return {
-      type: "weave", curves: smoothCurves(points), points, segmentCount: 5,
-      route: definition.route, crossings: []
+      type: "weave", curves, points, segmentCount: curves.length,
+      route: definition.route, backRanges, crossings: [],
+      ...(definition.route === "right-clasp" ? {
+        counter, counterUnit: 4 / 5, portalRight: glyph.right - glyphWidth * .12
+      } : {})
     };
   });
   const samples = paths.map(path => Array.from({ length: 129 }, (_, index) => sampleTitleChainCurve(path, index / 128)));
@@ -149,9 +156,8 @@ export function sampleTitleChainCurve(path: ChainPath, unit: number) {
   const y = v ** 3 * a.y + 3 * v * v * u * b.y + 3 * v * u * u * c.y + u ** 3 * d.y;
   const tangentX = 3 * v * v * (b.x - a.x) + 6 * v * u * (c.x - b.x) + 3 * u * u * (d.x - c.x);
   const tangentY = 3 * v * v * (b.y - a.y) + 6 * v * u * (c.y - b.y) + 3 * u * u * (d.y - c.y);
-  let back = path.route === "right-clasp"
-    ? unit < 0.07 || (index === 4 && x < (path.portalRight ?? x)) || index === 1 || index === 5
-    : unit > 0.92 || (index + (path.route === "left-lower" ? 1 : 0)) % 2 === 1;
+  let back = path.backRanges.some(([start, end]) => unit >= start && unit <= end)
+    || (path.route === "right-clasp" && unit >= path.counterUnit! && x < path.portalRight!);
   let nearest = Infinity;
   for (const crossing of path.crossings) {
     if (Math.abs(unit - crossing.unit) > 0.08) continue;

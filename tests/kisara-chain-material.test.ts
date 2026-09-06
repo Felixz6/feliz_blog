@@ -281,7 +281,7 @@ test("chain integration retains motion boundaries without live material construc
   }
 });
 
-test("three independent winding paths share local return crossings with explicit depth ownership", () => {
+test("asymmetric chains keep a sparse local clasp and the right chain returns to the right", () => {
   for (const width of [320, 390, 720, 1200, 1920]) {
     for (const ratio of [0.18, 0.22, 0.3]) {
       const { scope, box, state } = geometryFixture(width, width * ratio);
@@ -296,25 +296,39 @@ test("three independent winding paths share local return crossings with explicit
           assert.ok(Number.isFinite(sample.x + sample.y + sample.angle));
         }
         if (definition.route === "right-clasp") {
-          assert.equal(path.segmentCount, 7);
+          assert.equal(path.segmentCount, 5);
           assert.equal(points[0].plane, "back");
           assert.equal(points.at(-1).plane, "front");
           const counter = (state.chainRig as any).counter;
           const hole = scope.sampleTitleChain(definition, path, path.counterUnit, 1, 0, 0);
           assert.ok(Math.hypot(hole.x - counter.x, hole.y - counter.y) < box.height * 0.004);
           assert.equal(hole.crossing, false, "A complete ring owns the glyph passage");
-          const peaks = points.slice(1, -1).filter((point, index) =>
-            point.y > points[index].y && point.y > points[index + 2].y);
-          assert.ok(peaks.length >= 2, "The local return must be part of a longer winding chain");
+          const ingress = points.slice(240);
+          for (let i = 1; i < ingress.length; i++) {
+            assert.ok(ingress[i].x > ingress[i - 1].x && ingress[i].y > ingress[i - 1].y,
+              "The source approaches the counter directly, without an extra crest");
+          }
           assert.ok(path.points[2].x > path.points[3].x, "The central path turns back locally");
           assert.ok(path.points[2].x - path.points[3].x < box.width * 0.2, "The return cannot become the whole composition");
           const tail = points[0];
-          assert.ok(tail.x > box.left && tail.x < box.left + box.width);
+          assert.ok(tail.x > counter.x + box.width * 0.25 && tail.x < box.left + box.width,
+            "After clasping, the leading end wraps back across the right letters");
+          assert.ok(Math.min(...points.map(point => point.x)) > counter.x - box.width * 0.12,
+            "The right chain cannot travel back into the left weave");
         }
       }
       const crossings = (state.chainRig as any).crossings;
-      for (const pair of ["0,1", "0,2", "1,2"]) {
-        assert.ok(crossings.filter((point: any) => point.ids.join(",") === pair).length >= 2);
+      const linkWidth = Math.max(...scope.chainDefinitions.map((definition: any) => scope.getChainLinkDimensions(definition).width));
+      assert.ok(crossings.length <= 5, "Do not restore a dense central tangle");
+      assert.ok(crossings.every((point: any) => point.ids[0] !== point.ids[1]));
+      for (const pair of ["0,1", "0,2"]) {
+        assert.equal(crossings.filter((point: any) => point.ids.join(",") === pair).length, 2);
+      }
+      for (let i = 0; i < crossings.length; i++) {
+        for (const other of crossings.slice(i + 1)) {
+          assert.ok(Math.hypot(crossings[i].x - other.x, crossings[i].y - other.y) > linkWidth * 1.4,
+            "Distinct crossings need room for complete links");
+        }
       }
       for (const crossing of crossings) {
         const samples = crossing.ids.map((id: number, arm: number) => {
@@ -345,17 +359,19 @@ test("the rig follows measured glyph gaps and font/layout cache invalidation", (
   assert.ok(rebuild.includes("chainRig = null;") && rebuild.includes("chainLinkUnitCache.clear();"));
 });
 
-test("both left chains have independent continuous alternating curves without corner jumps", () => {
+test("hand-authored tangents stay continuous while the left sweeps differ in span and rhythm", () => {
   const { scope } = geometryFixture(1200);
   const paths = scope.chainDefinitions.slice(0, 2).map((definition: any) => scope.resolveTitleChainPath(definition, 1, 0));
   assert.notDeepEqual(paths[0].points, paths[1].points);
-  for (const definition of scope.chainDefinitions.slice(0, 2)) {
+  assert.equal(paths[0].curves.length, 4);
+  assert.equal(paths[1].curves.length, 3);
+  for (const definition of scope.chainDefinitions) {
     const path = scope.resolveTitleChainPath(definition, 1, 0);
-    assert.equal(path.curves.length, 5);
-    for (const boundary of [0.2, 0.4, 0.6, 0.8]) {
+    for (let i = 1; i < path.curves.length; i++) {
+      const boundary = i / path.curves.length;
       const before = scope.sampleTitleChain(definition, path, boundary - 1e-6, 1, 0, 0);
       const after = scope.sampleTitleChain(definition, path, boundary + 1e-6, 1, 0, 0);
-      assert.ok(Math.abs(before.angle - after.angle) < 0.0002);
+      assert.ok(Math.abs(Math.atan2(Math.sin(before.angle - after.angle), Math.cos(before.angle - after.angle))) < 0.0002);
     }
   }
 });
@@ -372,11 +388,58 @@ test("a measured counter owns the right chain's front-to-back passage rather tha
   assert.ok(Math.hypot(center.x - counter.x, center.y - counter.y) < 0.001);
   assert.ok(Math.hypot(hole.x - counter.x, hole.y - counter.y) < Math.min(counter.radiusX, counter.radiusY) * 0.1);
   assert.equal(hole.crossing, false);
-  assert.equal(path.counterUnit, 4 / 7);
+  assert.equal(path.counterUnit, 4 / 5);
   assert.ok(home.includes("counter: measureTitleChainCounter(chainCounterContext, style, glyphBounds[3])"));
 });
 
-test("source fade distances stay far outside the word even on the shorter right path", () => {
+test("the local clasp tolerates different measured counter positions without growing extra crossings", () => {
+  for (const x of [0.515, 0.54, 0.58, 0.6]) {
+    for (const y of [0.7, 0.78, 0.82]) {
+      const { scope, state, box } = geometryFixture(1100);
+      const counter = { x: box.left + box.width * x, y: box.top + box.height * y, radiusX: 20, radiusY: 25 };
+      Object.assign(state.chainGlyphLayout, { counter });
+      const path = scope.resolveTitleChainPath(scope.chainDefinitions[2], 1, 0);
+      const clasp = (state.chainRig as any).crossings.filter((point: any) => point.ids.join(",") === "0,2");
+      assert.equal(clasp.length, 2);
+      assert.deepEqual(clasp.map((point: any) => point.overId), [2, 0]);
+      assert.ok((state.chainRig as any).crossings.length <= 5);
+      const center = sampleTitleChainCurve(path, path.counterUnit);
+      assert.ok(Math.hypot(center.x - counter.x, center.y - counter.y) < 1e-8);
+      assert.ok(path.points[0].x > counter.x + box.width * 0.25);
+    }
+  }
+});
+
+test("central shoulders and their control handles follow lowercase glyph bounds, not the capital-height box", () => {
+  for (const lowercaseTop of [0.29, 0.4, 0.48]) {
+    const { scope, state, box } = geometryFixture(1100, 270);
+    const edges = [0, .23, .33, .49, .67, .81, 1];
+    const glyphBounds = edges.slice(0, -1).map((left, i) => ({
+      left: box.left + box.width * left,
+      right: box.left + box.width * edges[i + 1],
+      top: box.top + box.height * (i < 2 ? 0 : lowercaseTop),
+      bottom: box.top + box.height * .94
+    }));
+    const glyph = glyphBounds[3];
+    const counter = { x: glyph.left + (glyph.right - glyph.left) * .4,
+      y: glyph.top + (glyph.bottom - glyph.top) * .73, radiusX: 20, radiusY: 22 };
+    Object.assign(state.chainGlyphLayout, { glyphBounds, counter });
+    const left = scope.resolveTitleChainPath(scope.chainDefinitions[0], 1, 0);
+    const right = scope.resolveTitleChainPath(scope.chainDefinitions[2], 1, 0);
+    for (const curve of [left.curves[2], ...right.curves.slice(1, 4)]) {
+      for (const point of curve) {
+        assert.ok(point.y >= glyph.top, "Bezier handles cannot lift the central wrap above the lowercase shoulder");
+      }
+    }
+    assert.ok(right.points[2].y - glyph.top < (glyph.bottom - glyph.top) * .1);
+    assert.ok(right.points[2].x > glyph.left && right.points[2].x < glyph.right);
+    assert.ok(Math.abs(right.points[3].x - glyph.left) < (glyph.right - glyph.left) * .1);
+    const hole = sampleTitleChainCurve(right, right.counterUnit);
+    assert.ok(Math.hypot(hole.x - counter.x, hole.y - counter.y) < 1e-8);
+  }
+});
+
+test("source fade distances stay far outside the word regardless of the authored curve length", () => {
   for (const width of [390, 720, 1200]) {
     const { scope, box } = geometryFixture(width);
     for (const definition of scope.chainDefinitions) {
