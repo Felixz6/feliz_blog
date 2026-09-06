@@ -8,7 +8,7 @@ const homeSource = readFileSync(
   "utf8"
 );
 
-test("Home clears release particles before the opaque comic handoff leaves the Gate", () => {
+test("Home clears release particles only inside the covered comic commit", () => {
   const clearStart = homeSource.indexOf("const clearReleaseTransientEffects =");
   const clearEnd = homeSource.indexOf("const startReleaseAutoplay =", clearStart);
   const clearSource = homeSource.slice(clearStart, clearEnd);
@@ -24,7 +24,8 @@ test("Home clears release particles before the opaque comic handoff leaves the G
   const enterSource = homeSource.slice(enterStart, enterEnd);
   const clearIndex = enterSource.indexOf("clearReleaseTransientEffects()");
   const bridgeIndex = enterSource.indexOf('runComicHandoff("opening"');
-  assert.ok(clearIndex >= 0 && bridgeIndex > clearIndex);
+  assert.ok(bridgeIndex >= 0 && clearIndex > bridgeIndex);
+  assert.ok(enterSource.indexOf("setPostReleaseActive(false)") > bridgeIndex);
   assert.doesNotMatch(enterSource, /smoothScrollTo\(/);
   assert.doesNotMatch(enterSource, /activateOpeningBridgePortal\(/);
   assert.match(enterSource, /finalizeGateResetForNextPage\(\)/);
