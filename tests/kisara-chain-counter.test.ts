@@ -56,21 +56,37 @@ test("the bounded font probe maps its counter into the measured glyph box and to
   assert.deepEqual(counter, { x: 253, y: 151, radiusX: 23, radiusY: 23 });
   assert.equal(reads, 1);
   assert.equal(context.canvas.width * context.canvas.height * 4, 65_536);
+  Object.assign(context, {
+    measureText: () => ({ width: 56, actualBoundingBoxAscent: 50, actualBoundingBoxDescent: 0,
+      actualBoundingBoxLeft: -8, actualBoundingBoxRight: 48 })
+  });
+  const inkCounter = measureTitleChainCounter(context as unknown as CanvasRenderingContext2D,
+    { fontWeight: "700", fontFamily: "Georgia" }, glyph)!;
+  assert.ok(Math.abs(inkCounter.x - (200 + (34.5 - 8 - 8) * 112 / 40)) < 1e-8,
+    "Counter position must be relative to painted ink, not the glyph advance width");
   context.getImageData = () => { throw new Error("Readback unavailable"); };
   assert.equal(measureTitleChainCounter(context as unknown as CanvasRenderingContext2D,
     { fontWeight: "700", fontFamily: "Georgia" }, glyph), null);
   assert.equal(measureTitleChainCounter(null, { fontWeight: "700", fontFamily: "Georgia" }, glyph), null);
 });
 
-test("side-on connectors bridge actual neighbor centers without cutting a ring at a depth crossing", () => {
+test("side-on wire tips land inside the rotated neighboring apertures at bends", () => {
   for (const angle of [-0.6, 0, 0.6]) {
     const before = { x: -20, y: -10, tangentX: Math.cos(angle), tangentY: Math.sin(angle), plane: "back" };
     const after = { x: 20, y: 10, tangentX: Math.cos(angle), tangentY: -Math.sin(angle), plane: "front" };
     const sample = { x: 2, y: 7, angle: 0, crossing: false };
     const scale = fitTitleChainConnector(sample, before, after, 28);
-    assert.deepEqual([sample.x, sample.y], [0, 0]);
-    assert.equal(sample.angle, Math.atan2(20, 40));
+    const halfSpan = 28 * scale * .45;
+    const tips = [-1, 1].map(side => ({
+      x: sample.x + Math.cos(sample.angle) * halfSpan * side,
+      y: sample.y + Math.sin(sample.angle) * halfSpan * side
+    }));
+    const anchors = [
+      { x: before.x + before.tangentX * 28 * .34, y: before.y + before.tangentY * 28 * .34 },
+      { x: after.x - after.tangentX * 28 * .34, y: after.y - after.tangentY * 28 * .34 }
+    ];
+    tips.forEach((tip, i) => assert.ok(Math.hypot(tip.x - anchors[i].x, tip.y - anchors[i].y) < 1e-8));
     assert.equal(sample.crossing, false);
-    assert.ok(scale >= 0.62 && scale <= 1.16);
+    assert.ok(Number.isFinite(scale) && scale > 0);
   }
 });

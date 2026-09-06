@@ -120,7 +120,7 @@ test("Kisara Home contains opposing weave tails and keeps their sources unbounde
   assert.match(chainPathSource, /-definition\.xInset/);
   assert.match(chainPathSource, /1 \+ box\.width \* definition\.xInset \/ width/);
   assert.match(chainPathSource, /\[counterX, counterY, \.095, \.05\]/);
-  assert.match(chainPathSource, /crossing\.overId = index % 2 === 0 \? second : first/);
+  assert.match(chainPathSource, /crossing\.overId = crossing\.ids\[crossing\.overIndex\]/);
   assert.match(chainSpacingSource, /const sourceTailStep = 1 \/ Math\.max\(1, linkCount - 1\)/);
   assert.match(chainSpacingSource, /Math\.ceil\(entryOverscan \/ sourceTailStep \/ 2\) \* 2/);
   assert.match(chainSpacingSource, /definition\.entryOverscan \* entryReferenceLength \/ totalLength/);
