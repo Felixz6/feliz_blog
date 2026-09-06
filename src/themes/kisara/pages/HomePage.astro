@@ -356,6 +356,7 @@ const gateStyle = [
   <script>
     import { createComicTransition } from "../lib/comicTransition";
     import { chainLinkPitch, createTitleChainMaterial } from "../lib/titleChainMaterial";
+    import { buildTitleChainRig, titleChainDefinitions } from "../lib/titleChainRig";
     import {
       gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress,
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii
@@ -848,6 +849,7 @@ const gateStyle = [
       let chainLastPaintIntro = -1;
       let chainTitleBox = { left: 0, top: 0, width: 0, height: 0 };
       const chainLinkUnitCache = new Map();
+      let chainRig = null;
       const chainMaterial = mobilePerformance ? null : createTitleChainMaterial(signal);
       let chainMaterialVisibility = 0;
       chainMaterial?.prepare();
@@ -2153,6 +2155,8 @@ const gateStyle = [
           gaps,
           anchorBounds
         };
+        chainRig = null;
+        chainLinkUnitCache.clear();
       };
 
       const resizeTitleChains = (force = false) => {
@@ -5174,68 +5178,7 @@ const gateStyle = [
         energyLoopActive = false;
       };
 
-      const chainDefinitions = [
-        {
-          id: 0,
-          type: "weave",
-          buildStart: 0.025,
-          buildEnd: 0.62,
-          direction: 1,
-          verticalPhase: 1,
-          planePhase: 0,
-          topInset: 0.19,
-          bottomInset: 0.18,
-          xInset: 0.13,
-          xShift: 0.018,
-          breakT: 0.3,
-          desktopLinksPerSegment: 5,
-          mobileLinksPerSegment: 2,
-          linkScale: 0.92,
-          tailInset: 0.052,
-          entryOverscan: 0.42,
-          entryBend: -0.12
-        },
-        {
-          id: 1,
-          type: "weave",
-          buildStart: 0.1,
-          buildEnd: 0.76,
-          direction: 1,
-          verticalPhase: 0,
-          planePhase: 0,
-          topInset: 0.035,
-          bottomInset: 0.035,
-          xInset: 0.075,
-          xShift: -0.006,
-          breakT: 0.5,
-          desktopLinksPerSegment: 6,
-          mobileLinksPerSegment: 3,
-          linkScale: 0.9,
-          tailInset: 0.036,
-          entryOverscan: 0.38,
-          entryBend: 0.09
-        },
-        {
-          id: 2,
-          type: "weave",
-          buildStart: 0.38,
-          buildEnd: 0.97,
-          direction: -1,
-          verticalPhase: 1,
-          planePhase: 1,
-          topInset: 0.2,
-          bottomInset: 0.18,
-          xInset: 0.055,
-          xShift: 0.008,
-          breakT: 0.68,
-          desktopLinksPerSegment: 6,
-          mobileLinksPerSegment: 3,
-          linkScale: 0.88,
-          tailInset: 0.032,
-          entryOverscan: 0.4,
-          entryBend: -0.08
-        }
-      ];
+      const chainDefinitions = titleChainDefinitions;
 
       const catmullCoordinate = (point0, point1, point2, point3, unit) => {
         const unit2 = unit * unit;
@@ -5272,75 +5215,12 @@ const gateStyle = [
 
       const resolveTitleChainPath = (definition, fill, intro) => {
         if (definition.type === "frame") return { type: "frame", segmentCount: 4 };
-        const box = chainTitleBox;
-        const layout = chainGlyphLayout;
-        const fallbackGaps = [0.19, 0.31, 0.47, 0.64, 0.81]
-          .map((unit) => box.left + box.width * unit);
-        const gaps = layout.gaps.length === 5 ? layout.gaps : fallbackGaps;
-        const textLeft = layout.textRight > layout.textLeft
-          ? layout.textLeft
-          : box.left;
-        const textRight = layout.textRight > layout.textLeft
-          ? layout.textRight
-          : box.left + box.width;
-        const centerX = layout.centerX || box.left + box.width * 0.5;
-        const centerY = layout.centerY || box.top + box.height * 0.52;
-        const fallbackTop = layout.bottom > layout.top ? layout.top : box.top;
-        const fallbackBottom = layout.bottom > layout.top
-          ? layout.bottom
-          : box.top + box.height;
-        const xShift = box.width * definition.xShift;
-        const entryInset = box.width * definition.xInset;
-        const tailLinkWidth = getChainLinkDimensions(definition).width;
-        const tailBurial = Math.max(
-          box.width * definition.tailInset,
-          tailLinkWidth * 0.72 + box.height * 0.06
-        ) + tailLinkWidth;
-        const anchorXs = [
-          definition.direction < 0 ? textLeft + tailBurial : textLeft - entryInset,
-          ...gaps.map((gap) => gap + xShift),
-          definition.direction > 0 ? textRight - tailBurial : textRight + entryInset
-        ];
-        const anchorBounds = layout.anchorBounds.length === anchorXs.length
-          ? layout.anchorBounds
-          : anchorXs.map(() => ({ top: fallbackTop, bottom: fallbackBottom }));
-        const sealMotion = resolveSealMotion(fill, intro);
-        const { takeUp, lock, lockKick, cinch } = sealMotion;
-        const pull = sealMotion.weavePull;
-        const pointSpan = Math.max(1, anchorXs.length - 1);
-        const points = anchorXs.map((x, index) => {
-          const upper = (index + definition.verticalPhase) % 2 === 0;
-          const bounds = anchorBounds[index];
-          const localTop = Number.isFinite(bounds?.top) ? bounds.top : fallbackTop;
-          const localBottom = Number.isFinite(bounds?.bottom) ? bounds.bottom : fallbackBottom;
-          const localHeight = Math.max(1, localBottom - localTop);
-          const top = localTop + localHeight * definition.topInset;
-          const bottom = localBottom - localHeight * definition.bottomInset;
-          const endpointEase = index === 0 || index === anchorXs.length - 1 ? 0.08 : 0;
-          const y = upper
-            ? top + localHeight * endpointEase
-            : bottom - localHeight * endpointEase;
-          const pointUnit = index / pointSpan;
-          const windingWave = 0.5 + 0.5 * Math.cos(
-            pointUnit * fullTurn * 1.55
-              + definition.verticalPhase * Math.PI
-              - takeUp * fullTurn * 0.42
-          );
-          const localPull = 0;
-          const offsetX = x - centerX;
-          const offsetY = y - centerY;
-          const positionedX = offsetX * (1 - localPull);
-          const positionedY = offsetY * (1 - localPull);
-          return {
-            x: centerX + positionedX,
-            y: centerY + positionedY
-          };
-        });
-        return {
-          type: "weave",
-          points,
-          segmentCount: Math.max(1, points.length - 1)
-        };
+        chainRig ??= buildTitleChainRig(
+          chainTitleBox,
+          chainGlyphLayout,
+          chainDefinitions.map(item => getChainLinkDimensions(item).width)
+        );
+        return chainRig.paths[definition.id];
       };
 
       const sampleTitleChain = (definition, path, unit, fill, intro, timestamp) => {
@@ -5459,6 +5339,12 @@ const gateStyle = [
           crossing = nearestBoundary > 0
             && nearestBoundary < path.segmentCount
             && Math.abs(segmentPosition - nearestBoundary) < 0.045;
+          if (path.depths) {
+            depth = path.depths[segmentIndex]
+              + (path.depths[segmentIndex + 1] - path.depths[segmentIndex]) * smootherstep(localUnit);
+            plane = depth >= 0 ? "front" : "back";
+            crossing = Math.abs(depth) < 0.12;
+          }
         }
 
         const tangentLength = Math.max(0.001, Math.hypot(tangentX, tangentY));
@@ -5479,7 +5365,8 @@ const gateStyle = [
         const tensionOffset = tensionWave
           * box.height
           * (0.0014 + residualSlack * 0.0036 + strain * 0.0042)
-          * frameMotionResponse;
+          * frameMotionResponse
+          * (definition.route === "right-clasp" ? 0.35 : 1);
         x += normalX * tensionOffset;
         y += normalY * tensionOffset;
         return {
@@ -5591,6 +5478,8 @@ const gateStyle = [
         }
 
         const dimensions = getChainLinkDimensions(definition);
+        const entryReferenceLength = chainTitleBox.width * 1.5;
+        const entryOverscan = definition.entryOverscan * entryReferenceLength / totalLength;
         const desiredCount = Math.round(totalLength / chainLinkPitch(dimensions.width, isMobile));
         const minimum = definition.type === "frame"
           ? (isMobile ? definition.mobileLinks : definition.desktopLinks)
@@ -5640,7 +5529,7 @@ const gateStyle = [
           const sourceTailStep = 1 / Math.max(1, linkCount - 1);
           const sourceTailLinkCount = Math.max(
             2,
-            Math.ceil(definition.entryOverscan / sourceTailStep / 2) * 2
+            Math.ceil(entryOverscan / sourceTailStep / 2) * 2
           );
           for (let index = 1; index <= sourceTailLinkCount; index += 1) {
             const sourceDistance = sourceTailStep * index;
@@ -5656,6 +5545,9 @@ const gateStyle = [
         const spacing = {
           records,
           totalLength,
+          entryOverscan,
+          entryReferenceLength,
+          terminalFeather: dimensions.width * 1.8 / totalLength,
           unitAtDistance: (distanceUnit) => unitAtLength(clamp(distanceUnit, 0, 1) * totalLength),
           distanceAtUnit: (unit) => lengthAtUnit(clamp(unit, 0, 1)) / totalLength
         };
@@ -6704,7 +6596,7 @@ const gateStyle = [
             }
           }
           const travel = definition.type === "weave" ? build : easeOutCubic(build);
-          const travelSpan = 1 + definition.entryOverscan;
+          const travelSpan = 1 + spacing.entryOverscan;
           const travelOffset = definition.direction > 0
             ? travel * travelSpan - travelSpan
             : travelSpan - travel * travelSpan;
@@ -6754,8 +6646,8 @@ const gateStyle = [
             releaseFade
           });
           const leaderUnit = definition.direction > 0
-            ? -definition.entryOverscan + travel * travelSpan
-            : 1 + definition.entryOverscan - travel * travelSpan;
+            ? -spacing.entryOverscan + travel * travelSpan
+            : 1 + spacing.entryOverscan - travel * travelSpan;
           const leaderTravelUnit = leaderUnit
             + frameDistanceFeed * phaseProgress(build, 0.84, 0.995);
           const leaderSample = sampleTitleChainTravel(
@@ -6794,7 +6686,9 @@ const gateStyle = [
                 travelUnit = normalizeFrameDistance(travelUnit);
               }
             }
-            if (travelUnit < -1.05 || travelUnit > 2.05) continue;
+            const outside = Math.max(0, -travelUnit, travelUnit - 1)
+              * spacing.totalLength / spacing.entryReferenceLength;
+            if (outside > definition.entryOverscan) continue;
             const sample = sampleTitleChainTravel(
               definition,
               path,
@@ -6804,11 +6698,16 @@ const gateStyle = [
               intro,
               timestamp
             );
-            const outside = Math.max(0, -travelUnit, travelUnit - 1);
             const ingressFade = 1 - smootherstep(clamp((outside - 0.04) / 0.36, 0, 1));
+            const destinationFade = smootherstep(clamp(
+              (definition.direction > 0 ? 1 - travelUnit : travelUnit) / spacing.terminalFeather,
+              0,
+              1
+            ));
             let alpha = visibility
               * phaseProgress(build, 0.02, 0.07)
               * ingressFade
+              * destinationFade
               * resolveCenterDissolve(sample);
             const order = clamp(
               definition.direction > 0 ? distanceUnit : 1 - distanceUnit,
@@ -6846,6 +6745,7 @@ const gateStyle = [
                 const particleAlpha = visibility
                   * phaseProgress(build, 0.02, 0.07)
                   * ingressFade
+                  * destinationFade
                   * (1 - releaseFade * 0.34)
                   * resolveCanvasEdgeFade(sample)
                   * resolveCenterDissolve(sample);
@@ -6897,7 +6797,9 @@ const gateStyle = [
         drawChainLayer(chainBackContext, layerRecords.backWeave, false);
         drawChainLayer(chainFrontContext, layerRecords.frontWeave, true);
         drawChainLayer(chainFrontContext, layerRecords.frontFrame, true);
-        for (const leader of leaders) drawChainLeader(chainFrontContext, leader);
+        for (const leader of leaders) {
+          drawChainLeader(leader.sample.plane === "back" ? chainBackContext : chainFrontContext, leader);
+        }
         drawChainShatterParticles(chainFrontContext, shatterRecords, isMobile);
         drawChainRupture(timestamp, intro, ruptureEvents, visibility, isMobile);
         drawContractHeartImprint(timestamp, intro, ruptureEvents, visibility, isMobile);
