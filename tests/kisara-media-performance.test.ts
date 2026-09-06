@@ -111,22 +111,20 @@ test("Kisara Home renders its title abyss procedurally and pauses it with the Ga
 });
 
 test("Kisara Home contains opposing weave tails and keeps their sources unbounded", () => {
-  const chainPathSource = homeSource.slice(
-    homeSource.indexOf("const chainDefinitions ="),
-    homeSource.indexOf("const sampleTitleChain =")
-  );
+  const chainPathSource = readSource("src/themes/kisara/lib/titleChainRig.ts");
   const chainSpacingSource = homeSource.slice(
     homeSource.indexOf("const buildTitleChainLinkUnits ="),
     homeSource.indexOf("const drawChainLinkArc =")
   );
   assert.equal((chainPathSource.match(/tailInset:/g) ?? []).length, 3);
-  assert.match(chainPathSource, /const entryInset = box\.width \* definition\.xInset/);
-  assert.match(chainPathSource, /const tailLinkWidth = getChainLinkDimensions\(definition\)\.width/);
-  assert.match(chainPathSource, /tailLinkWidth \* 0\.72 \+ box\.height \* 0\.06[^]*\) \+ tailLinkWidth/);
-  assert.match(chainPathSource, /definition\.direction < 0 \? textLeft \+ tailBurial : textLeft - entryInset/);
-  assert.match(chainPathSource, /definition\.direction > 0 \? textRight - tailBurial : textRight \+ entryInset/);
+  assert.match(chainPathSource, /textLeft - box\.width \* definition\.xInset/);
+  assert.match(chainPathSource, /textRight \+ box\.width \* definition\.xInset/);
+  assert.match(chainPathSource, /linkWidth \* 0\.72 \+ box\.height \* 0\.06\) \+ linkWidth/);
+  assert.match(chainPathSource, /const destination = splitX \+ Math\.max\(clearance/);
+  assert.match(chainPathSource, /const destination = splitX - Math\.max\(clearance/);
   assert.match(chainSpacingSource, /const sourceTailStep = 1 \/ Math\.max\(1, linkCount - 1\)/);
-  assert.match(chainSpacingSource, /Math\.ceil\(definition\.entryOverscan \/ sourceTailStep \/ 2\) \* 2/);
+  assert.match(chainSpacingSource, /Math\.ceil\(entryOverscan \/ sourceTailStep \/ 2\) \* 2/);
+  assert.match(chainSpacingSource, /definition\.entryOverscan \* entryReferenceLength \/ totalLength/);
   assert.match(chainSpacingSource, /definition\.direction > 0[^]*\? -sourceDistance[^]*: 1 \+ sourceDistance/);
   assert.match(homeSource, /const order = clamp\([^]*definition\.direction > 0 \? distanceUnit : 1 - distanceUnit[^]*0,[^]*1[^]*\)/);
   assert.match(homeSource, /const travel = definition\.type === "weave" \? build : easeOutCubic\(build\)/);
