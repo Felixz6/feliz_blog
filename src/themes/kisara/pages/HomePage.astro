@@ -8021,7 +8021,8 @@ const gateStyle = [
 
       const runComicHandoff = (target, commit) => {
         if (comicTransition.active) return true;
-        pageMode = "snap";
+        // Input is locked by the flight; keep the exposed Gate renderers alive until coverage.
+        if (pageMode !== "gate" || target !== "opening") pageMode = "snap";
         scrollTransitionDirection = target === "gate" ? "comic-return" : "comic-forward";
         const comic = openingMemoryScene as (HTMLElement & {
           preparePresentation?: () => Promise<void>;
@@ -8315,11 +8316,11 @@ const gateStyle = [
       const enterNextPage = () => {
         if (lovebrainActive || pageMode === "lovebrain" || comicTransition.active) return;
         if (scrollFrame || scrollTransitionDirection !== "idle") cancelSmoothScroll();
-        clearOpeningTitleBridgeDissolve();
-        clearReleaseTransientEffects();
         gateReturnGuardUntil = 0;
-        setPostReleaseActive(false);
         runComicHandoff("opening", () => {
+          clearOpeningTitleBridgeDissolve();
+          clearReleaseTransientEffects();
+          setPostReleaseActive(false);
           setScrollPosition(getNextPageTop(), true);
           pageMode = "next";
           lastObservedScrollY = window.scrollY;

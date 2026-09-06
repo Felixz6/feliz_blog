@@ -12,15 +12,15 @@ export function settleWithin(task: Promise<unknown>, timeout: number, signal: Ab
   });
 }
 
-// A fixed contour expands from the portrait; no filters or per-frame geometry work.
+// A broad ink footprint grows behind the portrait, without a serrated iris or frame-time geometry.
 export function comicSpreadPoints(width: number, height: number, x: number, y: number, progress: number) {
-  const radius = Math.hypot(Math.max(x, width - x), Math.max(y, height - y)) * 1.4;
+  const radius = Math.hypot(Math.max(x, width - x), Math.max(y, height - y)) * 1.16;
   return Array.from({ length: 40 }, (_, index) => {
     const angle = index * Math.PI / 20;
-    const edge = .92 + .045 * Math.sin(angle * 5 + .8) + .035 * Math.sin(angle * 11);
+    const edge = .98 + .02 * Math.sin(angle * 3 + .8);
     return [
-      x + Math.cos(angle) * radius * edge * (.009 + progress * .991),
-      y + Math.sin(angle) * radius * edge * (.027 + progress * .973),
+      x + Math.cos(angle) * radius * edge * (.025 + progress * .975),
+      y + Math.sin(angle) * radius * edge * (.1 + progress * .9),
     ];
   });
 }
@@ -71,25 +71,25 @@ export function createComicMotion(signal: AbortSignal, reducedMotion: boolean) {
       const subject = portrait?.getBoundingClientRect();
       const x = Math.max(0, Math.min(bounds.width, subject ? subject.left - bounds.left + subject.width * .47 : bounds.width * .65));
       const y = Math.max(0, Math.min(bounds.height, subject ? subject.top - bounds.top + subject.height * .28 : bounds.height * .35));
-      const spread = [0, .23, .62, 1].map((progress, index) => ({
+      const spread = [0, .28, .68, 1].map((progress, index) => ({
         clipPath: `polygon(${comicSpreadPoints(bounds.width, bounds.height, x, y, progress).map(([px, py]) => `${px.toFixed(1)}px ${py.toFixed(1)}px`).join(",")})`,
-        opacity: index === 0 ? 0 : 1,
+        opacity: [0, .55, .95, 1][index],
       }));
       const reveal = [
-        { opacity: 0, transform: "translate3d(0,12px,0)", clipPath: "inset(0 0 90% 0)" },
-        { opacity: 1, transform: "translate3d(0,0,0)", clipPath: "inset(0)" },
+        { opacity: 0, transform: "translate3d(0,6px,0) scale(1.025)" },
+        { opacity: 1, transform: "translate3d(0,0,0) scale(1)" },
       ];
       const fade = [{ opacity: 0 }, { opacity: 1 }];
       const ordered = (frames: Keyframe[]) => reverse ? [...frames].reverse() : frames;
       const jobs = [
-        animate(portrait, ordered(reveal), reverse ? 260 : 360, reverse ? 320 : 0),
-        animate(paper, ordered(spread), reverse ? 480 : 520, reverse ? 40 : 100, reverse ? "cubic-bezier(.77,0,.175,1)" : undefined),
+        animate(portrait, ordered(reveal), reverse ? 240 : 300, reverse ? 240 : 0),
+        animate(paper, ordered(spread), reverse ? 420 : 440, reverse ? 30 : 60, reverse ? "cubic-bezier(.77,0,.175,1)" : undefined),
       ];
       scene.querySelectorAll<HTMLElement>(".kisara-comic-panel").forEach((panel, index) => {
-        jobs.push(animate(panel, ordered(fade), reverse ? 180 : 280, reverse ? index * 25 : 160 + index * 35));
+        jobs.push(animate(panel, ordered(fade), 180, reverse ? index * 30 : 100 + index * 30));
       });
       scene.querySelectorAll<HTMLElement>("[data-comic-caption]").forEach((caption, index) => {
-        jobs.push(animate(caption, ordered(fade), reverse ? 160 : 220, reverse ? 0 : 280 + index * 30));
+        jobs.push(animate(caption, ordered(fade), reverse ? 140 : 180, reverse ? 0 : 200 + index * 30));
       });
       await Promise.all(jobs);
       if (!reverse && paper && serial === generation && !signal.aborted) paper.style.clipPath = "none";

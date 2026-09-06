@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import vm from "node:vm";
 import { createComicTransition, settleWithin } from "../src/themes/kisara/lib/comicTransition.ts";
 import { comicSpreadPoints } from "../src/themes/kisara/lib/comicMotion.ts";
 import { bindComicOpening } from "../src/themes/kisara/lib/comicOpening.ts";
@@ -116,7 +119,7 @@ function fixture() {
   scene.append(caption);
   for (let i = 0; i < 5; i++) scene.append(make("comic-caption", { comicCaption: "" }));
   const doc = Object.assign(new EventTarget(), {
-    hidden: false, createElement: (tag: string) => new FakeNode(tag),
+    hidden: false, visibilityState: "visible", createElement: (tag: string) => new FakeNode(tag),
     querySelectorAll: () => [], body: { append(node: FakeNode) { nodes.push(node); } },
   });
   const win = Object.assign(new EventTarget(), {
@@ -137,6 +140,107 @@ function fixture() {
     },
   };
 }
+
+function gateHandoffFixture(f: ReturnType<typeof fixture>, controller: AbortController, ready: Promise<void>) {
+  const home = readFileSync(new URL("../src/themes/kisara/pages/HomePage.astro", import.meta.url), "utf8");
+  const functions = [
+    ["runComicHandoff", "isOpeningStopCurrent"],
+    ["enterNextPage", "finalizeLovebrainExit"],
+    ["drawTitleLens", "glitchAlphabet"],
+  ];
+  // Execute the production handoff and material gate, not a second model of their ordering.
+  const source = functions.map(([name, next]) => {
+    const start = home.indexOf(`const ${name} =`);
+    const end = home.indexOf(`const ${next} =`, start);
+    assert.ok(start >= 0 && end > start, `${name}/${next}`);
+    return home.slice(start, end);
+  }).join("\n");
+  const events: string[] = [];
+  const state = {
+    comicTransition: createComicTransition(controller.signal, false),
+    openingMemoryScene: { preparePresentation: () => ready },
+    pageMode: "gate", scrollTransitionDirection: "idle", lovebrainActive: false,
+    scrollFrame: 0, disposed: false, gateReturnGuardUntil: 0, lastObservedScrollY: 0,
+    gateVisualResetPending: false, foundSelfState: "", homeSectionInputGuardUntil: 0,
+    lastTitleLensPaintTimestamp: 0, mobileFrameInterval: 0,
+    gate: { clientWidth: 1440, style: { setProperty() {} } },
+    titleLensCanvas: { dataset: { active: "true" } },
+    titleLensRenderer: { draw: () => events.push("draw"), clear: () => events.push("clear-lens") },
+    clamp: (value: number, min: number, max: number) => Math.min(max, Math.max(min, value)),
+    performance, document: f.doc, window: { scrollY: 0 },
+    cancelSmoothScroll: () => events.push("cancel-scroll"),
+    clearOpeningTitleBridgeDissolve: () => events.push("clear-bridge"),
+    clearReleaseTransientEffects: () => events.push("clear-effects"),
+    setPostReleaseActive: (active: boolean) => events.push(`post-release:${active}`),
+    getNextPageTop: () => 900,
+    setScrollPosition: (y: number) => { events.push("scroll"); state.window.scrollY = y; },
+    resetOpeningMemoryPresentation: () => events.push("reset-comic"),
+    finalizeGateResetForNextPage: () => events.push("reset-gate"),
+    render: () => events.push("render"),
+    console,
+  };
+  Object.assign(f.scene, { preparePresentation: () => ready, settlePresentation: () => events.push("settle-comic") });
+  state.openingMemoryScene = f.scene as typeof state.openingMemoryScene;
+  const api = vm.runInNewContext(
+    stripTypeScriptTypes(source) + "\n({ enterNextPage, drawTitleLens });", state
+  );
+  return { state, events, api };
+}
+
+test("The real Gate keeps liquid rendering through preparation and reveal, then resets under full paper", async () => {
+  const f = fixture();
+  const controller = new AbortController();
+  try {
+    const ready = deferred();
+    const { state, events, api } = gateHandoffFixture(f, controller, ready.promise);
+    api.enterNextPage();
+    assert.equal(state.comicTransition.active, true);
+    assert.equal(state.pageMode, "gate");
+    api.drawTitleLens(1000, { opacity: 1, sourceOpacity: 0 });
+    assert.deepEqual(events, ["draw"]);
+    ready.resolve();
+    await flush();
+    api.enterNextPage();
+    api.drawTitleLens(1100, { opacity: 1, sourceOpacity: 0 });
+    assert.equal(f.nodes.length, 1);
+    assert.deepEqual(events, ["draw", "draw"], "No cleanup while the underlying title is visible");
+    f.animations.find(animation => animation.node.className === "kisara-comic-paper")!.finish();
+    await flush();
+    assert.equal(state.pageMode, "gate", "The remaining layers finish before the covered commit");
+    f.finish();
+    await flush();
+    assert.equal(state.pageMode, "next");
+    assert.equal(state.comicTransition.active, false);
+    assert.deepEqual(events.slice(2), [
+      "clear-bridge", "clear-effects", "post-release:false", "scroll", "reset-gate",
+      "reset-comic", "settle-comic", "render",
+    ]);
+    assert.equal(f.nodes.length, 0);
+  } finally { controller.abort(); f.restore(); }
+});
+
+test("Aborting a Gate flight never clears the exposed material or commits the reset", async () => {
+  for (const duringMotion of [false, true]) {
+    const f = fixture();
+    const controller = new AbortController();
+    try {
+      const ready = deferred();
+      const { state, events, api } = gateHandoffFixture(f, controller, ready.promise);
+      api.enterNextPage();
+      if (duringMotion) ready.resolve();
+      await flush();
+      controller.abort();
+      await flush();
+      assert.equal(state.pageMode, "gate");
+      assert.equal(state.comicTransition.active, false);
+      assert.equal(f.nodes.length, 0);
+      assert.deepEqual(events, ["render"]);
+      ready.resolve();
+      await flush();
+      assert.deepEqual(events, ["render"], "A late decode cannot commit the cancelled handoff");
+    } finally { controller.abort(); f.restore(); }
+  }
+});
 
 test("Entry grows the actual comic from its subject before committing the scroll", async () => {
   const f = fixture();
@@ -161,7 +265,9 @@ test("Entry grows the actual comic from its subject before committing the scroll
     assert.equal(subject.options.delay, 0);
     assert.ok(Number(paper.options.delay) > Number(subject.options.delay));
     assert.equal(paper.options.easing, "cubic-bezier(.23,1,.32,1)");
-    assert.ok(Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration))) <= 650);
+    assert.ok(Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration))) <= 530);
+    assert.ok(subject.frames.every(frame => frame.clipPath === undefined), "Reveal the whole silhouette, not a horizontal cut");
+    assert.deepEqual(paper.frames.map(frame => frame.opacity), [0, .55, .95, 1]);
     assert.match(String(paper.frames[0].clipPath), /^polygon\(/);
     f.finish();
     assert.equal(await run, true);
@@ -185,7 +291,7 @@ test("Exit removes paper before the subject, then holds black for the fridge's f
     const paper = f.animations.find(animation => animation.node.className === "kisara-comic-paper")!;
     assert.ok(Number(subject.options.delay) > Number(paper.options.delay));
     const exitDuration = Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration)));
-    assert.ok(exitDuration <= 580);
+    assert.ok(exitDuration <= 480);
     f.finish();
     await flush();
     assert.equal(commits, 1);
@@ -198,7 +304,7 @@ test("Exit removes paper before the subject, then holds black for the fridge's f
     await flush();
     assert.equal(f.animations.length, count + 1);
     assert.equal(f.animations.at(-1)?.options.duration, 100);
-    assert.ok(exitDuration + Number(f.animations.at(-1)?.options.duration) <= 680);
+    assert.ok(exitDuration + Number(f.animations.at(-1)?.options.duration) <= 580);
     f.finish();
     await run;
     assert.equal(f.nodes.length, 0);
