@@ -6,7 +6,7 @@ import vm from "node:vm";
 import sharp from "sharp";
 import { chainAtlas, chainLinkPitch, chainMaterialCell, createTitleChainMaterial } from "../src/themes/kisara/lib/titleChainMaterial.ts";
 import { rasterChainTile } from "../scripts/lib/kisara-chain-raster.mjs";
-import { buildTitleChainRig, titleChainDefinitions } from "../src/themes/kisara/lib/titleChainRig.ts";
+import { buildTitleChainRig, fitTitleChainConnector, sampleTitleChainCurve, titleChainDefinitions } from "../src/themes/kisara/lib/titleChainRig.ts";
 
 const asset = fileURLToPath(new URL("../public/themes/kisara/assets/title-chain-steel.webp", import.meta.url));
 const home = readFileSync(new URL("../src/themes/kisara/pages/HomePage.astro", import.meta.url), "utf8");
@@ -226,7 +226,7 @@ function geometryFixture(width: number, height = width * 0.22, customGaps?: numb
     },
     chainLinkUnitCache: new Map(),
     chainRig: null,
-    buildTitleChainRig, titleChainDefinitions,
+    buildTitleChainRig, fitTitleChainConnector, sampleTitleChainCurve, titleChainDefinitions,
     mobilePerformance: false,
     velocity: 0, burstVelocity: 0,
     fullTurn: Math.PI * 2,
@@ -281,34 +281,49 @@ test("chain integration retains motion boundaries without live material construc
   }
 });
 
-test("the shared rig gives the right clasp one shallow arc and a separate full-link corridor", () => {
+test("three independent winding paths share local return crossings with explicit depth ownership", () => {
   for (const width of [320, 390, 720, 1200, 1920]) {
     for (const ratio of [0.18, 0.22, 0.3]) {
       const { scope, box, state } = geometryFixture(width, width * ratio);
+      assert.equal(scope.chainDefinitions.length, 3);
       for (const definition of scope.chainDefinitions) {
         const path = scope.resolveTitleChainPath(definition, 1, 0);
-        const radius = scope.getChainLinkDimensions(definition).width * 0.68;
         assert.equal(scope.resolveTitleChainPath(definition, 0.5, 0.2), path, "The rig is not rebuilt during playback");
         const points = [];
         for (let i = 0; i <= 300; i++) {
           const sample = scope.sampleTitleChain(definition, path, i / 300, 1, 0, 5000);
           points.push(sample);
-          const split = (state.chainRig as any).splitX;
           assert.ok(Number.isFinite(sample.x + sample.y + sample.angle));
-          assert.ok(definition.direction > 0 ? sample.x + radius < split : sample.x - radius > split,
-            `${width}/${ratio}/chain ${definition.id} crosses the shared corridor`);
         }
         if (definition.route === "right-clasp") {
-          assert.equal(path.segmentCount, 3);
+          assert.equal(path.segmentCount, 7);
           assert.equal(points[0].plane, "back");
-          assert.equal(points.at(-1).plane, "back");
-          assert.equal(points[150].plane, "front");
+          assert.equal(points.at(-1).plane, "front");
+          const counter = (state.chainRig as any).counter;
+          const hole = scope.sampleTitleChain(definition, path, path.counterUnit, 1, 0, 0);
+          assert.ok(Math.hypot(hole.x - counter.x, hole.y - counter.y) < box.height * 0.004);
+          assert.equal(hole.crossing, false, "A complete ring owns the glyph passage");
           const peaks = points.slice(1, -1).filter((point, index) =>
             point.y > points[index].y && point.y > points[index + 2].y);
-          assert.equal(peaks.length, 1, "The right clasp cannot inherit the repeating left weave");
+          assert.ok(peaks.length >= 2, "The local return must be part of a longer winding chain");
+          assert.ok(path.points[2].x > path.points[3].x, "The central path turns back locally");
+          assert.ok(path.points[2].x - path.points[3].x < box.width * 0.2, "The return cannot become the whole composition");
           const tail = points[0];
           assert.ok(tail.x > box.left && tail.x < box.left + box.width);
         }
+      }
+      const crossings = (state.chainRig as any).crossings;
+      for (const pair of ["0,1", "0,2", "1,2"]) {
+        assert.ok(crossings.filter((point: any) => point.ids.join(",") === pair).length >= 2);
+      }
+      for (const crossing of crossings) {
+        const samples = crossing.ids.map((id: number, arm: number) => {
+          const definition = scope.chainDefinitions[id];
+          return scope.sampleTitleChain(definition, scope.resolveTitleChainPath(definition, 1, 0),
+            crossing.units[arm], 1, 0, 0);
+        });
+        assert.notEqual(samples[0].plane, samples[1].plane);
+        assert.equal(samples[crossing.overIndex].plane, "front");
       }
     }
   }
@@ -317,7 +332,7 @@ test("the shared rig gives the right clasp one shallow arc and a separate full-l
 test("the rig follows measured glyph gaps and font/layout cache invalidation", () => {
   const { scope, state, box } = geometryFixture(960, 205, [0.23, 0.33, 0.49, 0.68, 0.82]);
   const first = scope.resolveTitleChainPath(scope.chainDefinitions[2], 1, 0);
-  assert.equal((state.chainRig as any).splitX, box.left + box.width * 0.68);
+  const firstCounterX = (state.chainRig as any).counter.x;
   const firstSpacing = scope.buildTitleChainLinkUnits(scope.chainDefinitions[2], false);
   state.chainGlyphLayout.gaps = [0.2, 0.32, 0.47, 0.63, 0.8].map(value => box.left + box.width * value);
   state.chainRig = null;
@@ -325,9 +340,40 @@ test("the rig follows measured glyph gaps and font/layout cache invalidation", (
   const updated = scope.resolveTitleChainPath(scope.chainDefinitions[2], 1, 0);
   assert.notEqual(updated, first);
   assert.notEqual(scope.buildTitleChainLinkUnits(scope.chainDefinitions[2], false), firstSpacing);
-  assert.equal((state.chainRig as any).splitX, box.left + box.width * 0.63);
+  assert.ok((state.chainRig as any).counter.x < firstCounterX);
   const rebuild = home.slice(home.indexOf("const rebuildTitleChainLayout ="), home.indexOf("const resizeTitleChains ="));
   assert.ok(rebuild.includes("chainRig = null;") && rebuild.includes("chainLinkUnitCache.clear();"));
+});
+
+test("both left chains have independent continuous alternating curves without corner jumps", () => {
+  const { scope } = geometryFixture(1200);
+  const paths = scope.chainDefinitions.slice(0, 2).map((definition: any) => scope.resolveTitleChainPath(definition, 1, 0));
+  assert.notDeepEqual(paths[0].points, paths[1].points);
+  for (const definition of scope.chainDefinitions.slice(0, 2)) {
+    const path = scope.resolveTitleChainPath(definition, 1, 0);
+    assert.equal(path.curves.length, 5);
+    for (const boundary of [0.2, 0.4, 0.6, 0.8]) {
+      const before = scope.sampleTitleChain(definition, path, boundary - 1e-6, 1, 0, 0);
+      const after = scope.sampleTitleChain(definition, path, boundary + 1e-6, 1, 0, 0);
+      assert.ok(Math.abs(before.angle - after.angle) < 0.0002);
+    }
+  }
+});
+
+test("a measured counter owns the right chain's front-to-back passage rather than a generic wave boundary", () => {
+  const { scope, state, box } = geometryFixture(1200);
+  const counter = { x: box.left + box.width * 0.545, y: box.top + box.height * 0.73, radiusX: 21, radiusY: 23 };
+  Object.assign(state.chainGlyphLayout, { counter });
+  const definition = scope.chainDefinitions[2];
+  const path = scope.resolveTitleChainPath(definition, 1, 0);
+  assert.deepEqual(path.points[4], { x: counter.x, y: counter.y });
+  const hole = scope.sampleTitleChain(definition, path, path.counterUnit, 1, 0, 0);
+  const center = sampleTitleChainCurve(path, path.counterUnit);
+  assert.ok(Math.hypot(center.x - counter.x, center.y - counter.y) < 0.001);
+  assert.ok(Math.hypot(hole.x - counter.x, hole.y - counter.y) < Math.min(counter.radiusX, counter.radiusY) * 0.1);
+  assert.equal(hole.crossing, false);
+  assert.equal(path.counterUnit, 4 / 7);
+  assert.ok(home.includes("counter: measureTitleChainCounter(chainCounterContext, style, glyphBounds[3])"));
 });
 
 test("source fade distances stay far outside the word even on the shorter right path", () => {
@@ -346,7 +392,7 @@ test("source fade distances stay far outside the word even on the shorter right 
   }
 });
 
-test("actual rendered links remain separated during entry, reverse scroll, and center dissolution", () => {
+test("actual rendered links interlock only at authored crossings during entry, reverse scroll, and dissolution", () => {
   for (const width of [390, 720, 1200]) {
     const { scope, state, box } = geometryFixture(width);
     let records: any[] = [];
@@ -360,7 +406,10 @@ test("actual rendered links remain separated during entry, reverse scroll, and c
       chainLastPaintTimestamp: 0, chainLastPaintFill: -1, chainLastPaintIntro: -1,
       chargeIntroProgress: 0, burstProgress: 0,
       randomSeed: (value: number) => { const x = Math.sin(value) * 43758.5453; return x - Math.floor(x); },
-      drawChainLayer: (_: unknown, layer: any[]) => records.push(...layer.filter(record => record.alpha > 0.01)),
+      drawChainLayer: (_: unknown, layer: any[]) => {
+        assert.ok(layer.every(record => record.arcMode === "full"), "Do not split rings across the glyph layers");
+        records.push(...layer.filter(record => record.alpha > 0.01));
+      },
       drawChainLeader() {}, drawChainShatterParticles() {}, drawChainRupture() {}, drawContractHeartImprint() {},
       clearTitleChains() {}
     });
@@ -376,15 +425,41 @@ test("actual rendered links remain separated during entry, reverse scroll, and c
         const right = records.filter(record => record.definition.direction < 0);
         if (!left.length || !right.length) continue;
         framesWithBothGroups++;
-        const maxLeft = Math.max(...left.map(record =>
-          record.sample.x + scope.getChainLinkDimensions(record.definition).width * 0.68));
-        const minRight = Math.min(...right.map(record =>
-          record.sample.x - scope.getChainLinkDimensions(record.definition).width * 0.68));
-        assert.ok(maxLeft < minRight, `Visible rings overlap at width ${width}, fill ${fill}, intro ${intro}`);
+        for (const a of left) {
+          for (const b of right) {
+            const distance = Math.hypot(a.sample.x - b.sample.x, a.sample.y - b.sample.y);
+            if (distance > scope.getChainLinkDimensions(a.definition).width * 0.85) continue;
+            const planned = (state.chainRig as any).crossings.some((point: any) =>
+              Math.hypot(point.x - a.sample.x, point.y - a.sample.y) < scope.getChainLinkDimensions(a.definition).width * 2.5);
+            assert.ok(planned, `Unplanned collision at width ${width}, fill ${fill}, intro ${intro}`);
+            // Nearby rings can share a glyph plane; drawChainLayer must keep their complete chain groups ordered.
+            assert.equal(a.arcMode, "full");
+            assert.equal(b.arcMode, "full");
+          }
+        }
       }
     }
     assert.ok(framesWithBothGroups > 10);
   }
   assert.ok(home.includes("leader.sample.plane === \"back\" ? chainBackContext : chainFrontContext"));
   assert.ok(home.includes("* destinationFade"));
+});
+
+test("same-plane crossings paint complete chain groups without interleaving their half-rings", () => {
+  const calls: { id: number; link: number; arc: string }[] = [];
+  const source = home.slice(home.indexOf("const drawChainLayer ="), home.indexOf("const drawChainLeader ="));
+  const draw = vm.runInNewContext(`${source}; drawChainLayer`, {
+    mobilePerformance: false, chainTitleBox: { width: 1200 },
+    drawChainLinkArc: (_context: unknown, _sample: unknown, link: number, definition: { id: number },
+      _alpha: number, _heat: number, _front: boolean, arc: string) => calls.push({ id: definition.id, link, arc })
+  });
+  const records = [0, 1, 2].flatMap(id => [0, 1, 2, 3].map(linkIndex => ({
+    definition: { id }, linkIndex, arcMode: "full", alpha: 1, heat: 0, sample: {}, scale: 1, lengthScale: 1
+  })));
+  draw({}, records, true);
+  assert.deepEqual(calls.map(call => call.id), [0, 1, 2].flatMap(id => Array(8).fill(id)));
+  for (const record of records) {
+    assert.deepEqual(calls.filter(call => call.id === record.definition.id && call.link === record.linkIndex)
+      .map(call => call.arc), ["far", "near"]);
+  }
 });

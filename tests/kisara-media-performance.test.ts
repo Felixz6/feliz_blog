@@ -116,12 +116,11 @@ test("Kisara Home contains opposing weave tails and keeps their sources unbounde
     homeSource.indexOf("const buildTitleChainLinkUnits ="),
     homeSource.indexOf("const drawChainLinkArc =")
   );
-  assert.equal((chainPathSource.match(/tailInset:/g) ?? []).length, 3);
-  assert.match(chainPathSource, /textLeft - box\.width \* definition\.xInset/);
+  assert.equal((chainPathSource.match(/buildStart:/g) ?? []).length, 3);
+  assert.match(chainPathSource, /-definition\.xInset/);
   assert.match(chainPathSource, /textRight \+ box\.width \* definition\.xInset/);
-  assert.match(chainPathSource, /linkWidth \* 0\.72 \+ box\.height \* 0\.06\) \+ linkWidth/);
-  assert.match(chainPathSource, /const destination = splitX \+ Math\.max\(clearance/);
-  assert.match(chainPathSource, /const destination = splitX - Math\.max\(clearance/);
+  assert.match(chainPathSource, /x: counter\.x, y: counter\.y/);
+  assert.match(chainPathSource, /crossing\.overId = index % 2 === 0 \? second : first/);
   assert.match(chainSpacingSource, /const sourceTailStep = 1 \/ Math\.max\(1, linkCount - 1\)/);
   assert.match(chainSpacingSource, /Math\.ceil\(entryOverscan \/ sourceTailStep \/ 2\) \* 2/);
   assert.match(chainSpacingSource, /definition\.entryOverscan \* entryReferenceLength \/ totalLength/);

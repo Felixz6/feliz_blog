@@ -356,7 +356,8 @@ const gateStyle = [
   <script>
     import { createComicTransition } from "../lib/comicTransition";
     import { chainLinkPitch, createTitleChainMaterial } from "../lib/titleChainMaterial";
-    import { buildTitleChainRig, titleChainDefinitions } from "../lib/titleChainRig";
+    import { buildTitleChainRig, fitTitleChainConnector, sampleTitleChainCurve, titleChainDefinitions } from "../lib/titleChainRig";
+    import { measureTitleChainCounter } from "../lib/titleChainCounter";
     import {
       gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress,
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii
@@ -850,6 +851,8 @@ const gateStyle = [
       let chainTitleBox = { left: 0, top: 0, width: 0, height: 0 };
       const chainLinkUnitCache = new Map();
       let chainRig = null;
+      const chainCounterContext = mobilePerformance ? null
+        : document.createElement("canvas").getContext("2d", { willReadFrequently: true });
       const chainMaterial = mobilePerformance ? null : createTitleChainMaterial(signal);
       let chainMaterialVisibility = 0;
       chainMaterial?.prepare();
@@ -2153,7 +2156,9 @@ const gateStyle = [
           centerX,
           centerY: chainTitleBox.top + chainTitleBox.height * 0.52,
           gaps,
-          anchorBounds
+          anchorBounds,
+          glyphBounds,
+          counter: measureTitleChainCounter(chainCounterContext, style, glyphBounds[3])
         };
         chainRig = null;
         chainLinkUnitCache.clear();
@@ -4600,10 +4605,10 @@ const gateStyle = [
         const nextFontSignature = readTitleFontSignature();
         if (nextFontSignature === titleFontSignature) return;
         titleFontSignature = nextFontSignature;
+        resizeTitleChains(true);
         if (!titleLensRenderer) return;
         invalidateReleaseWarmupTask("titleLens");
         titleLensRenderer?.refresh();
-        resizeTitleChains(true);
         resizeTitleDataCanvas(true);
         scheduleReleaseWarmup();
       });
@@ -5318,6 +5323,14 @@ const gateStyle = [
             0.2
           );
           crossing = Math.abs(depth) <= frameJoinDepth;
+        } else if (path.curves) {
+          const sample = sampleTitleChainCurve(path, unit);
+          x = sample.x;
+          y = sample.y;
+          tangentX = sample.tangentX;
+          tangentY = sample.tangentY;
+          plane = sample.plane;
+          depth = sample.depth;
         } else {
           const reeledUnit = unit;
           const segmentPosition = reeledUnit * path.segmentCount;
@@ -5339,12 +5352,6 @@ const gateStyle = [
           crossing = nearestBoundary > 0
             && nearestBoundary < path.segmentCount
             && Math.abs(segmentPosition - nearestBoundary) < 0.045;
-          if (path.depths) {
-            depth = path.depths[segmentIndex]
-              + (path.depths[segmentIndex + 1] - path.depths[segmentIndex]) * smootherstep(localUnit);
-            plane = depth >= 0 ? "front" : "back";
-            crossing = Math.abs(depth) < 0.12;
-          }
         }
 
         const tangentLength = Math.max(0.001, Math.hypot(tangentX, tangentY));
@@ -5488,7 +5495,7 @@ const gateStyle = [
               : definition.desktopLinksPerSegment) * spacingPath.segmentCount + 1;
         const maximum = definition.type === "frame"
           ? (isMobile ? 28 : 110)
-          : (isMobile ? 22 : 86);
+          : (isMobile ? 22 : 128);
         let linkCount = Math.round(clamp(desiredCount, minimum, maximum));
         if (definition.type === "frame" && linkCount % 2 !== 0) {
           linkCount += linkCount < maximum ? 1 : -1;
@@ -5548,6 +5555,7 @@ const gateStyle = [
           entryOverscan,
           entryReferenceLength,
           terminalFeather: dimensions.width * 1.8 / totalLength,
+          distanceStep: 1 / Math.max(1, linkCount - 1),
           unitAtDistance: (distanceUnit) => unitAtLength(clamp(distanceUnit, 0, 1) * totalLength),
           distanceAtUnit: (unit) => lengthAtUnit(clamp(unit, 0, 1)) / totalLength
         };
@@ -5578,7 +5586,7 @@ const gateStyle = [
           ? (isFront
               ? 0.82 + Math.max(0, frameDepth) * 0.18
               : 0.78 + Math.max(0, -frameDepth) * 0.16)
-          : (isFront ? 1 : 0.84));
+          : (isFront ? 1 : 0.94));
         const variantSeed = randomSeed(
           41011 + definition.id * 701.3 + linkIndex * 43.17
         );
@@ -5620,24 +5628,30 @@ const gateStyle = [
           { arcPart: "near", edgeOn: false },
           { arcPart: "near", edgeOn: true }
         ];
-        for (const pass of passes) {
-          for (const record of records) {
-            const edgeOn = record.linkIndex % 2 === 1;
-            if (edgeOn !== pass.edgeOn) continue;
-            if (record.arcMode !== "full" && record.arcMode !== pass.arcPart) continue;
-            drawChainLinkArc(
-              context,
-              record.sample,
-              record.linkIndex,
-              record.definition,
-              record.alpha,
-              record.heat,
-              isFront,
-              pass.arcPart,
-              record.rotationOffset,
-              record.scale,
-              record.lengthScale
-            );
+        const groups = new Map();
+        for (const record of records) {
+          if (!groups.has(record.definition.id)) groups.set(record.definition.id, []);
+          groups.get(record.definition.id).push(record);
+        }
+        // Interlock arcs within one chain; never interleave half-rings from different chains.
+        for (const chainRecords of groups.values()) {
+          for (const pass of passes) {
+            for (const record of chainRecords) {
+              if ((record.linkIndex % 2 === 1) !== pass.edgeOn) continue;
+              drawChainLinkArc(
+                context,
+                record.sample,
+                record.linkIndex,
+                record.definition,
+                record.alpha,
+                record.heat,
+                isFront,
+                pass.arcPart,
+                record.rotationOffset,
+                record.scale,
+                record.lengthScale
+              );
+            }
           }
         }
       };
@@ -6704,6 +6718,15 @@ const gateStyle = [
               0,
               1
             ));
+            let connectorLengthScale = 1;
+            if (definition.type === "weave" && linkIndex % 2 === 1 && ingressFade * destinationFade > 0.002) {
+              const step = spacing.distanceStep;
+              const before = sampleTitleChainTravel(definition, path, travelUnit - step, spacing, fill, intro, timestamp);
+              const after = sampleTitleChainTravel(definition, path, travelUnit + step, spacing, fill, intro, timestamp);
+              connectorLengthScale = fitTitleChainConnector(
+                sample, before, after, getChainLinkDimensions(definition).width * 1.16
+              );
+            }
             let alpha = visibility
               * phaseProgress(build, 0.02, 0.07)
               * ingressFade
@@ -6778,18 +6801,12 @@ const gateStyle = [
                 : 1,
               lengthScale: definition.type === "frame" && linkIndex % 2 === 1
                 ? frameConnectorLengthScale
-                : 1,
+                : connectorLengthScale,
               arcMode: "full"
             };
-            if (sample.crossing) {
-              const crossingKind = definition.type === "frame" ? "Frame" : "Weave";
-              layerRecords[`back${crossingKind}`].push({ ...record, arcMode: "far" });
-              layerRecords[`front${crossingKind}`].push({ ...record, arcMode: "near" });
-            } else {
-              const layer = sample.plane === "front" ? "front" : "back";
-              const kind = record.definition.type === "frame" ? "Frame" : "Weave";
-              layerRecords[`${layer}${kind}`].push(record);
-            }
+            const layer = sample.plane === "front" ? "front" : "back";
+            const kind = record.definition.type === "frame" ? "Frame" : "Weave";
+            layerRecords[`${layer}${kind}`].push(record);
           }
         }
 
@@ -6804,7 +6821,7 @@ const gateStyle = [
         drawChainRupture(timestamp, intro, ruptureEvents, visibility, isMobile);
         drawContractHeartImprint(timestamp, intro, ruptureEvents, visibility, isMobile);
 
-        chainBackCanvas.style.opacity = Math.min(1, visibility * 0.88).toFixed(3);
+        chainBackCanvas.style.opacity = Math.min(1, visibility * 0.96).toFixed(3);
         chainFrontCanvas.style.opacity = Math.min(1, visibility).toFixed(3);
         chainLastPaintTimestamp = timestamp;
         chainLastPaintFill = fill;
