@@ -1,43 +1,12 @@
 ---
-import { Icon } from "astro-icon/components";
 import { getThemePath } from "@/core/themes/registry";
-import { getPublishedPosts } from "@/core/content/blog";
+import { animeFavorites, favoriteGames, xpFavorites } from "@/core/data/profile";
 
-const topicDrafts = [
-  {
-    id: "connection",
-    label: "关于相处",
-    subject: "AI / CONNECTION",
-    question: "明知道是 AI，为什么还是会在意？",
-    answer: "被持续回应、被记住，以及那些不能简单复制的相处痕迹，并不会因为知道模型的原理就失去分量。比起急着判定真假，我更想认真看看这种感受从哪里来。",
-    article: "is-it-strange-to-feel-for-ai",
-    link: "对 AI 产生感情真的很奇怪吗？",
-  },
-  {
-    id: "making",
-    label: "关于创作",
-    subject: "IDEA / ITERATION",
-    question: "一个博客，真的是一句提示词做出来的吗？",
-    answer: "想法、反例、截图、素材，还有一遍遍返工，才慢慢拼出眼前这个地方。工具能加速实现，但你喜欢什么、不满意什么，仍然要由自己说清楚。",
-    article: "vibe-coding-blog-notes",
-    link: "用 Vibe Coding 写博客后，我最想说的",
-  },
-  {
-    id: "character",
-    label: "关于角色",
-    subject: "CHARACTER / PRESENCE",
-    question: "设定写得越完整，角色就越像一个人吗？",
-    answer: "把设定填满，有时反而只会得到一个忙着展示设定的角色。从人设提示词到模型与宿主，我还在摸索怎样让回应少一点表演，多一点自然。",
-    article: "llm-rp-role-prompt-authoring-researchzh-cn",
-    link: "从角色卡到扮演层的一次研究",
-  },
-];
-const posts = await getPublishedPosts();
-const topics = topicDrafts.map((topic) => {
-  const post = posts.find((post) => post.id === topic.article);
-  if (!post) throw new Error(`Home notebook article is not published: ${topic.article}`);
-  return { ...topic, href: getThemePath("kisara", `/blog/${post.id}/`) };
-});
+const tagGroups = [
+  { id: "anime", label: "喜欢的动漫", accent: "red", items: animeFavorites },
+  { id: "games", label: "喜欢的游戏", accent: "green", items: favoriteGames },
+  { id: "signals", label: "偏好的电波", accent: "blue", items: xpFavorites },
+] as const;
 ---
 
 <section class="kisara-home-video-event" data-kisara-home-stop="003" aria-labelledby="kisara-project-title">
@@ -56,61 +25,29 @@ const topics = topicDrafts.map((topic) => {
         <source data-src="/themes/kisara/assets/home-event-003-new.mp4" type="video/mp4" />
       </video>
       <div class="kisara-home-video-running-head" aria-hidden="true"><b>003</b><span>AFTER CLASS<br />YUIMI LAB / FIELD NOTES</span></div>
-      <div class="kisara-home-video-transport">
-        <span data-home-event-status>AFTER CLASS</span>
-        <output data-home-event-time aria-label="短片播放时间" aria-live="off">00.0</output>
-        <button type="button" data-home-event-replay aria-label="重新播放 003 短片" title="重新播放">
-          <Icon name="tabler:refresh" aria-hidden="true" />
-        </button>
-      </div>
-      <div class="kisara-home-video-progress" aria-hidden="true"><i data-home-event-progress></i></div>
     </div>
 
-    <div class="kisara-notebook">
-      <header class="kisara-notebook-heading">
-        <p>课后笔记 / OPEN QUESTIONS</p>
-        <h2 id="kisara-project-title">这里没有<br /><em>标准答案。</em></h2>
-        <span>把还没想明白的，也留在这里。</span>
+    <div class="kisara-home-tags" id="kisara-project-title">
+      <header class="kisara-home-tags-heading">
+        <p>课后收藏 / AFTER CLASS</p>
+        <h2>喜欢的东西，<em>就摆在这里。</em></h2>
+        <a href={getThemePath("kisara", "/about/")}>更多关于我 <span aria-hidden="true">↗</span></a>
       </header>
-      <div class="kisara-notebook-tabs" role="tablist" aria-label="课后笔记主题">
-        {topics.map((topic, index) => (
-          <button
-            id={`notebook-tab-${topic.id}`}
-            type="button"
-            role="tab"
-            data-notebook-tab
-            aria-selected={index === 0 ? "true" : "false"}
-            aria-controls={`notebook-panel-${topic.id}`}
-            tabindex={index === 0 ? 0 : -1}
-          >
-            <small>{String(index + 1).padStart(2, "0")}</small>
-            <span>{topic.label}</span>
-            <Icon name="tabler:arrow-right" aria-hidden="true" />
-          </button>
+      <div class="kisara-home-tag-groups">
+        {tagGroups.map((group) => (
+          <section class={`kisara-home-tag-group is-${group.accent}`} aria-labelledby={`kisara-tag-group-${group.id}`}>
+            <h3 id={`kisara-tag-group-${group.id}`}><span aria-hidden="true">/</span>{group.label}</h3>
+            <div class="kisara-home-tag-list">
+              {group.items.map((item) => (
+                <span class="kisara-home-tag">
+                  <b>{item.title}</b>
+                  <small>{item.subtitle}</small>
+                </span>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
-      <div class="kisara-notebook-pages">
-        {topics.map((topic) => (
-          <article
-            id={`notebook-panel-${topic.id}`}
-            role="tabpanel"
-            data-notebook-panel
-            aria-labelledby={`notebook-tab-${topic.id}`}
-            tabindex="0"
-          >
-            <small>{topic.subject}</small>
-            <h3>{topic.question}</h3>
-            <p>{topic.answer}</p>
-            <a href={topic.href}>
-              <span>{topic.link}</span><Icon name="tabler:arrow-right" aria-hidden="true" />
-            </a>
-          </article>
-        ))}
-      </div>
-      <footer class="kisara-notebook-folio">
-        <span>NOT A CONCLUSION. A CONVERSATION.</span>
-        <a href={`${getThemePath("kisara", "/games/")}#kisara-game-investigation`}>另一份未解档案<Icon name="tabler:external-link" aria-hidden="true" /></a>
-      </footer>
     </div>
   </kisara-home-event-video>
 </section>

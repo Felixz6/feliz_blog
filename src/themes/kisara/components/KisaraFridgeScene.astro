@@ -638,6 +638,7 @@ import { getThemePath } from "@/core/themes/registry";
           }
 
           video.pause();
+          video.playbackRate = 1.25;
           try {
             video.currentTime = 0;
           } catch {

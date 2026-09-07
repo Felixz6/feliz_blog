@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { setMaxListeners } from "node:events";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { bindHomeEvent, nextNotebookTab, visibleSceneRatio } from "../src/themes/kisara/lib/homeEvent.ts";
+import { bindHomeEvent, visibleSceneRatio } from "../src/themes/kisara/lib/homeEvent.ts";
 import { createFrameQueue } from "../src/themes/kisara/lib/frameQueue.ts";
 
 setMaxListeners(0);
 const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-function fixture(reduced = false, videoClock = true) {
+function fixture(reduced = false) {
   class Node extends EventTarget {
     dataset: Record<string, string> = {};
     attributes = new Map<string, string>();
@@ -28,7 +28,6 @@ function fixture(reduced = false, videoClock = true) {
   const source = new Node() as Node & { src: string };
   source.dataset.src = "/fragment.mp4";
   Object.defineProperty(source, "src", { set(value: string) { source.setAttribute("src", value); } });
-  const frames = new Map<number, Function>();
   const timers = new Map<number, Function>();
   const motion = Object.assign(new EventTarget(), { matches: reduced });
   let id = 0;
@@ -54,25 +53,13 @@ function fixture(reduced = false, videoClock = true) {
       if (!this.paused) { this.paused = true; this.dispatchEvent(new Event("pause")); }
     },
     querySelector() { return source; },
-    requestVideoFrameCallback: videoClock ? (callback: Function) => {
-      const next = ++id; frames.set(next, callback); return next;
-    } : undefined,
-    cancelVideoFrameCallback: (id: number) => { frames.delete(id); },
   });
-  const replay = new Node(), time = new Node(), status = new Node(), progress = new Node();
-  const tabs = [new Node(), new Node(), new Node()];
-  const panels = [new Node(), new Node(), new Node()];
   const selectors = new Map([
     ["[data-home-event-video]", video],
-    ["[data-home-event-replay]", replay],
-    ["[data-home-event-time]", time],
-    ["[data-home-event-status]", status],
-    ["[data-home-event-progress]", progress],
   ]);
   const root = Object.assign(new Node(), {
     getBoundingClientRect: () => rect,
     querySelector: (selector: string) => selectors.get(selector),
-    querySelectorAll: (selector: string) => selector === "[data-notebook-tab]" ? tabs : panels,
   });
   const observers: FakeObserver[] = [];
   class FakeObserver {
@@ -97,7 +84,7 @@ function fixture(reduced = false, videoClock = true) {
   const show = () => { rect = { top: 0, bottom: 900, height: 900 }; observers[1].emit(); };
   const hide = () => { rect = { top: -1000, bottom: -100, height: 900 }; observers[1].emit(false); };
   return {
-    video, replay, time, status, progress, tabs, panels, root, frames, timers, observers, motion, document, window, playPromises,
+    video, root, timers, observers, motion, document, window, playPromises,
     runtime, show, hide,
     destroy() {
       runtime.destroy();
@@ -122,10 +109,8 @@ test("003 warms once near the viewport and only plays while actually visible", a
     await flush();
     assert.equal(f.video.plays, 1);
     f.video.dispatchEvent(new Event("playing"));
-    assert.equal(f.frames.size, 1);
     f.hide();
     assert.equal(f.video.paused, true);
-    assert.equal(f.frames.size, 0);
     assert.equal(f.timers.size, 0);
   } finally { f.destroy(); }
 });
@@ -152,27 +137,26 @@ test("003 pauses in a hidden document and resumes the held position without repl
   } finally { f.destroy(); }
 });
 
-test("003 reduced motion does not download or autoplay the video until explicit replay", async () => {
+test("003 reduced motion keeps the one-shot background still and deferred", async () => {
   const f = fixture(true);
   try {
     f.observers[0].emit(); f.show(); await flush();
     assert.equal(f.video.loads, 0);
     assert.equal(f.video.plays, 0);
-    f.replay.dispatchEvent(new Event("click")); await flush();
-    assert.equal(f.video.loads, 1);
-    assert.equal(f.video.plays, 1);
     f.hide(); f.show(); await flush();
-    assert.equal(f.video.plays, 1);
+    assert.equal(f.video.loads, 0);
+    assert.equal(f.video.plays, 0);
   } finally { f.destroy(); }
 });
 
-test("003 a stale play promise cannot pause a newer explicit replay", async () => {
+test("003 a stale play promise cannot pause a newer visibility replay", async () => {
   const f = fixture();
   try {
     let resolve!: () => void;
     f.playPromises.push(() => new Promise<void>(done => { resolve = done; }));
     f.show();
-    f.replay.dispatchEvent(new Event("click"));
+    f.hide();
+    f.show();
     await flush();
     assert.equal(f.video.plays, 2);
     const pauses = f.video.pauses;
@@ -182,50 +166,39 @@ test("003 a stale play promise cannot pause a newer explicit replay", async () =
   } finally { f.destroy(); }
 });
 
-test("003 a stalled play is bounded and leaves readable notes and a working replay", async () => {
+test("003 a stalled play is bounded and recovers after leaving and re-entering", async () => {
   const f = fixture();
   try {
     f.playPromises.push(() => new Promise(() => {}));
     f.show();
     [...f.timers.values()][0]();
     assert.equal(f.video.paused, true);
-    assert.equal(f.status.textContent, "REPLAY");
-    assert.equal(f.panels[0].hidden, false);
-    f.replay.dispatchEvent(new Event("click")); await flush();
+    assert.equal(f.root.dataset.state, "ready");
+    f.hide();
+    f.show();
+    await flush();
     assert.equal(f.video.plays, 2);
-    assert.equal(f.video.paused, false);
   } finally { f.destroy(); }
 });
 
-test("003 synchronizes one progress transform with media frames and has an event fallback", async () => {
-  const f = fixture(false, false);
-  try {
-    f.show(); await flush();
-    f.video.currentTime = .646479;
-    f.video.dispatchEvent(new Event("timeupdate"));
-    assert.equal(f.progress.style.transform, "scaleX(0.5000)");
-    assert.equal(f.frames.size, 0);
-    assert.equal(f.time.textContent, "00.6");
-    f.video.dispatchEvent(new Event("error"));
-    assert.equal(f.root.dataset.state, "error");
-    assert.equal(f.panels[0].hidden, false);
-  } finally { f.destroy(); }
-});
-
-test("003 notebook tabs keep selection, focus, panel visibility and arrow navigation aligned", () => {
+test("003 reports media errors without requiring transport controls", async () => {
   const f = fixture();
   try {
-    f.tabs[1].dispatchEvent(new Event("click"));
-    assert.deepEqual(f.tabs.map(tab => tab.getAttribute("aria-selected")), ["false", "true", "false"]);
-    assert.deepEqual(f.panels.map(panel => panel.hidden), [true, false, true]);
-    const key = Object.assign(new Event("keydown", { cancelable: true }), { key: "End" });
-    f.tabs[1].dispatchEvent(key);
-    assert.equal(key.defaultPrevented, true);
-    assert.equal(f.tabs[2].focused, true);
-    assert.equal(f.tabs[2].tabIndex, 0);
+    f.show(); await flush();
+    f.video.dispatchEvent(new Event("error"));
+    assert.equal(f.root.dataset.state, "error");
+  } finally { f.destroy(); }
+});
+
+test("003 reset clears its one-shot presentation state", () => {
+  const f = fixture();
+  try {
+    f.show();
+    f.video.currentTime = .6;
+    f.video.dispatchEvent(new Event("ended"));
     f.runtime.reset();
-    assert.equal(f.panels[0].hidden, false);
     assert.equal(f.video.currentTime, 0);
+    assert.equal(f.root.dataset.state, "idle");
   } finally { f.destroy(); }
 });
 
@@ -236,21 +209,16 @@ test("003 cleanup releases media frames, timers, observers and route listeners",
     f.video.dispatchEvent(new Event("playing"));
     f.runtime.destroy();
     assert.equal(f.video.paused, true);
-    assert.equal(f.frames.size, 0);
     assert.equal(f.timers.size, 0);
     assert.ok(f.observers.every(observer => observer.disconnected));
-    f.replay.dispatchEvent(new Event("click"));
     f.window.dispatchEvent(new Event("pageshow"));
     assert.equal(f.video.plays, 1);
   } finally { f.destroy(); }
 });
 
-test("Home scene visibility handles tall mobile chapters and notebook keys wrap", () => {
+test("Home scene visibility handles tall mobile chapters", () => {
   assert.equal(visibleSceneRatio({ top: 0, bottom: 1500, height: 1500 }, 700), 1);
   assert.equal(visibleSceneRatio({ top: 710, bottom: 900, height: 190 }, 700), 0);
-  assert.equal(nextNotebookTab("ArrowLeft", 0, 3), 2);
-  assert.equal(nextNotebookTab("ArrowRight", 2, 3), 0);
-  assert.equal(nextNotebookTab("Home", 2, 3), 0);
 });
 
 test("Drag frames coalesce moves, flush the final release and discard cancelled work", () => {
@@ -317,16 +285,12 @@ test("Chibi preserves group secrets while bounding background and drag work", ()
   assert.doesNotMatch(source, /will-change: transform, filter/);
 });
 
-test("003 articles exist and 004 uses real dates without duplicate blurred covers", () => {
+test("003 exposes favorite tags and 004 uses real dates without duplicate blurred covers", () => {
   const notebook = read("src/themes/kisara/components/KisaraHomeEventVideo.astro");
-  const articles = [...notebook.matchAll(/article: "([^"]+)"/g)].map(match => match[1]);
-  assert.equal(articles.length, 3);
-  assert.match(notebook, /await getPublishedPosts\(\)/);
-  assert.match(notebook, /post\.id === topic\.article/);
-  assert.match(notebook, /if \(!post\) throw new Error/);
-  assert.ok(articles.includes("llm-rp-role-prompt-authoring-researchzh-cn"));
-  assert.match(notebook, /role="tablist"/);
-  assert.match(notebook, /role="tabpanel"/);
+  assert.match(notebook, /animeFavorites/);
+  assert.match(notebook, /favoriteGames/);
+  assert.match(notebook, /xpFavorites/);
+  assert.doesNotMatch(notebook, /data-home-event-progress|data-home-event-replay|data-notebook-tab/);
   const latest = read("src/themes/kisara/components/KisaraLatestNotes.astro");
   assert.match(latest, /post\.data\.updatedDate \?\? post\.data\.pubDate/);
   assert.match(latest, /datetime=\{date\.toISOString\(\)\}/);

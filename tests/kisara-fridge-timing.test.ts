@@ -10,6 +10,7 @@ const fridgeSource = readFileSync(
 
 test("Fridge inventory begins dropping just before the door reaches its open frame", () => {
   assert.match(fridgeSource, /const bodyDropStartTime = 0\.88;/);
+  assert.match(fridgeSource, /video\.playbackRate = 1\.25;/);
   assert.match(fridgeSource, /video\.addEventListener\("timeupdate", bodyReleaseHandler\)/);
   assert.match(fridgeSource, /video\.currentTime >= bodyDropStartTime/);
   assert.match(fridgeSource, /bodyElements\.length !== 4/);
