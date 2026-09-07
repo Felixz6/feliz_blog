@@ -359,7 +359,8 @@ const gateStyle = [
     import { buildTitleChainRig, fitTitleChainConnector, orientTitleChainRing, partitionTitleChainRing, sampleTitleChainCurve, titleChainDefinitions } from "../lib/titleChainRig";
     import { measureTitleChainCounter } from "../lib/titleChainCounter";
     import {
-      gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
+      gateRelease, mapChargeIntroProgress, getChargeIntroClock,
+      mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, getContractReleaseFrame
     } from "../lib/gateRelease";
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
@@ -789,10 +790,10 @@ const gateStyle = [
       let chargeIntroProgress = startsComplete ? 1 : 0;
       let chargeIntroActive = false;
       let chargeIntroComplete = startsComplete;
-      let chargeIntroStartedAt = 0;
-      let chargeIntroFrom = chargeIntroProgress;
+      let chargeIntroLastTimestamp = 0;
+      let chargeIntroClock = getChargeIntroClock(chargeIntroProgress);
       let chargeIntroTarget = chargeIntroProgress;
-      let chargeIntroTransitionDuration = 0;
+      let chargeIntroTargetClock = chargeIntroClock;
       let chargeIntroReversing = false;
       let animationFrame = 0;
       let lastFrameTime = 0;
@@ -7567,16 +7568,13 @@ const gateStyle = [
           chargeIntroReversing = false;
           return;
         }
-        chargeIntroFrom = chargeIntroProgress;
+        chargeIntroClock = getChargeIntroClock(chargeIntroProgress);
         chargeIntroTarget = target;
-        chargeIntroTransitionDuration = Math.max(
-          180,
-          (target < chargeIntroProgress ? 820 : chargeIntroDuration) * distance
-        );
+        chargeIntroTargetClock = getChargeIntroClock(target);
         chargeIntroActive = true;
         chargeIntroComplete = false;
         chargeIntroReversing = target < chargeIntroProgress;
-        chargeIntroStartedAt = timestamp;
+        chargeIntroLastTimestamp = timestamp;
       };
 
       const startChargeIntro = (timestamp) => {
@@ -7647,8 +7645,9 @@ const gateStyle = [
           setPostReleaseActive(false, true);
           gate.classList.add("is-release-return");
           chargeIntroProgress = gateRelease.introHandoff;
-          chargeIntroFrom = chargeIntroProgress;
+          chargeIntroClock = getChargeIntroClock(chargeIntroProgress);
           chargeIntroTarget = chargeIntroProgress;
+          chargeIntroTargetClock = chargeIntroClock;
           chargeIntroActive = false;
           chargeIntroReversing = false;
           releaseTimeline = 1;
@@ -7825,21 +7824,20 @@ const gateStyle = [
           startChargeIntro(timestamp);
         }
         if (chargeIntroActive) {
-          const transitionProgress = clamp(
-            (timestamp - chargeIntroStartedAt) / Math.max(1, chargeIntroTransitionDuration),
-            0,
-            1
-          );
-          const transitionEase = smootherstep(transitionProgress);
-          chargeIntroProgress = chargeIntroFrom
-            + (chargeIntroTarget - chargeIntroFrom) * transitionEase;
-          if (transitionProgress >= 1 || (!chargeIntroReversing && chargeIntroProgress >= gateRelease.introHandoff)) {
+          const introDelta = clamp(timestamp - chargeIntroLastTimestamp, 0, 50);
+          chargeIntroLastTimestamp = timestamp;
+          const clockStep = introDelta / (reducedMotion ? 180 : chargeIntroDuration);
+          chargeIntroClock = chargeIntroReversing
+            ? Math.max(chargeIntroTargetClock, chargeIntroClock - clockStep)
+            : Math.min(chargeIntroTargetClock, chargeIntroClock + clockStep);
+          chargeIntroProgress = mapChargeIntroProgress(chargeIntroClock);
+          if (chargeIntroClock === chargeIntroTargetClock || (!chargeIntroReversing && chargeIntroProgress >= gateRelease.introHandoff)) {
             chargeIntroProgress = chargeIntroTarget >= 0.9995 ? gateRelease.introHandoff : chargeIntroTarget;
+            chargeIntroClock = getChargeIntroClock(chargeIntroProgress);
             chargeIntroActive = false;
             chargeIntroComplete = chargeIntroTarget >= 0.9995;
             chargeIntroReversing = false;
-            chargeIntroStartedAt = 0;
-            chargeIntroTransitionDuration = 0;
+            chargeIntroLastTimestamp = 0;
           }
         }
         if (releaseMode === "rewinding") {
@@ -8163,10 +8161,10 @@ const gateStyle = [
         chargeIntroProgress = 0;
         chargeIntroActive = false;
         chargeIntroComplete = false;
-        chargeIntroStartedAt = 0;
-        chargeIntroFrom = 0;
+        chargeIntroLastTimestamp = 0;
+        chargeIntroClock = 0;
         chargeIntroTarget = 0;
-        chargeIntroTransitionDuration = 0;
+        chargeIntroTargetClock = 0;
         chargeIntroReversing = false;
         gateWheelDirection = 0;
         gateWheelMomentum = 0;
@@ -9139,7 +9137,7 @@ const gateStyle = [
         releaseVisualPressure = 0;
         releaseRewindVeil = 0;
         chargeIntroActive = false;
-        chargeIntroStartedAt = 0;
+        chargeIntroLastTimestamp = 0;
         enterNextPage();
       }, { signal });
 

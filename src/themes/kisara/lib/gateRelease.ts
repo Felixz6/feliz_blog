@@ -16,6 +16,24 @@ export const gateRelease = {
   phases: { start: 0.01 }
 } as const;
 
+export function mapChargeIntroProgress(clock: number) {
+  return smoother(clock);
+}
+
+// Resolve the original shot clock only when seeking or changing direction.
+export function getChargeIntroClock(progress: number) {
+  const p = unit(progress);
+  if (p === 0 || p === 1) return p;
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 32; step++) {
+    const middle = (low + high) * 0.5;
+    if (smoother(middle) < p) low = middle;
+    else high = middle;
+  }
+  return (low + high) * 0.5;
+}
+
 // The small nonzero start distinguishes release from the manual charge state.
 export function mapReleaseAutoplayProgress(value: number) {
   return gateRelease.phases.start + smooth(value) * (1 - gateRelease.phases.start);
