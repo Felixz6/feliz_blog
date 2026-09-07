@@ -48,6 +48,39 @@
   background: linear-gradient(180deg, #15162155, transparent 18%, transparent 88%, #edf1f0);
 }
 
+.kisara-home-board-caption {
+  position: absolute;
+  top: 14%;
+  left: 55%;
+  right: 6%;
+  color: #303036;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease;
+  letter-spacing: 0;
+}
+
+.kisara-home-board-caption h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 .25em;
+  margin: 0;
+  font-size: 36px;
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.kisara-home-board-caption h2 span { white-space: nowrap; }
+.kisara-home-board-caption p {
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: #5e5860;
+}
+
 .kisara-home-portrait {
   position: absolute;
   left: var(--portrait-x);
@@ -59,7 +92,8 @@
   transition: opacity 200ms ease;
 }
 
-[data-portrait-ready] .kisara-home-portrait {
+[data-portrait-ready] .kisara-home-portrait,
+[data-portrait-ready] .kisara-home-board-caption {
   opacity: 1;
   visibility: visible;
 }
@@ -257,8 +291,28 @@
   to { opacity: 1; }
 }
 
+@media (min-width: 1440px) {
+  .kisara-home-board-caption h2 { font-size: 44px; }
+}
+
+@media (min-width: 2000px) {
+  .kisara-home-board-caption h2 { font-size: 52px; }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .kisara-home-board-caption h2 { font-size: 28px; }
+}
+
 @media (max-width: 760px) {
   .kisara-home-video-stage { height: max(760px, 100svh); }
+  .kisara-home-board-caption {
+    top: calc(var(--portrait-y) + var(--portrait-size) / 2 + 260px);
+    left: 20px;
+    right: 20px;
+    text-align: center;
+  }
+  .kisara-home-board-caption h2 { justify-content: center; font-size: 24px; }
+  .kisara-home-board-caption p { margin-top: 6px; font-size: 14px; }
   .kisara-home-knife { width: 36px; height: 160px; }
   .kisara-home-knife-blade { height: 116px; }
   .kisara-home-knife-blade b { font-size: 14px; }
@@ -266,7 +320,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kisara-home-portrait, .kisara-home-reaction { transition: none; }
+  .kisara-home-portrait, .kisara-home-reaction, .kisara-home-board-caption { transition: none; }
   .kisara-home-portrait-rig[data-impact], .kisara-home-reaction-frame { animation: none; }
   [data-landed] .kisara-home-knife-flight { animation: none; opacity: 1; transform: none; }
 }
