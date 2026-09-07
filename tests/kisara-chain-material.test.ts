@@ -535,6 +535,24 @@ test("source fade distances stay far outside the word regardless of the authored
   }
 });
 
+test("chain release keeps wire geometry stationary across timestamps and intro phases", () => {
+  for (const width of [390, 720, 1200]) {
+    const { scope } = geometryFixture(width);
+    for (const definition of scope.chainDefinitions) {
+      const path = scope.resolveTitleChainPath(definition, 1, 0);
+      for (const unit of [.12, .3, .51, .68, .85]) {
+        const baseline = scope.sampleTitleChain(definition, path, unit, 1, 0, 0);
+        for (const intro of [0, .02, .08, .15, .26, .45]) {
+          for (const timestamp of [0, 150, 380, 720, 1200, 5500]) {
+            const actual = scope.sampleTitleChain(definition, path, unit, 1, intro, timestamp);
+            assert.deepEqual(actual, baseline, "Release light and ash may move; the wire cannot shake");
+          }
+        }
+      }
+    }
+  }
+});
+
 test("rendered links keep connected apertures and complementary depth fragments throughout scrolling and dissolution", () => {
   for (const width of [390, 720, 1200]) {
     const { scope, state, box } = geometryFixture(width);

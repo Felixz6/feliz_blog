@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 import {
-  gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress,
+  gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
   getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, transformationTimeline
 } from "../src/themes/kisara/lib/gateRelease.ts";
 
@@ -331,7 +331,7 @@ test("the production presentation resets diffusion, settles the final frame, and
   const context: Record<string, any> = {
     energyProgress: 1, chargeIntroProgress: 0.66, burstProgress: 0,
     gate: { clientWidth: 1600, clientHeight: 900 }, meterShell: {},
-    clamp, gateRelease, getReconstructionProgress, getReconstructionRadii,
+    clamp, gateRelease, getReconstructionProgress, getReconstructionRadii, getTitleReconstructionFrame,
     smootherstep: (value: number) => {
       const p = clamp(value, 0, 1);
       return p ** 3 * (p * (p * 6 - 15) + 10);
@@ -355,6 +355,10 @@ test("the production presentation resets diffusion, settles the final frame, and
   for (const progress of [0, 0.01, 0.2, 0.5, 0.9, 1]) {
     context.burstProgress = mapReleaseAutoplayProgress(progress);
     update(1000 + progress * 610, false);
+    const titleFrame = getTitleReconstructionFrame(getReconstructionProgress(context.burstProgress));
+    for (const key of Object.keys(titleFrame) as (keyof typeof titleFrame)[]) {
+      assert.equal(draws.at(-1)![key], titleFrame[key], `Production title handoff must use ${key}`);
+    }
     for (const parameters of draws.splice(0)) {
       for (const value of Object.values(parameters)) assert.ok(Number.isFinite(value));
     }

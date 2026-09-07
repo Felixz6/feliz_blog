@@ -359,7 +359,7 @@ const gateStyle = [
     import { buildTitleChainRig, fitTitleChainConnector, orientTitleChainRing, partitionTitleChainRing, sampleTitleChainCurve, titleChainDefinitions } from "../lib/titleChainRig";
     import { measureTitleChainCounter } from "../lib/titleChainCounter";
     import {
-      gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress,
+      gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii
     } from "../lib/gateRelease";
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
@@ -4065,7 +4065,7 @@ const gateStyle = [
             float dissolveMask = 1.0 - smoothstep(
               dissolveNoise - 0.16,
               dissolveNoise + 0.16,
-              clamp(uDissolve, 0.0, 1.0)
+              mix(-0.16, 1.16, clamp(uDissolve, 0.0, 1.0))
             );
             float liquidCaustic = pow(
               max(
@@ -4153,14 +4153,14 @@ const gateStyle = [
               * edge
               * dissolveMask
               * clamp(uOpacity, 0.0, 1.0);
-            float trailOutputAlpha = trailAlpha * edge * clamp(uOpacity, 0.0, 1.0);
+            float trailOutputAlpha = trailAlpha * edge * dissolveMask * clamp(uOpacity, 0.0, 1.0);
             vec3 trailColor = mix(
               vec3(0.36, 0.62, 1.0),
               vec3(1.0, 0.16, 0.46),
               0.58 + flowDirection * 0.12
             );
             outputColor = vec4(
-              titleColor.rgb * edge * uOpacity + trailColor * trailOutputAlpha,
+              titleColor.rgb * edge * dissolveMask * uOpacity + trailColor * trailOutputAlpha,
               clamp(alpha + trailOutputAlpha, 0.0, 1.0)
             );
           }
@@ -4634,8 +4634,8 @@ const gateStyle = [
       };
 
       const drawTitleLens = (timestamp, parameters) => {
-        if (!titleLensRenderer || !titleLensCanvas) {
-          gate.style.setProperty("--kisara-title-source-opacity", "1");
+        if (!titleLensRenderer || !titleLensCanvas || titleLensCanvas.dataset.state === "lost") {
+          gate.style.setProperty("--kisara-title-source-opacity", (parameters.fallbackOpacity ?? 1).toFixed(4));
           return;
         }
         const sourceOpacity = clamp(
@@ -5129,19 +5129,16 @@ const gateStyle = [
           time: timestamp / 1000
         });
         if (!postReleaseActive) {
-          const flow = phaseProgress(reconstruction, 0.42, 1);
-          const lensOpacity = titleLensRenderer ? phaseProgress(reconstruction, 0.06, 0.84) : 0;
+          const titleFrame = getTitleReconstructionFrame(reconstruction);
           drawTitleLens(timestamp, {
             centerX: (titleLensCanvas?.clientWidth || 0) * 0.5,
             centerY: (titleLensCanvas?.clientHeight || 0) * 0.5,
-            opacity: lensOpacity, sourceOpacity: 1 - lensOpacity,
+            ...titleFrame,
             strength: 0, gravity: 0, collapse: 0, crush: 0,
             shockStrength: 0, shockRadius: 0, shockWidth: 12,
             coreRadius: 0, lensRadius: 1,
-            release: phaseProgress(reconstruction, 0, 0.18) * (1 - flow),
-            dissolve: phaseProgress(reconstruction, 0.04, 0.42) * (1 - flow),
-            finalFlow: flow, liquidPhase: postReleaseDataPhase,
-            liquidPressure: 0.2 + flow * 0.08,
+            liquidPhase: postReleaseDataPhase,
+            liquidPressure: 0.2 + titleFrame.finalFlow * 0.08,
             flowDirection: -1, flowFront: 0.5, parallax: 0, time: timestamp / 1000
           });
         }
@@ -5216,10 +5213,9 @@ const gateStyle = [
         const lockUnit = clamp((intro - 0.022) / 0.065, 0, 1);
         const lock = easeOutCubic(lockUnit);
         const lockKick = Math.sin(lockUnit * Math.PI) * Math.exp(-lockUnit * 1.2);
-        const strain = Math.sin(phaseProgress(intro, 0.012, 0.15) * Math.PI);
         const weavePull = 0;
         const cinch = 0;
-        return { scrollTension, settle, takeUp, lock, lockKick, strain, weavePull, cinch };
+        return { scrollTension, settle, takeUp, lock, lockKick, weavePull, cinch };
       };
 
       const resolveTitleChainPath = (definition, fill, intro) => {
@@ -5237,7 +5233,7 @@ const gateStyle = [
         const centerX = chainGlyphLayout.centerX || box.left + box.width * 0.5;
         const centerY = chainGlyphLayout.centerY || box.top + box.height * 0.52;
         const sealMotion = resolveSealMotion(fill, intro);
-        const { scrollTension, settle, takeUp, lock, lockKick, strain } = sealMotion;
+        const { scrollTension, settle, takeUp, lock, lockKick } = sealMotion;
         const frameMotionResponse = definition.type === "frame"
           ? clamp(
               Math.abs(velocity) * 320
@@ -5363,23 +5359,6 @@ const gateStyle = [
         tangentY /= tangentLength;
         const normalX = -tangentY;
         const normalY = tangentX;
-        const tensionWave = Math.sin(
-          timestamp * (0.0008 + strain * 0.0032)
-            + unit * fullTurn * (2.1 + definition.id * 0.16)
-            + definition.id * 1.73
-        );
-        const residualSlack = 1 - clamp(
-          settle * 0.14 + localTakeUp * 0.72 + lock * 0.16,
-          0,
-          1
-        );
-        const tensionOffset = tensionWave
-          * box.height
-          * (0.0014 + residualSlack * 0.0036 + strain * 0.0042)
-          * frameMotionResponse
-          * (definition.route === "right-clasp" ? 0.35 : 1);
-        x += normalX * tensionOffset;
-        y += normalY * tensionOffset;
         return {
           x,
           y,
@@ -6065,13 +6044,33 @@ const gateStyle = [
         }
       };
 
+      const sampleChainAsh = (originX, originY, centerX, centerY, bend, age) => {
+        const p = easeOutCubic(clamp(age, 0, 1));
+        const dx = centerX - originX, dy = centerY - originY;
+        const length = Math.max(1, Math.hypot(dx, dy));
+        const arc = 4 * p * (1 - p) * bend;
+        return {
+          x: originX + dx * p - dy / length * arc,
+          y: originY + dy * p + dx / length * arc,
+          angle: Math.atan2(dy, dx)
+        };
+      };
+
       const drawChainShatterParticles = (context, records, isMobile) => {
         if (!context || records.length === 0) return;
-        const shardCount = isMobile ? 4 : 6;
+        const shardCount = isMobile ? 2 : 3;
+        const centerX = (chainGlyphLayout.centerX || chainTitleBox.left + chainTitleBox.width * .5)
+          + chainTitleBox.width * .012;
+        const centerY = (chainGlyphLayout.centerY || chainTitleBox.top + chainTitleBox.height * .52)
+          + chainTitleBox.height * .045;
+        let remaining = isMobile ? 36 : 72;
+        const emittedByChain = new Map();
         context.save();
         context.lineCap = "round";
         context.lineJoin = "round";
         for (const record of records) {
+          if (remaining <= 0) break;
+          if ((emittedByChain.get(record.definition.id) ?? 0) >= (isMobile ? 12 : 24)) continue;
           const born = smootherstep(clamp(record.age / 0.045, 0, 1));
           const fade = 1 - smootherstep(clamp((record.age - 0.58) / 0.42, 0, 1));
           const baseAlpha = record.alpha * born * fade;
@@ -6080,11 +6079,11 @@ const gateStyle = [
           const materialHeat = clamp(record.heat, 0, 1);
           const shardBody = `rgb(${Math.round(37 + materialHeat * 22)},${Math.round(41 - materialHeat * 19)},${Math.round(48 - materialHeat * 19)})`;
           const shardRim = `rgb(${Math.round(144 + materialHeat * 42)},${Math.round(153 - materialHeat * 27)},${Math.round(166 - materialHeat * 29)})`;
-          const outwardX = record.sample.tangentX * record.side;
-          const outwardY = record.sample.tangentY * record.side;
           const sampleCosine = Math.cos(record.sample.angle);
           const sampleSine = Math.sin(record.sample.angle);
           for (let shardIndex = 0; shardIndex < shardCount; shardIndex += 1) {
+            if (remaining-- <= 0) break;
+            emittedByChain.set(record.definition.id, (emittedByChain.get(record.definition.id) ?? 0) + 1);
             const seedA = randomSeed(record.seed * 701.3 + shardIndex * 53.7 + 17.1);
             const seedB = randomSeed(record.seed * 977.9 + shardIndex * 89.3 + 31.7);
             const seedC = randomSeed(record.seed * 1237.1 + shardIndex * 131.9 + 47.3);
@@ -6101,38 +6100,12 @@ const gateStyle = [
             const originY = record.sample.y
               + localRimX * sampleSine
               + localRimY * sampleCosine;
-            const localRadialLength = Math.max(0.001, Math.hypot(localRimX, localRimY));
-            const localRadialX = localRimX / localRadialLength;
-            const localRadialY = localRimY / localRadialLength;
-            const radialX = localRadialX * sampleCosine - localRadialY * sampleSine;
-            const radialY = localRadialX * sampleSine + localRadialY * sampleCosine;
-            let velocityX = radialX * (0.72 + seedA * 0.88)
-              + outwardX * (0.34 + seedB * 0.74)
-              + record.sample.normalX * (seedC - 0.5) * 1.35;
-            let velocityY = radialY * (0.72 + seedA * 0.88)
-              + outwardY * (0.34 + seedB * 0.74)
-              + record.sample.normalY * (seedC - 0.5) * 1.35;
-            const velocityLength = Math.max(0.001, Math.hypot(velocityX, velocityY));
-            velocityX /= velocityLength;
-            velocityY /= velocityLength;
-            const travel = chainTitleBox.height
-              * (0.085 + seedA * 0.42)
-              * easeOutCubic(record.age);
-            const drift = Math.sin(record.age * Math.PI)
-              * chainTitleBox.height
-              * (seedB - 0.5)
-              * 0.075;
-            const x = originX
-              + velocityX * travel
-              + record.sample.normalX * drift;
-            const y = originY
-              + velocityY * travel
-              + record.sample.normalY * drift
-              + chainTitleBox.height * record.age ** 2 * (seedC - 0.34) * 0.028;
-            const angle = Math.atan2(velocityY, velocityX)
-              + (seedC - 0.5) * record.age * 4.8;
-            const shardLength = (2.3 + seedB * 5.8) * (1 - record.age * 0.32);
-            const shardWidth = (0.85 + seedC * 1.55) * (1 - record.age * 0.24);
+            const { x, y, angle } = sampleChainAsh(
+              originX, originY, centerX, centerY,
+              chainTitleBox.height * (seedB - .5) * .16, record.age
+            );
+            const shardLength = (1.8 + seedB * 3.8) * (1 - record.age * .55);
+            const shardWidth = (.65 + seedC) * (1 - record.age * .45);
             const directionX = Math.cos(angle);
             const directionY = Math.sin(angle);
             const perpendicularX = -directionY;
@@ -6385,139 +6358,41 @@ const gateStyle = [
       };
 
       const drawChainRupture = (timestamp, intro, events, visibility, isMobile) => {
-        if (!chainFrontContext || events.length === 0) return;
-        const stressPulse = Math.sin(phaseProgress(intro, 0.012, 0.145) * Math.PI);
-        const rupturePulse = Math.sin(phaseProgress(intro, 0.1, 0.48) * Math.PI);
-        if (Math.max(stressPulse, rupturePulse) <= 0.001) return;
-        const context = chainFrontContext;
-        context.save();
-        context.lineCap = "round";
+        if (!chainFrontContext || !chainBackContext || events.length === 0) return;
+        const steps = isMobile ? 5 : 8;
         for (const event of events) {
-          const { breakSample, breakSeed, heat, breakOpen, snapPulse } = event;
-          const dimensions = getChainLinkDimensions(event.definition);
-          context.save();
-          context.globalCompositeOperation = "screen";
-          if (stressPulse > 0.001 && breakOpen < 0.98) {
-            const stressLength = dimensions.width * (0.4 + stressPulse * 0.42);
-            context.globalAlpha = visibility * stressPulse * (1 - breakOpen) * 0.72;
-            context.strokeStyle = heat > 0.5
-              ? "rgba(255,229,240,0.98)"
-              : "rgba(226,238,255,0.96)";
-            context.lineWidth = 0.8 + stressPulse * 1.2;
-            context.shadowColor = heat > 0.5
-              ? "rgba(255,56,128,0.9)"
-              : "rgba(126,166,255,0.78)";
-            context.shadowBlur = 4 + stressPulse * 8;
-            context.beginPath();
-            context.moveTo(
-              breakSample.x - breakSample.tangentX * stressLength,
-              breakSample.y - breakSample.tangentY * stressLength
-            );
-            context.lineTo(
-              breakSample.x + breakSample.tangentX * stressLength,
-              breakSample.y + breakSample.tangentY * stressLength
-            );
-            context.stroke();
-          }
-
-          if (snapPulse > 0.002) {
-            const coreRadius = dimensions.width * (0.24 + snapPulse * 0.46);
-            const core = context.createRadialGradient(
-              breakSample.x,
-              breakSample.y,
-              0,
-              breakSample.x,
-              breakSample.y,
-              coreRadius
-            );
-            core.addColorStop(0, "rgba(255,255,255,0.98)");
-            core.addColorStop(0.16, "rgba(255,221,235,0.88)");
-            core.addColorStop(0.46, "rgba(255,62,130,0.38)");
-            core.addColorStop(1, "rgba(255,45,119,0)");
-            context.globalAlpha = visibility * snapPulse * 0.96;
-            context.fillStyle = core;
-            context.fillRect(
-              breakSample.x - coreRadius,
-              breakSample.y - coreRadius,
-              coreRadius * 2,
-              coreRadius * 2
-            );
-
-            context.translate(breakSample.x, breakSample.y);
-            context.rotate(breakSample.angle);
-            context.globalAlpha = visibility * snapPulse * 0.84;
-            context.strokeStyle = heat > 0.5
-              ? "rgba(255,230,240,0.98)"
-              : "rgba(226,240,255,0.98)";
-            context.lineWidth = 0.72 + snapPulse * 0.86;
-            context.shadowColor = "rgba(255,58,132,0.9)";
-            context.shadowBlur = 4 + snapPulse * 7;
-            for (const side of [-1, 1]) {
-              context.beginPath();
-              context.ellipse(
-                side * dimensions.width * 0.07,
-                0,
-                dimensions.width * (0.36 + snapPulse * 0.72),
-                dimensions.height * (0.34 + snapPulse * 0.48),
-                0,
-                side < 0 ? Math.PI * 0.64 : -Math.PI * 0.36,
-                side < 0 ? Math.PI * 1.18 : Math.PI * 0.18
+          const p = event.traceProgress;
+          const opacity = visibility * chainMaterialVisibility
+            * phaseProgress(p, 0, .16) * (1 - phaseProgress(p, .65, 1)) * .58;
+          if (opacity <= .002) continue;
+          // A single release front travels along each strand without moving the wire.
+          for (const side of [-1, 1]) {
+            const span = side < 0 ? event.breakDistanceUnit : 1 - event.breakDistanceUnit;
+            let previous = null;
+            for (let index = 0; index <= steps; index++) {
+              const tail = Math.max(0, p - .13 + index / steps * .13);
+              const distance = event.breakDistanceUnit + side * span * tail;
+              const sample = sampleTitleChainTravel(
+                event.definition, event.path, distance, event.spacing, 1, intro, timestamp
               );
-              context.stroke();
+              if (previous && previous.plane === sample.plane) {
+                const context = sample.plane === "back" ? chainBackContext : chainFrontContext;
+                context.save();
+                context.globalCompositeOperation = "screen";
+                context.globalAlpha = opacity * index / steps * (sample.plane === "back" ? .4 : 1);
+                context.strokeStyle = "rgba(248,187,205,0.92)";
+                context.lineWidth = isMobile ? .7 : 1;
+                context.lineCap = "round";
+                context.beginPath();
+                context.moveTo(previous.x, previous.y);
+                context.lineTo(sample.x, sample.y);
+                context.stroke();
+                context.restore();
+              }
+              previous = sample;
             }
-            context.rotate(-breakSample.angle);
-            context.translate(-breakSample.x, -breakSample.y);
           }
-
-          if (rupturePulse <= 0.001) {
-            context.restore();
-            continue;
-          }
-          const sparkCount = isMobile ? 5 : 8;
-          for (let sparkIndex = 0; sparkIndex < sparkCount; sparkIndex += 1) {
-            const seed = randomSeed(breakSeed * 1000 + sparkIndex * 37.1);
-            const direction = sparkIndex % 2 === 0 ? -1 : 1;
-            const tangentWeight = (0.52 + seed * 0.82) * direction;
-            const normalWeight = (seed - 0.5) * 1.08;
-            const length = chainTitleBox.height
-              * (0.055 + seed * 0.13)
-              * (0.52 + rupturePulse * 0.48);
-            const bend = (seed - 0.5) * chainTitleBox.height * 0.045;
-            const midX = breakSample.x
-              + (breakSample.tangentX * tangentWeight + breakSample.normalX * normalWeight)
-                * length
-                * 0.52
-              + breakSample.normalX * bend;
-            const midY = breakSample.y
-              + (breakSample.tangentY * tangentWeight + breakSample.normalY * normalWeight)
-                * length
-                * 0.52
-              + breakSample.normalY * bend;
-            const endX = breakSample.x
-              + (breakSample.tangentX * tangentWeight + breakSample.normalX * normalWeight) * length;
-            const endY = breakSample.y
-              + (breakSample.tangentY * tangentWeight + breakSample.normalY * normalWeight) * length;
-            context.globalAlpha = visibility
-              * rupturePulse
-              * (0.46 + seed * 0.48)
-              * (0.74 + snapPulse * 0.26);
-            context.strokeStyle = sparkIndex % 3 === 0
-              ? "rgba(255,251,253,0.98)"
-              : "rgba(255,94,151,0.94)";
-            context.lineWidth = 0.72 + seed * 1.08;
-            context.shadowColor = "rgba(255,51,124,0.9)";
-            context.shadowBlur = 3 + rupturePulse * 6;
-            context.beginPath();
-            context.moveTo(
-              breakSample.x + breakSample.tangentX * tangentWeight * 2,
-              breakSample.y + breakSample.tangentY * tangentWeight * 2
-            );
-            context.quadraticCurveTo(midX, midY, endX, endY);
-            context.stroke();
-          }
-          context.restore();
         }
-        context.restore();
       };
 
       const drawTitleChains = (timestamp, fill) => {
@@ -6699,6 +6574,10 @@ const gateStyle = [
             breakSample,
             breakSeed,
             definition,
+            path,
+            spacing,
+            breakDistanceUnit,
+            traceProgress: phaseProgress(intro, breakStart, breakStart + .22),
             heat: breakHeat,
             breakOpen: definitionBreakOpen,
             recoil: definitionRecoil,
@@ -6824,7 +6703,7 @@ const gateStyle = [
                   * destinationFade
                   * (1 - releaseFade * 0.34)
                   * resolveCanvasEdgeFade(sample)
-                  * resolveCenterDissolve(sample);
+                  * (1 - phaseProgress(intro, .5, .66));
                 if (particleAlpha > 0.002) {
                   shatterRecords.push({
                     sample: { ...sample },

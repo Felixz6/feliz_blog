@@ -26,6 +26,23 @@ export function getReconstructionProgress(burst: number) {
   return between(burst, gateRelease.phases.start, 1);
 }
 
+export function getTitleReconstructionFrame(progress: number) {
+  const p = unit(progress);
+  const takeover = smooth(between(p, 0, 0.12));
+  const scatter = smooth(between(p, 0.08, 0.42));
+  const regroup = smooth(between(p, 0.44, 0.96));
+  // Reuse the legacy nine-pixel dissolve before restoring the final liquid surface.
+  const dissolve = scatter * (1 - regroup);
+  return {
+    opacity: takeover,
+    sourceOpacity: 1 - takeover,
+    fallbackOpacity: 1 - dissolve,
+    release: smooth(between(p, 0.02, 0.34)) * (1 - regroup),
+    dissolve,
+    finalFlow: smooth(between(p, 0.5, 1))
+  };
+}
+
 export const transformationTimeline = [
   { start: 0.025, enterEnd: 0.18, leaveStart: 0.34, end: 0.52, drift: -15, lift: -3 },
   { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 }
