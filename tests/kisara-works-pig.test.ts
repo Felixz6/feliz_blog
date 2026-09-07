@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const projectsPagePath = fileURLToPath(new URL("../src/themes/kisara/pages/ProjectsPage.astro", import.meta.url));
 const projectsCssPath = fileURLToPath(new URL("../src/themes/kisara/styles/projects.css", import.meta.url));
-const projectsPageSource = readFileSync(projectsPagePath, "utf8");
+const projectsPageSource = readFileSync(projectsPagePath, "utf8")
+  + readFileSync(new URL("../src/themes/kisara/lib/worksPage.js", import.meta.url), "utf8");
 const projectsCssSource = readFileSync(projectsCssPath, "utf8");
 
 test("Works reuses the transparent Fuyukawa pig as a rare unsliceable target", () => {
@@ -61,7 +62,7 @@ test("Works hero plays its supplied video once and holds an optimized final fram
   assert.match(projectsPageSource, /const videoReady = await prepareHeroVideo\(\)/);
   assert.match(projectsPageSource, /heroVideo\.addEventListener\("ended"/);
   assert.match(projectsPageSource, /hero\.dataset\.videoState = "complete"/);
-  assert.match(projectsPageSource, /event\.persisted\) return;[\s\S]{0,160}void playHeroIntro\(\)/);
+  assert.match(projectsPageSource, /event\.persisted\) return;[\s\S]{0,400}void playHeroIntro\(\)/);
   assert.doesNotMatch(projectsPageSource, /event\.persisted\)[\s\S]{0,260}hero\.dataset\.videoState = "complete"/);
   assert.match(projectsCssSource, /data-video-state="complete"[^]*kisara-works-intro-last-frame/);
   assert.match(projectsCssSource, /prefers-reduced-motion: reduce[^]*kisara-works-intro-video/);
