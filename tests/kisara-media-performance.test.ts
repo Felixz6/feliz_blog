@@ -165,7 +165,7 @@ test("Kisara Home masks chapter seams with motion-paper transitions", () => {
   assert.doesNotMatch(homeSource, /class="kisara-home-transition is-memory-to-fridge"/);
   assert.match(homeStyles, /\.kisara-home-transition \{[^]*--transition-paper:[^]*radial-gradient\(circle, var\(--transition-dot\)/);
   assert.match(homeStyles, /\.kisara-home-transition:not\(\.is-latest-to-footer\)::before,[^]*border: 2px dashed var\(--transition-pink\)/);
-  assert.match(homeStyles, /\.kisara-home-transition\.is-event-to-latest \{[^]*--transition-from: #f5f6f4;[^]*--transition-to: #edf1f0;/);
+  assert.match(homeStyles, /\.kisara-home-transition\.is-event-to-latest \{[^]*--transition-from: #f5f6f4;[^]*--transition-to: #dbe2ec;/);
   assert.match(homeStyles, /animation-timeline: view\(block\)/);
   assert.match(homeStyles, /prefers-reduced-motion: reduce[^]*\.kisara-home-transition::before[^]*animation: none !important/);
   assert.match(homeStyles, /data-yuimi-performance="lite"[^]*\.kisara-home-transition::before[^]*animation: none !important/);
