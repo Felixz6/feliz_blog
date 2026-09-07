@@ -149,6 +149,8 @@ test("Kisara Home 003 uses a one-shot board scene with a portrait and the four o
   assert.match(homeEventSource, /xpFavorites\.map/);
   assert.match(homeEventSource, /\/themes\/fuyukawa-kagari\/assets\/about\/xp-\$\{item\.key\}\.webp/);
   assert.match(homeEventSource, /😋.*🤤.*😍.*😚/);
+  assert.match(homeEventSource, /人类公敌<span>BE LIKE:<\/span>/);
+  assert.match(homeEventSource, /<p>未必是人类<\/p>/);
   assert.doesNotMatch(homeEventSource, /kisara-home-tags|tagGroups|PERSONAL INDEX/);
   assert.match(homeEventStyles, /\.kisara-home-video-event \{[^]*display: block;[^]*min-height: 100svh/);
   assert.match(homeEventStyles, /\.kisara-home-video-stage \{[^]*display: block;[^]*min-height: 100svh/);
