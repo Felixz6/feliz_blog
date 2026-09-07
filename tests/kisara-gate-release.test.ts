@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 import {
-  gateRelease, mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
+  gateRelease, mapChargeIntroProgress, getChargeIntroClock,
+  mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
   getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, transformationTimeline
 } from "../src/themes/kisara/lib/gateRelease.ts";
 
@@ -41,6 +42,20 @@ test("release mapping has no missing interval, jump, or reverse step", () => {
   assert.equal(mapReleaseAutoplayProgress(2), 1);
 });
 
+test("seeking an intro recovers the original shot clock without re-easing its remaining range", () => {
+  for (let index = 0; index <= 1000; index++) {
+    const progress = index / 1000;
+    assert.ok(Math.abs(mapChargeIntroProgress(getChargeIntroClock(progress)) - progress) < 3e-10);
+  }
+  assert.equal(getChargeIntroClock(0), 0);
+  assert.equal(getChargeIntroClock(1), 1);
+  assert.equal(getChargeIntroClock(NaN), 0);
+  assert.equal(getChargeIntroClock(-1), 0);
+  assert.equal(getChargeIntroClock(2), 1);
+  const handoffMs = getChargeIntroClock(gateRelease.introHandoff) * gateRelease.introDuration;
+  assert.ok(handoffMs > 1262 && handoffMs < 1263);
+});
+
 function fixture(overrides: Record<string, unknown> = {}) {
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
   const classes = new Set<string>();
@@ -56,7 +71,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
     mobileFrameInterval: 0, lastAnimationPaintTimestamp: 0, animationFrame: 0, lastFrameTime: 0,
     progress: 1, targetProgress: 1, velocity: 0, springStrength: 0.06, damping: 0.76, settleDistance: 0.00035,
     chargeIntroProgress: 0, chargeIntroActive: false, chargeIntroComplete: false, chargeIntroReversing: false,
-    chargeIntroStartedAt: 0, chargeIntroTransitionDuration: 0, chargeIntroFrom: 0, chargeIntroTarget: 1,
+    chargeIntroLastTimestamp: 0, chargeIntroClock: 0, chargeIntroTargetClock: 1, chargeIntroTarget: 1,
     chargeIntroDuration: 2150, energyProgress: 1, fillDistance: 2100,
     releaseMode: "manual", releaseTimeline: 0, releaseDuration: gateRelease.duration,
     releaseAutoplayDuration: gateRelease.duration, releaseLastTimestamp: 0,
@@ -66,10 +81,15 @@ function fixture(overrides: Record<string, unknown> = {}) {
     releaseWarmupState: { spaceLens: true }, releaseWarmupPending: { spaceLens: false },
     burstProgress: 0, targetBurstProgress: 0, burstVelocity: 0,
     heroAutoplayActive: false, heroAutoplayLastTimestamp: 0, heroAutoplayFillDuration: 4600,
-    clamp, mapReleaseAutoplayProgress, gateRelease, getTransformationFrame, getGateSceneHandoff,
+    clamp, mapChargeIntroProgress, getChargeIntroClock,
+    mapReleaseAutoplayProgress, gateRelease, getTransformationFrame, getGateSceneHandoff,
     getReconstructionProgress,
-    memorySceneRecords: Array.from({ length: 5 }, () => ({ kind: "memory" })),
-    transformationSceneRecords: transformationTimeline.map(() => ({ kind: "transformation" })),
+    memorySceneRecords: Array.from({ length: 5 }, (_, index) => ({
+      id: index === 4 ? "memory-kiss" : `memory-${index}`, kind: "memory", order: index, image: `memory-${index}.webp`
+    })),
+    transformationSceneRecords: transformationTimeline.map((_, index) => ({
+      id: `transformation-${index}`, kind: "transformation", order: index + 5, image: `transformation-${index}.webp`
+    })),
     smoothstep: (value: number) => value * value * (3 - 2 * value),
     smootherstep: (value: number) => {
       const p = clamp(value, 0, 1);
@@ -136,6 +156,13 @@ function fixture(overrides: Record<string, unknown> = {}) {
   return {
     state, api,
     step(timestamp: number) { state.now = timestamp; api.animate(timestamp); },
+    advance(duration: number, interval = 1000 / 60) {
+      const end = state.now + duration;
+      while (state.now < end) {
+        state.now = Math.min(end, state.now + interval);
+        api.animate(state.now);
+      }
+    },
     until(mode: string, interval = 1000 / 60) {
       let attempts = 0;
       while (state.releaseMode !== mode && attempts++ < 250) {
@@ -152,10 +179,49 @@ function fixture(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function attachSceneCompositor(f: ReturnType<typeof fixture>) {
+  class SceneElement {
+    dataset: Record<string, string> = {};
+    style: Record<string, any> = {
+      setProperty(name: string, value: string) { this[name] = value; }
+    };
+  }
+  const slots = Array.from({ length: 2 }, (_, index) => ({
+    element: new SceneElement(), index, sceneId: "", rendered: Object.create(null)
+  }));
+  const context = {
+    HTMLElement: SceneElement, sceneSlotRecords: slots, sceneSlotOverflowWarned: false,
+    mobilePerformance: false, litePerformance: false,
+    isSceneImageReady: () => true, quantizeRuntimeValue: (value: number) => value,
+    console: { warn() { assert.fail("Shot sequence exceeded the two-slot compositor capacity"); } }
+  };
+  const sync = vm.runInNewContext(
+    sourceBetween("setSceneSlotStyle", "bindSceneSlot")
+      + sourceBetween("bindSceneSlot", "syncSceneSlots")
+      + sourceBetween("syncSceneSlots", "computeSceneHandoff")
+      + "\nsyncSceneSlots;",
+    context
+  );
+  f.state.syncSceneSlots = (presentations: unknown) => {
+    f.state.presentations = presentations;
+    sync(presentations);
+  };
+  return {
+    opacity(id: string) {
+      const slot = slots.find((candidate) => candidate.sceneId === id);
+      return Number(slot?.element.style.opacity || 0);
+    },
+    snapshot() {
+      return slots.filter((slot) => Number(slot.element.style.opacity) > .00005)
+        .map((slot) => ({ id: slot.sceneId, opacity: Number(slot.element.style.opacity) }));
+    }
+  };
+}
+
 test("finishing the heart automatically starts release in the same frame without wheel input", () => {
   const f = fixture();
   f.api.startChargeIntro(1000);
-  f.step(3150);
+  f.until("forward");
   assert.equal(f.state.chargeIntroComplete, true);
   assert.equal(f.state.chargeIntroActive, false);
   assert.equal(f.state.releaseMode, "forward");
@@ -202,7 +268,7 @@ test("release rewind continues into the shots without a paused checkpoint or ano
   assert.equal(f.state.targetBurstProgress, 0);
   assert.equal(f.state.chargeIntroTarget, 0);
   assert.equal(f.state.chargeIntroReversing, true);
-  f.step(f.state.now + f.state.chargeIntroTransitionDuration + 1000 / 60);
+  f.advance(gateRelease.introDuration);
   assert.equal(f.state.chargeIntroComplete, false);
   assert.equal(f.state.releaseMode, "manual");
   assert.equal(f.state.burstProgress, 0);
@@ -276,19 +342,86 @@ test("reversing direction during the close-up rewind resumes from that shot", ()
   f.input(-120);
   f.until("manual");
   assert.equal(f.state.chargeIntroReversing, true);
-  f.step(f.state.now + 160);
+  f.advance(160);
   const intro = f.state.chargeIntroProgress;
   assert.ok(intro > 0 && intro < gateRelease.introHandoff);
-  const startedAt = f.state.chargeIntroStartedAt;
+  const clock = f.state.chargeIntroClock;
+  const lastTimestamp = f.state.chargeIntroLastTimestamp;
+  f.state.now += 5;
   f.input(-120);
-  assert.equal(f.state.chargeIntroStartedAt, startedAt, "Repeated upward input cannot restart the shot clock");
+  assert.equal(f.state.chargeIntroLastTimestamp, lastTimestamp, "Repeated upward input cannot restart the shot clock");
   f.input(120);
-  assert.equal(f.state.chargeIntroFrom, intro);
+  assert.ok(Math.abs(f.state.chargeIntroClock - clock) < 1e-9);
   assert.equal(f.state.chargeIntroProgress, intro, "Direction changes do not jump to a shot boundary");
   assert.equal(f.state.chargeIntroReversing, false);
   assert.equal(f.state.chargeIntroTarget, 1);
   f.until("complete");
   assert.equal(f.state.burstProgress, 1);
+});
+
+test("the actual two-slot compositor gives both reversed close-ups their original visible durations", () => {
+  for (const fps of [30, 60, 120]) {
+    const interval = 1000 / fps;
+    const forward = fixture();
+    const forwardSlots = attachSceneCompositor(forward);
+    forward.api.startChargeIntro(forward.state.now);
+    const reverse = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
+      releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1 });
+    const reverseSlots = attachSceneCompositor(reverse);
+    reverse.input(-120);
+    reverse.until("manual", interval);
+    const handoffClock = getChargeIntroClock(gateRelease.introHandoff);
+    const trace = (f: ReturnType<typeof fixture>, slots: ReturnType<typeof attachSceneCompositor>, backward: boolean) => {
+      const visible = [0, 0];
+      const alphaIntegral = [0, 0];
+      const startedAt = f.state.now;
+      while (f.state.chargeIntroActive && f.state.now - startedAt < 1800) {
+        f.step(f.state.now + interval);
+        const elapsed = f.state.now - startedAt;
+        if (backward) {
+          const mirrored = mapChargeIntroProgress(handoffClock - elapsed / gateRelease.introDuration);
+          assert.ok(Math.abs(f.state.chargeIntroProgress - mirrored) < 1e-9);
+        }
+        for (let index = 0; index < 2; index++) {
+          const opacity = slots.opacity(`transformation-${index}`);
+          if (opacity > .7) visible[index] += interval;
+          alphaIntegral[index] += opacity * interval;
+          const expected = f.state.presentations[index + 5].opacity;
+          assert.ok(Math.abs(opacity - expected) < .0001, "The bound slot must follow each shot, not retain a stale frame");
+        }
+      }
+      assert.equal(f.state.chargeIntroActive, false);
+      return { visible, alphaIntegral };
+    };
+    const original = trace(forward, forwardSlots, false);
+    const reversed = trace(reverse, reverseSlots, true);
+    for (let index = 0; index < 2; index++) {
+      assert.ok(Math.abs(original.visible[index] - reversed.visible[index]) <= interval * 2 + .001,
+        `Shot ${index} must retain its original dwell at ${fps}Hz`);
+      assert.ok(Math.abs(original.alphaIntegral[index] - reversed.alphaIntegral[index]) <= interval * 2,
+        `Shot ${index} must retain its fade envelope at ${fps}Hz`);
+    }
+    assert.ok(reversed.visible[0] > 330, "The first close-up cannot flash past in 136ms");
+    assert.ok(reversed.visible[1] > 190, "The detail close-up retains its original readable interval");
+    assert.deepEqual(reverseSlots.snapshot(), [{ id: "memory-kiss", opacity: .985 }]);
+  }
+});
+
+test("delayed intro frames cannot skip either shot in forward or reverse playback", () => {
+  const f = fixture();
+  f.api.startChargeIntro(f.state.now);
+  f.step(f.state.now + 4000);
+  assert.ok(Math.abs(f.state.chargeIntroClock - 50 / gateRelease.introDuration) < 1e-10);
+  f.until("forward");
+  f.input(-120);
+  f.until("manual");
+  const before = f.state.chargeIntroClock;
+  f.step(f.state.now + 60000);
+  assert.ok(Math.abs(f.state.chargeIntroClock - (before - 50 / gateRelease.introDuration)) < 1e-10);
+  assert.equal(f.state.chargeIntroReversing, true);
+  assert.ok(f.state.chargeIntroProgress > .6, "A delayed frame must not jump from detail straight to kiss");
+  f.advance(1600);
+  assert.equal(f.state.chargeIntroProgress, 0);
 });
 
 test("opposite input resumes exactly where the reverse stopped; repeated gestures do not restart clocks", () => {
@@ -328,7 +461,7 @@ test("small wheel input, normalized touch/keyboard, reduced motion and long reve
     assert.equal(f.state.releaseMode, "rewinding");
     f.until("manual");
     assert.equal(f.state.chargeIntroReversing, true);
-    f.step(f.state.now + f.state.chargeIntroTransitionDuration + 1000 / 60);
+    f.advance(180);
     assert.equal(f.state.chargeIntroProgress, 0);
     assert.equal(f.state.chargeIntroActive, false);
     assert.equal(f.state.presentations[4].opacity, .985);
@@ -351,11 +484,11 @@ test("AUTO no longer inserts a timed blade stage or bypasses an active heart", (
 });
 
 test("reversing an unfinished heart never starts reconstruction", () => {
-  const f = fixture({ chargeIntroActive: true, chargeIntroProgress: 0.6, chargeIntroFrom: 0,
-    chargeIntroTarget: 1, chargeIntroStartedAt: 500, chargeIntroTransitionDuration: 2150 });
+  const f = fixture({ chargeIntroActive: true, chargeIntroProgress: 0.6,
+    chargeIntroTarget: 1, chargeIntroLastTimestamp: 500 });
   f.api.addProgress(-120);
   assert.equal(f.state.chargeIntroTarget, 0);
-  f.step(1000 + f.state.chargeIntroTransitionDuration);
+  f.advance(gateRelease.introDuration);
   assert.equal(f.state.chargeIntroComplete, false);
   assert.equal(f.state.releaseMode, "manual");
   assert.equal(f.state.burstProgress, 0);
@@ -420,7 +553,8 @@ test("both close-ups retain c4fd2f4 shot cues and focus instead of extending the
   const middle = getTransformationFrame(1, (0.35 + 0.79) / 2, 0, 0, true)!;
   assert.ok(Math.abs(middle.blur - 0.35) < 1e-10);
   assert.ok(Math.abs(middle.scale - (1.072 - 0.034 + 0.5 * 0.005)) < 1e-10);
-  assert.match(home, /const transitionEase = smootherstep\(transitionProgress\)/);
+  assert.match(sourceBetween("animate", "startAnimation"), /chargeIntroProgress = mapChargeIntroProgress\(chargeIntroClock\)/);
+  assert.doesNotMatch(sourceBetween("transitionChargeIntro", "startChargeIntro"), /820|smootherstep/);
 });
 
 test("the original diffusion wash reaches every corner and retains full source brightness", () => {
@@ -452,7 +586,7 @@ test("the release takes over at the original third-shot cue, not after a stretch
   const f = fixture();
   f.api.startChargeIntro(1000);
   for (const elapsed of [300, 600, 900, 1100]) {
-    f.step(1000 + elapsed);
+    f.advance(1000 + elapsed - f.state.now);
     assert.ok(Math.abs(f.state.chargeIntroProgress - f.state.smootherstep(elapsed / 2150)) < 1e-10);
     assert.equal(f.state.releaseMode, "manual");
   }
