@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
-import { getTitleReconstructionFrame, gateRelease } from "../src/themes/kisara/lib/gateRelease.ts";
+import { getTitleReconstructionFrame, getContractReleaseFrame, gateRelease } from "../src/themes/kisara/lib/gateRelease.ts";
 
 const home = readFileSync(new URL("../src/themes/kisara/pages/HomePage.astro", import.meta.url), "utf8");
 const between = (name: string, next: string) =>
@@ -15,16 +15,17 @@ const smootherstep = (value: number) => value ** 3 * (value * (value * 6 - 15) +
 test("title reconstruction has distinct scatter and regroup phases without lengthening the release", () => {
   assert.equal(gateRelease.duration, 610);
   const start = getTitleReconstructionFrame(0);
-  assert.deepEqual(start, { opacity: 0, sourceOpacity: 1, fallbackOpacity: 1, release: 0, dissolve: 0, finalFlow: 0 });
+  assert.deepEqual(start, { opacity: 0, sourceOpacity: 1, fallbackOpacity: 1, release: 0, dissolve: 0, blockMix: 0, finalFlow: 0 });
   for (const p of [.42, .43, .44]) {
     const gap = getTitleReconstructionFrame(p);
     assert.equal(gap.sourceOpacity, 0, "DOM lettering cannot fill the holes in the dissolving shader");
     assert.equal(gap.dissolve, 1);
     assert.equal(gap.fallbackOpacity, 0);
     assert.equal(gap.finalFlow, 0, "The liquid surface waits until regrouping starts");
+    assert.equal(gap.blockMix, 1, "Packets remain visible while the solid lettering is absent");
   }
   assert.deepEqual(getTitleReconstructionFrame(1), {
-    opacity: 1, sourceOpacity: 0, fallbackOpacity: 1, release: 0, dissolve: 0, finalFlow: 1
+    opacity: 1, sourceOpacity: 0, fallbackOpacity: 1, release: 0, dissolve: 0, blockMix: 0, finalFlow: 1
   });
   let last = start;
   for (let i = 1; i <= 1000; i++) {
@@ -38,6 +39,128 @@ test("title reconstruction has distinct scatter and regroup phases without lengt
   }
   for (const p of [NaN, -1, -Infinity]) assert.deepEqual(getTitleReconstructionFrame(p), start);
   assert.deepEqual(getTitleReconstructionFrame(2), getTitleReconstructionFrame(1));
+});
+
+test("the title uses a distinct bounded packet field and disables it completely in the final liquid pass", () => {
+  const shader = between("createTitleLensRenderer", "drawSpaceLens");
+  assert.match(shader, /if \(blockMix > 0\.001\)/);
+  assert.match(shader, /vec2 cell = floor\(pixel \/ cellSize\)/);
+  assert.match(shader, /spreadSource \+ offset/);
+  assert.match(shader, /smoothstep\(0\.045, 0\.095, edgeDistance\)/);
+  assert.match(shader, /packetAlpha \+ surface\.a \* \(1\.0 - packetAlpha\)/);
+  assert.match(shader, /uniforms\.blockMix, parameters\.blockMix \?\? 0/);
+  assert.doesNotMatch(shader.slice(shader.indexOf("float blockMix ="), shader.indexOf("outputColor = surface;")),
+    /uTime|sin\(/, "Packets have stable cell identities when the transition is paused or reversed");
+  const middle = getTitleReconstructionFrame(.43);
+  let surviving = 0;
+  for (let i = 0; i <= 1000; i++) {
+    const seed = i / 1000;
+    const mask = 1 - smooth((middle.dissolve * .78 - (seed - .08)) / .16);
+    if (mask > .5) surviving++;
+  }
+  assert.ok(surviving > 200 && surviving < 240, "The scatter gap retains a sparse, readable packet field");
+  assert.ok(getTitleReconstructionFrame(.62).blockMix > .95);
+  assert.equal(getTitleReconstructionFrame(.62).finalFlow, 0);
+});
+
+test("the heart is drawn, pulses once and disperses before the reachable shot handoff", () => {
+  const start = getContractReleaseFrame(0);
+  for (const key of ["etch", "gather", "opacity", "draw"] as const) assert.equal(start[key], 0);
+  assert.ok(getContractReleaseFrame(.16).etch > .9);
+  assert.ok(getContractReleaseFrame(.28).opacity > .65);
+  assert.equal(getContractReleaseFrame(.32).draw, 1);
+  assert.equal(getContractReleaseFrame(.39).pulse, 1);
+  assert.ok(getContractReleaseFrame(.56).opacity < .6);
+  const end = getContractReleaseFrame(gateRelease.introHandoff);
+  assert.equal(end.opacity, 0);
+  assert.equal(end.gather, 0);
+  assert.equal(end.etch, 0);
+  assert.equal(end.exit, 1);
+  const frames = Array.from({ length: 661 }, (_, i) => getContractReleaseFrame(i / 1000));
+  for (let i = 1; i < frames.length; i++) {
+    for (const key of Object.keys(start) as (keyof typeof start)[]) {
+      assert.ok(Number.isFinite(frames[i][key]));
+      assert.ok(Math.abs(frames[i][key] - frames[i - 1][key]) < .03);
+    }
+  }
+  const heart = between("drawContractHeartImprint", "drawChainRupture");
+  assert.doesNotMatch(heart, /timestamp \*|createRadialGradient|shadowBlur|0\.68|0\.695/);
+  assert.match(heart, /context\.setLineDash/);
+});
+
+test("glyph etching uses the measured font and baseline, stays bounded and clears outside release", () => {
+  const strokes: unknown[][] = [];
+  let fills = 0;
+  const context = new Proxy({
+    strokeText(...args: unknown[]) { strokes.push(args); },
+    fillText() { fills++; },
+    createLinearGradient() { return { addColorStop() {} }; }
+  }, {
+    get(target, key: string) { return key in target ? target[key as keyof typeof target] : () => {}; },
+    set(target, key: string, value) { (target as Record<string, unknown>)[key] = value; return true; }
+  });
+  const state = {
+    getContractReleaseFrame, chainFrontContext: context,
+    chainTitleBox: { top: 70, height: 210 },
+    chainGlyphLayout: { font: "700 300px Georgia", textLeft: 100, textRight: 1000, baseline: 300, widthScale: .8 }
+  };
+  const draw = vm.runInNewContext(between("drawTitleSealEtching", "drawContractHeartImprint")
+    + "; drawTitleSealEtching;", state);
+  for (const p of [0, .14, .26, .4, .66, 1, .26, 0]) {
+    strokes.length = 0;
+    fills = 0;
+    draw(p, 1, false);
+    assert.equal(strokes.length, getContractReleaseFrame(p).etch > .002 ? 3 : 0);
+    assert.equal(fills, getContractReleaseFrame(p).etch > .002 ? 1 : 0);
+    assert.ok(strokes.every(args => args[0] === "Kisara"));
+  }
+  assert.equal((context as any).font, "700 300px Georgia");
+  assert.doesNotMatch(between("drawTitleSealEtching", "drawContractHeartImprint"),
+    /getBoundingClientRect|getImageData|createElement|shadowBlur/);
+});
+
+test("production heart drawing is deterministic across pause and rewind, with no unreachable exit", () => {
+  const calls: unknown[][] = [];
+  let depth = 0;
+  const gradient = { addColorStop: (...args: unknown[]) => calls.push(["stop", ...args]) };
+  const context = new Proxy({
+    save() { depth++; }, restore() { depth--; },
+    createLinearGradient(...args: unknown[]) { calls.push(["gradient", ...args]); return gradient; }
+  }, {
+    get(target, key: string) {
+      if (key in target) return target[key as keyof typeof target];
+      return (...args: unknown[]) => {
+        for (const value of args) if (typeof value === "number") assert.ok(Number.isFinite(value));
+        calls.push([key, ...args]);
+      };
+    },
+    set(_target, key, value) { calls.push([key, value]); return true; }
+  });
+  class Path {
+    moveTo() {} bezierCurveTo() {} closePath() {}
+  }
+  const code = between("sampleChainAsh", "drawChainShatterParticles")
+    + between("createContractHeartPath", "drawTitleSealEtching")
+    + between("drawContractHeartImprint", "drawChainRupture") + "; drawContractHeartImprint;";
+  const draw = vm.runInNewContext(code, {
+    Path2D: Path, getContractReleaseFrame, clamp, easeOutCubic,
+    phaseProgress: (p: number, a: number, b: number) => smooth((p - a) / (b - a)),
+    chainFrontContext: context, chainBackContext: context,
+    chainTitleBox: { left: 100, top: 80, width: 1000, height: 210 }, chainGlyphLayout: {}
+  });
+  const events = [{ breakSample: { x: 450, y: 140 } }, { breakSample: { x: 740, y: 260 } }];
+  for (const intro of [.17, .26, .39, .56, .66, .56, .39, 0]) {
+    calls.length = 0;
+    draw(1000, intro, events, 1, false);
+    const first = JSON.stringify(calls);
+    assert.equal(depth, 0);
+    if (intro === .66 || intro === 0) assert.equal(calls.length, 0);
+    else assert.ok(calls.some(call => call[0] === "stroke"));
+    calls.length = 0;
+    draw(8000, intro, events, 1, false);
+    assert.equal(JSON.stringify(calls), first, "Timestamp cannot restart the seal pulse or scatter");
+    assert.equal(depth, 0);
+  }
 });
 
 test("legacy cell dissolve masks both premultiplied color and liquid trails, with exact endpoints", () => {

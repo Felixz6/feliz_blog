@@ -571,7 +571,7 @@ test("rendered links keep connected apertures and complementary depth fragments 
         assert.ok(layer.every(record => record.arcMode === "full"), "Near/far wire arcs are independent of glyph clipping");
         records.push(...layer.filter(record => record.alpha > 0.01).map(record => ({ ...record, paintPlane: isFront ? "front" : "back" })));
       },
-      drawChainLeader() {}, drawChainShatterParticles() {}, drawChainRupture() {}, drawContractHeartImprint() {},
+      drawChainLeader() {}, drawTitleSealEtching() {}, drawChainShatterParticles() {}, drawChainRupture() {}, drawContractHeartImprint() {},
       clearTitleChains() {}
     });
     let framesWithBothGroups = 0;

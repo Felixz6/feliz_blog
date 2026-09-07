@@ -31,7 +31,7 @@ export function getTitleReconstructionFrame(progress: number) {
   const takeover = smooth(between(p, 0, 0.12));
   const scatter = smooth(between(p, 0.08, 0.42));
   const regroup = smooth(between(p, 0.44, 0.96));
-  // Reuse the legacy nine-pixel dissolve before restoring the final liquid surface.
+  // Keep packets visible through the gap; only the solid letter dissolves completely.
   const dissolve = scatter * (1 - regroup);
   return {
     opacity: takeover,
@@ -39,7 +39,25 @@ export function getTitleReconstructionFrame(progress: number) {
     fallbackOpacity: 1 - dissolve,
     release: smooth(between(p, 0.02, 0.34)) * (1 - regroup),
     dissolve,
-    finalFlow: smooth(between(p, 0.5, 1))
+    blockMix: smooth(between(p, 0.04, 0.24)) * (1 - smooth(between(p, 0.72, 1))),
+    finalFlow: smooth(between(p, 0.64, 1))
+  };
+}
+
+export function getContractReleaseFrame(intro: number) {
+  const p = unit(intro);
+  const draw = smooth(between(p, 0.19, 0.32));
+  const exit = smooth(between(p, 0.47, gateRelease.introHandoff));
+  const pulse = Math.sin(between(p, 0.32, 0.46) * Math.PI) ** 2;
+  return {
+    etch: smooth(between(p, 0.065, 0.14)) * (1 - smooth(between(p, 0.3, 0.48))),
+    sweep: smooth(between(p, 0.09, 0.36)),
+    gather: smooth(between(p, 0.16, 0.25)) * (1 - smooth(between(p, 0.35, 0.48))),
+    draw,
+    pulse,
+    exit,
+    opacity: draw * (1 - exit),
+    scale: 0.9 + draw * 0.1 + pulse * 0.06 + exit * 0.3
   };
 }
 
