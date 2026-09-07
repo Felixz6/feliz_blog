@@ -43,8 +43,16 @@ test("release mapping has no missing interval, jump, or reverse step", () => {
 
 function fixture(overrides: Record<string, unknown> = {}) {
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+  const classes = new Set<string>();
   const state: Record<string, any> = {
-    disposed: false, lovebrainActive: false, pageMode: "gate", gate: { isConnected: true },
+    disposed: false, lovebrainActive: false, pageMode: "gate",
+    gate: { isConnected: true, classList: { add: (name: string) => classes.add(name), remove: (name: string) => classes.delete(name) } },
+    classes, comicTransition: { active: false }, foundSelfActive: false,
+    scrollFrame: 0, scrollTransitionDirection: "idle", gateReturnGuardUntil: 0, reducedMotion: false,
+    postReleaseActive: false, postReleaseDataPhase: 2.3, postReleaseDataPressure: .4, postReleaseFlowWhip: .2,
+    postReleaseDirection: -1, postReleaseDataPosition: 68, postReleaseMaxX: 14,
+    postReleaseX: 9, postReleaseY: -2, postReleaseStartedAt: 100,
+    releaseReturnPose: null, postReleaseParticles: [],
     mobileFrameInterval: 0, lastAnimationPaintTimestamp: 0, animationFrame: 0, lastFrameTime: 0,
     progress: 1, targetProgress: 1, velocity: 0, springStrength: 0.06, damping: 0.76, settleDistance: 0.00035,
     chargeIntroProgress: 0, chargeIntroActive: false, chargeIntroComplete: false, chargeIntroReversing: false,
@@ -53,29 +61,41 @@ function fixture(overrides: Record<string, unknown> = {}) {
     releaseMode: "manual", releaseTimeline: 0, releaseDuration: gateRelease.duration,
     releaseAutoplayDuration: gateRelease.duration, releaseLastTimestamp: 0,
     releasePlaybackRate: 1, releaseBoost: 0, releaseVisualPressure: 0,
-    releaseRewindVeil: 0, releaseRewindStartedAt: 0, releaseRewindDuration: 0, releaseRewindFromTimeline: 0,
-    releaseRewindCommitAt: gateRelease.rewindCommitAt,
+    releaseRewindVeil: 0, releaseRewindDuration: 0, releaseRewindFromTimeline: 0, releaseRewindElapsed: 0,
     spaceLensRenderer: null, releaseUsesReconstruction: false, title: null,
     releaseWarmupState: { spaceLens: true }, releaseWarmupPending: { spaceLens: false },
     burstProgress: 0, targetBurstProgress: 0, burstVelocity: 0,
     heroAutoplayActive: false, heroAutoplayLastTimestamp: 0, heroAutoplayFillDuration: 4600,
     clamp, mapReleaseAutoplayProgress, gateRelease,
+    smoothstep: (value: number) => value * value * (3 - 2 * value),
     smootherstep: (value: number) => {
       const p = clamp(value, 0, 1);
       return p ** 3 * (p * (p * 6 - 15) + 10);
     },
-    now: 1000, requested: 0, cleared: 0, rendered: 0, rail: null,
+    now: 1000, requested: 0, cleared: 0, rendered: 0, rail: null, effects: [], nextPageEntries: 0,
     ...overrides
   };
-  state.window = { requestAnimationFrame: () => ++state.requested };
+  state.window = { requestAnimationFrame: () => ++state.requested, scrollY: 0 };
   state.performance = { now: () => state.now };
   state.startAnimation = () => { state.requested++; };
   state.scheduleReleaseWarmup = () => {};
-  state.clearReleaseTransientEffects = () => { state.cleared++; };
+  state.clearReleaseTransientEffects = () => { state.cleared++; state.effects.push("clear"); };
+  state.setPostReleaseActive = (active: boolean, preserve: boolean) => {
+    state.postReleaseActive = active;
+    state.effects.push(`post:${active}:${Boolean(preserve)}`);
+  };
+  state.stopPostReleaseAnimation = (reset: boolean) => {
+    if (reset) { state.releaseReturnPose = null; classes.delete("is-release-return"); }
+    state.effects.push(`stop:${reset}`);
+  };
+  state.updateGatePresentation = () => state.effects.push("present");
+  state.shapeGateWheelDelta = (delta: number) => delta;
+  state.enterNextPage = () => { state.nextPageEntries++; state.pageMode = "next"; };
   state.stopHeroAutoplay = () => { state.heroAutoplayActive = false; state.heroAutoplayLastTimestamp = 0; };
   state.publishGateRailState = (rail: unknown) => { state.rail = rail; };
   state.render = () => {
     state.rendered++;
+    state.effects.push("render");
     api.syncGateProgressRail(state.progress, state.releaseMode === "complete", "inner-bind");
   };
   const functions = [
@@ -87,16 +107,37 @@ function fixture(overrides: Record<string, unknown> = {}) {
     ["advanceHeroAutoplay", "startHeroAutoplay"],
     ["animate", "startAnimation"],
     ["addProgress", "isFillComplete"],
-    ["syncGateProgressRail", "render"]
+    ["syncGateProgressRail", "render"],
+    ["readPostReleaseTitlePose", "drawPostReleaseTitleLens"],
+    ["isFillComplete", "isComplete"],
+    ["isComplete", "shouldCaptureGate"],
+    ["shouldCaptureGate", "normalizeWheel"]
   ];
+  const inputStart = home.indexOf("const handleDirectionalInput =");
+  const inputEnd = home.indexOf('window.addEventListener("wheel"', inputStart);
+  assert.ok(inputStart > 0 && inputEnd > inputStart);
   const api = vm.runInNewContext(
     functions.map(([name, next]) => sourceBetween(name, next)).join("\n")
-      + `\n({ ${functions.map(([name]) => name).join(", ")} });`,
+      + "\n" + home.slice(inputStart, inputEnd)
+      + `\n({ ${functions.map(([name]) => name).join(", ")}, handleDirectionalInput });`,
     state
   );
   return {
     state, api,
-    step(timestamp: number) { state.now = timestamp; api.animate(timestamp); }
+    step(timestamp: number) { state.now = timestamp; api.animate(timestamp); },
+    until(mode: string, interval = 1000 / 60) {
+      let attempts = 0;
+      while (state.releaseMode !== mode && attempts++ < 250) {
+        state.now += interval;
+        api.animate(state.now);
+      }
+      assert.equal(state.releaseMode, mode, `Timed out waiting for ${mode}`);
+    },
+    input(delta: number, inputType = "wheel") {
+      let prevented = 0;
+      api.handleDirectionalInput(delta, { preventDefault() { prevented++; } }, inputType);
+      return prevented;
+    }
   };
 }
 
@@ -144,7 +185,8 @@ test("early rewind pauses at the new start, then moves straight back into the he
   f.state.burstProgress = mapReleaseAutoplayProgress(0.2);
   assert.equal(f.api.handleReleaseInput(-120, 1200), true);
   assert.equal(f.state.releaseMode, "rewinding");
-  f.step(1200 + f.state.releaseRewindDuration);
+  f.state.now = 1200;
+  f.until("paused");
   assert.equal(f.state.releaseMode, "paused");
   assert.equal(f.state.burstProgress, gateRelease.phases.start);
   f.step(f.state.now + 16);
@@ -161,17 +203,96 @@ test("early rewind pauses at the new start, then moves straight back into the he
   assert.equal(f.state.burstProgress, 0);
 });
 
-test("paused release resumes, and late reverse input keeps the existing fast-finish behavior", () => {
+test("paused release resumes, and late reverse input now rewinds rather than fast-finishing", () => {
   const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "paused",
     burstProgress: gateRelease.phases.start, targetBurstProgress: gateRelease.phases.start });
   assert.equal(f.api.handleReleaseInput(120, 1000), true);
   assert.equal(f.state.releaseMode, "forward");
   assert.equal(f.state.burstProgress, gateRelease.phases.start);
   f.state.releaseTimeline = 0.8;
+  f.state.burstProgress = mapReleaseAutoplayProgress(.8);
   assert.equal(f.api.handleReleaseInput(-120, 1100), true);
+  assert.equal(f.state.releaseMode, "rewinding");
+  assert.equal(f.state.releasePlaybackRate, 1);
+  assert.equal(f.state.releaseBoost, 0);
+  assert.equal(f.state.releaseRewindFromTimeline, .8);
+});
+
+test("completed gate captures upward input and rewinds from the current frame to the original shot cue", () => {
+  for (const fps of [30, 60, 120]) {
+    const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
+      releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, postReleaseActive: true });
+    assert.equal(f.input(-120), 1);
+    assert.equal(f.state.releaseMode, "rewinding");
+    assert.equal(f.state.burstProgress, 1, "The first frame keeps the final composition");
+    assert.equal(f.state.chargeIntroProgress, .66, "No reverse traversal of the retired .66-1 intro tail");
+    assert.equal(f.state.postReleaseActive, false);
+    assert.equal(f.state.releaseReturnPose.liquidPhase, 2.3);
+    assert.equal(f.state.releaseReturnPose.x, 9);
+    assert.equal(f.state.classes.has("is-release-return"), true);
+    assert.deepEqual(f.state.effects, ["post:false:true", "clear", "render", "present"]);
+    let previous = 1;
+    for (let i = 0; i < fps && f.state.releaseMode === "rewinding"; i++) {
+      f.step(f.state.now + 1000 / fps);
+      assert.ok(f.state.burstProgress <= previous);
+      previous = f.state.burstProgress;
+    }
+    assert.equal(f.state.releaseMode, "paused");
+    assert.equal(f.state.burstProgress, gateRelease.phases.start);
+    assert.equal(f.state.rail.progress, .7);
+    assert.equal(f.state.releaseReturnPose, null);
+    assert.equal(f.state.classes.has("is-release-return"), false);
+    assert.equal(f.input(-120), 1);
+    assert.equal(f.state.chargeIntroReversing, true);
+    assert.equal(f.state.chargeIntroFrom, .66);
+    f.step(f.state.now + f.state.chargeIntroTransitionDuration);
+    assert.equal(f.state.chargeIntroProgress, 0);
+    assert.equal(f.state.releaseMode, "manual");
+    assert.equal(f.state.nextPageEntries, 0);
+  }
+});
+
+test("opposite input resumes exactly where the reverse stopped; repeated gestures do not restart clocks", () => {
+  const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
+    releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1 });
+  f.input(-120);
+  f.step(1050);
+  f.step(1100);
+  const current = f.state.releaseTimeline;
+  const burst = f.state.burstProgress;
+  const elapsed = f.state.releaseRewindElapsed;
+  f.input(-120);
+  assert.equal(f.state.releaseRewindElapsed, elapsed);
+  f.input(120);
   assert.equal(f.state.releaseMode, "forward");
-  assert.ok(f.state.releasePlaybackRate >= 1.5);
-  assert.ok(f.state.releaseBoost >= 0.72);
+  assert.equal(f.state.releaseTimeline, current);
+  assert.equal(f.state.burstProgress, burst);
+  f.step(1120);
+  assert.ok(f.state.releaseTimeline > current);
+  f.input(-120);
+  assert.equal(f.state.releaseMode, "rewinding");
+  f.input(120);
+  f.until("complete");
+  assert.equal(f.state.burstProgress, 1);
+  assert.equal(f.input(120), 1);
+  assert.equal(f.state.nextPageEntries, 1, "Forward input still enters 001 only after final completion");
+});
+
+test("small wheel input, normalized touch/keyboard, reduced motion and long reverse frames remain usable", () => {
+  for (const inputType of ["wheel", "touch", "keyboard"]) {
+    const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
+      releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, reducedMotion: true });
+    assert.equal(f.input(-.5, inputType), 1);
+    assert.equal(f.state.releaseRewindDuration, 180);
+    f.step(61000);
+    assert.equal(f.state.releaseRewindElapsed, 50, "A delayed frame cannot skip the whole reverse");
+    assert.equal(f.state.releaseMode, "rewinding");
+    f.until("paused");
+  }
+  const blocked = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
+    releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, comicTransition: { active: true } });
+  assert.equal(blocked.input(-120), 1);
+  assert.equal(blocked.state.releaseMode, "complete", "Comic transition keeps input ownership");
 });
 
 test("AUTO no longer inserts a timed blade stage or bypasses an active heart", () => {
@@ -324,9 +445,10 @@ test("retired black-hole passes, prewarm work, and warning overlays cannot run",
   assert.doesNotMatch(read("src/themes/kisara/lib/layoutRuntime.js"), /黑洞成形|引力塌缩|爆发预警/);
 });
 
-test("the production presentation resets diffusion, settles the final frame, and supplies finite shader inputs", () => {
+function presentationFixture() {
   const styles = new Map<string, string>();
   const draws: Array<Record<string, number>> = [];
+  const effects: string[] = [];
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
   const context: Record<string, any> = {
     energyProgress: 1, chargeIntroProgress: 0.66, burstProgress: 0,
@@ -344,14 +466,21 @@ test("the production presentation resets diffusion, settles the final frame, and
     readSceneBreathClock: () => 1,
     titleAbyssDomHandoffStart: 0.72, chargeHandoffStart: 0.015, chargeHandoffEnd: 0.18,
     reconstructionCenter: { x: 0.5, y: 0.48 }, releaseUsesReconstruction: true,
-    postReleaseActive: false, titleLensRenderer: {}, postReleaseDataPhase: 0,
+    postReleaseActive: false, titleLensRenderer: {}, postReleaseDataPhase: 0, releaseReturnPose: null,
+    drawTitleAbyss() { effects.push("abyss"); }, postReleaseParticles: [{ age: .1 }],
+    clearPostReleaseCanvas() { effects.push("clear-post"); },
     titleLensCanvas: { clientWidth: 1200, clientHeight: 320 },
     setRuntimeStyle: (_element: unknown, key: string, value: string) => styles.set(key, value),
     drawSpaceLens: (_time: number, parameters: Record<string, number>) => draws.push(parameters),
-    drawTitleLens: (_time: number, parameters: Record<string, number>) => draws.push(parameters)
+    drawTitleLens: (_time: number, parameters: Record<string, number>) => { effects.push("lens"); draws.push(parameters); }
   };
   const update = vm.runInNewContext(sourceBetween("updateGatePresentation", "updateGlitchState")
     + "\nupdateGatePresentation;", context);
+  return { context, styles, draws, update, effects };
+}
+
+test("the production presentation resets diffusion, settles the final frame, and supplies finite shader inputs", () => {
+  const { context, styles, draws, update } = presentationFixture();
   for (const progress of [0, 0.01, 0.2, 0.5, 0.9, 1]) {
     context.burstProgress = mapReleaseAutoplayProgress(progress);
     update(1000 + progress * 610, false);
@@ -379,4 +508,131 @@ test("the production presentation resets diffusion, settles the final frame, and
   assert.ok(gpuRadius < fallbackRadius, "The clean wash trails visible packets only when the GPU layer is available");
   const expected = getReconstructionRadii(.3, 1600, 900, 800, 900 * .48);
   assert.ok(Math.abs(fallbackRadius - expected.outer) < .001, "No GPU keeps the original bright diffusion fallback");
+});
+
+test("reverse rendering takes over the exact liquid pose, eases parallax and never resurrects frozen particles", () => {
+  const { context, styles, draws, update, effects } = presentationFixture();
+  context.releaseReturnPose = {
+    liquidPhase: 7.4, liquidPressure: 1.1, flowFront: .85, flowDirection: 1, parallax: -.6,
+    x: -8.4, y: 3, opacity: .8
+  };
+  context.burstProgress = 1;
+  update(1000, false);
+  const first = draws.at(-1)!;
+  for (const key of ["liquidPhase", "liquidPressure", "flowFront", "flowDirection", "parallax"]) {
+    assert.equal(first[key], context.releaseReturnPose[key], `Incoming liquid must preserve ${key}`);
+  }
+  assert.equal(first.sourceOpacity, 0);
+  assert.equal(first.blockMix, 0);
+  assert.equal(styles.get("--kisara-post-parallax-x"), "-8.400px");
+  assert.equal(styles.get("--kisara-post-release-opacity"), "0.800");
+  let previousX = 8.4;
+  for (const p of [.98, .9, .85, .78, .68, .5, .2, 0]) {
+    context.burstProgress = gateRelease.phases.start + p * (1 - gateRelease.phases.start);
+    update(1000 + (1 - p) * 560, false);
+    const x = Math.abs(Number.parseFloat(styles.get("--kisara-post-parallax-x")!));
+    assert.ok(x <= previousX);
+    previousX = x;
+  }
+  assert.equal(previousX, 0);
+  assert.equal(context.postReleaseParticles.length, 0);
+  assert.equal(effects.filter(effect => effect === "clear-post").length, 1);
+  assert.deepEqual(effects.slice(-2), ["abyss", "lens"], "The source material is restored before lens opacity drops");
+  context.burstProgress = .95;
+  update(1800, false);
+  assert.equal(styles.get("--kisara-post-release-opacity"), "0.000", "Reversing again cannot flash old particles");
+  assert.equal(effects.filter(effect => effect === "clear-post").length, 1);
+  const abyss = sourceBetween("drawTitleAbyss", "updateGatePresentation");
+  assert.match(abyss, /getTitleReconstructionFrame\(getReconstructionProgress\(burstProgress\)\)\.sourceOpacity <= \.001/);
+});
+
+test("post-release suspension preserves buffers and phase, while ordinary exits and reset still clear them", () => {
+  const styles = new Map<string, string>();
+  const effects: string[] = [];
+  const classes = new Set(["is-post-release", "is-release-return"]);
+  const state: Record<string, any> = {
+    postReleaseActive: true, postReleaseFrame: 7, postReleaseLastTimestamp: 1000,
+    postReleaseX: 9, postReleaseY: -2, postReleaseDataPhase: 3.2, postReleaseDataPressure: .7,
+    postReleaseDataPosition: 71, postReleaseStartedAt: 400, postReleasePointerX: 750,
+    postReleaseFlowWhip: .2, postReleaseDirection: -1, postReleaseJourney: {},
+    postReleaseParticles: [{ x: 10 }], postReleaseFlowAngles: [1, 2], postReleaseFlowAngularVelocities: [1, 1],
+    postReleaseInitialFlowAngle: 0, releaseReturnPose: { liquidPhase: 3.2 },
+    orientationSupported: false, orientationPermissionRequired: false, orientationUserDisabled: false,
+    gate: {
+      style: { setProperty: (key: string, value: string) => styles.set(key, value) },
+      classList: {
+        toggle(name: string, active: boolean) { if (active) classes.add(name); else classes.delete(name); },
+        remove(name: string) { classes.delete(name); }
+      }
+    },
+    window: { cancelAnimationFrame: (id: number) => effects.push(`cancel:${id}`) },
+    performance: { now: () => 1500 },
+    titleLensRenderer: { clear: () => effects.push("clear-lens") },
+    clearTitleDataCanvas: () => effects.push("clear-data"),
+    clearPostReleaseCanvas: () => effects.push("clear-post"),
+    resizePostReleaseCanvas: (force: boolean) => effects.push(`resize:${force}`),
+    setOrientationEnabled() {}, updateMotionToggle() {},
+    startPostReleaseAnimation: () => { effects.push("start-post"); state.postReleaseFrame = 8; }
+  };
+  const api = vm.runInNewContext(sourceBetween("stopPostReleaseAnimation", "beginPostReleaseJourney")
+    + "; ({ setPostReleaseActive, stopPostReleaseAnimation });", state);
+  api.setPostReleaseActive(false, true);
+  assert.deepEqual(effects, ["cancel:7"]);
+  assert.equal(styles.has("--kisara-title-source-opacity"), false, "Suspending cannot expose source lettering");
+  assert.equal(state.postReleaseDataPhase, 3.2);
+  assert.equal(state.postReleaseX, 9);
+  assert.equal(state.postReleaseParticles.length, 1);
+  api.setPostReleaseActive(true);
+  assert.ok(effects.includes("resize:false"), "Resuming cannot resize-clear the existing frozen frame");
+  assert.equal(state.postReleaseDataPhase, 3.2);
+  assert.equal(state.postReleaseDataPressure, .7);
+  assert.equal(state.postReleaseDataPosition, 71);
+  assert.equal(state.postReleaseStartedAt, 400);
+  assert.equal(state.postReleaseTargetX, 9);
+  assert.equal(state.releaseReturnPose, null);
+  assert.equal(classes.has("is-release-return"), false);
+  api.setPostReleaseActive(false);
+  assert.equal(state.postReleaseFrame, 0);
+  assert.equal(state.postReleaseParticles.length, 0);
+  assert.equal(state.postReleaseDataPhase, 0);
+  assert.equal(state.postReleaseX, 0);
+  assert.equal(styles.get("--kisara-title-source-opacity"), "1");
+  assert.equal(styles.get("--kisara-post-release-opacity"), "0");
+  assert.ok(effects.includes("clear-lens") && effects.includes("clear-post"));
+  const reset = sourceBetween("resetGateState", "hasGateTitleVisualState");
+  assert.match(reset, /if \(releaseReturnPose\) stopPostReleaseAnimation\(true\)/);
+  const css = read("src/themes/kisara/styles/home.css");
+  assert.match(css, /:is\(\.is-post-release, \.is-release-return\) \.kisara-title-lens-canvas/);
+});
+
+test("returning to a cached procedural title restores its layer even when reduced motion suppresses repaint", () => {
+  const classes = new Set<string>();
+  const state: Record<string, any> = {
+    titleAbyssCanvas: {}, titleAbyssContext: {}, titleDataMaskContext: {},
+    titleAbyssRimContext: {}, titleAbyssFluidContext: {}, titleAbyssFluidImageData: {},
+    titleAbyssTideContext: {}, titleAbyssTideImageData: {},
+    titleDataCanvasWidth: 1200, titleDataCanvasHeight: 300,
+    pageMode: "gate", document: { visibilityState: "visible" },
+    chargeIntroProgress: .66, titleAbyssDomHandoffStart: .72,
+    burstProgress: gateRelease.phases.start, releaseStart: gateRelease.phases.start,
+    getTitleReconstructionFrame, getReconstructionProgress,
+    progress: 1, energyProgress: 1, velocity: 0,
+    titleAbyssLastPaintTimestamp: 950, titleAbyssLastFill: 1,
+    titleAbyssPointerTargetX: 0, titleAbyssPointerX: 0,
+    titleAbyssPointerTargetY: 0, titleAbyssPointerY: 0,
+    reducedMotion: true, litePerformance: false, mobilePerformance: false,
+    clamp: (value: number, a: number, b: number) => Math.max(a, Math.min(b, value)),
+    gate: { classList: { add: (name: string) => classes.add(name), remove: (name: string) => classes.delete(name) } }
+  };
+  const draw = vm.runInNewContext(sourceBetween("drawTitleAbyss", "updateGatePresentation")
+    + "; drawTitleAbyss;", state);
+  draw(1000);
+  assert.equal(classes.has("is-title-abyss-ready"), true);
+  state.burstProgress = .5;
+  draw(1050);
+  assert.equal(classes.has("is-title-abyss-ready"), false);
+  state.burstProgress = gateRelease.phases.start;
+  draw(1100);
+  assert.equal(classes.has("is-title-abyss-ready"), true);
+  assert.equal(state.titleAbyssLastPaintTimestamp, 950, "The cached surface is reused without painting it again");
 });

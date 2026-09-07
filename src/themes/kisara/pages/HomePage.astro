@@ -764,8 +764,8 @@ const gateStyle = [
       const releaseStart = gateRelease.phases.start;
       const releaseAutoplayDuration = gateRelease.duration;
       const heroAutoplayFillDuration = 4600;
-      const releaseRewindCommitAt = gateRelease.rewindCommitAt;
       let releaseUsesReconstruction = false;
+      let releaseReturnPose = null;
       let reconstructionCenter = { x: 0.5, y: 0.48 };
       const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
       const startsComplete = reducedMotion && !restoredBelowGate && !foundSelfEntryRequested;
@@ -783,8 +783,8 @@ const gateStyle = [
       let releaseBoost = 0;
       let releaseVisualPressure = 0;
       let releaseRewindFromTimeline = 0;
-      let releaseRewindStartedAt = 0;
       let releaseRewindDuration = 0;
+      let releaseRewindElapsed = 0;
       let releaseRewindVeil = 0;
       let chargeIntroProgress = startsComplete ? 1 : 0;
       let chargeIntroActive = false;
@@ -3439,12 +3439,18 @@ const gateStyle = [
         titleDataCanvas.style.opacity = liquidOpacity.toFixed(3);
       };
 
+      const readPostReleaseTitlePose = () => ({
+        liquidPhase: postReleaseDataPhase,
+        liquidPressure: clamp(
+          0.2 + postReleaseDataPressure * 0.92 + postReleaseFlowWhip * 0.24, 0.2, 1.3
+        ),
+        flowDirection: postReleaseDirection > 0 ? -1 : 1,
+        flowFront: clamp(postReleaseDataPosition / 100, 0.06, 0.94),
+        parallax: postReleaseMaxX > 0 ? clamp(postReleaseX / postReleaseMaxX, -1, 1) : 0
+      });
+
       const drawPostReleaseTitleLens = (timestamp) => {
         if (!titleLensCanvas) return;
-        const direction = postReleaseDirection > 0 ? -1 : 1;
-        const parallax = postReleaseMaxX > 0
-          ? clamp(postReleaseX / postReleaseMaxX, -1, 1)
-          : 0;
         drawTitleLens(timestamp, {
           centerX: titleLensCanvas.clientWidth * 0.5,
           centerY: titleLensCanvas.clientHeight * 0.5,
@@ -3462,15 +3468,7 @@ const gateStyle = [
           dissolve: 0,
           sourceOpacity: 0,
           finalFlow: 1,
-          liquidPhase: postReleaseDataPhase,
-          liquidPressure: clamp(
-            0.2 + postReleaseDataPressure * 0.92 + postReleaseFlowWhip * 0.24,
-            0.2,
-            1.3
-          ),
-          flowDirection: direction,
-          flowFront: clamp(postReleaseDataPosition / 100, 0.06, 0.94),
-          parallax,
+          ...readPostReleaseTitlePose(),
           time: timestamp / 1000
         });
       };
@@ -3557,6 +3555,8 @@ const gateStyle = [
         postReleaseFrame = 0;
         postReleaseLastTimestamp = 0;
         if (!reset) return;
+        releaseReturnPose = null;
+        gate.classList.remove("is-release-return");
         postReleaseX = 0;
         postReleaseY = 0;
         postReleaseTargetX = 0;
@@ -3590,23 +3590,33 @@ const gateStyle = [
         clearPostReleaseCanvas();
       };
 
-      const setPostReleaseActive = (active) => {
+      const setPostReleaseActive = (active, preservePresentation = false) => {
         if (postReleaseActive === active) return;
         postReleaseActive = active;
         gate.classList.toggle("is-post-release", active);
         if (!active) {
           setOrientationEnabled(false);
           updateMotionToggle();
-          stopPostReleaseAnimation(true);
+          stopPostReleaseAnimation(!preservePresentation);
           return;
         }
-        resizePostReleaseCanvas(true);
+        const resuming = Boolean(releaseReturnPose);
+        resizePostReleaseCanvas(!resuming);
         clearTitleDataCanvas();
-        postReleaseDataInitialized = true;
-        postReleaseDataPosition = 50;
-        postReleaseDataOpacity = 0;
-        postReleaseDataPressure = 0;
-        postReleaseStartedAt = performance.now();
+        if (resuming) {
+          postReleaseTargetX = postReleaseX;
+          postReleaseTargetY = postReleaseY;
+          postReleasePointerX = null;
+          postReleaseJourney = null;
+        } else {
+          postReleaseDataInitialized = true;
+          postReleaseDataPosition = 50;
+          postReleaseDataOpacity = 0;
+          postReleaseDataPressure = 0;
+          postReleaseStartedAt = performance.now();
+        }
+        releaseReturnPose = null;
+        gate.classList.remove("is-release-return");
         if (titleLensRenderer) gate.style.setProperty("--kisara-title-source-opacity", "0");
         updateMotionToggle();
         if (orientationSupported && !orientationPermissionRequired && !orientationUserDisabled) {
@@ -4857,7 +4867,8 @@ const gateStyle = [
         }
         if (
           chargeIntroProgress >= titleAbyssDomHandoffStart
-          || burstProgress >= releaseStart
+          || (burstProgress >= releaseStart
+            && getTitleReconstructionFrame(getReconstructionProgress(burstProgress)).sourceOpacity <= .001)
         ) {
           gate.classList.remove("is-title-abyss-ready");
           return;
@@ -4882,7 +4893,10 @@ const gateStyle = [
           !force
           && gap < frameInterval
           && Math.abs(fill - titleAbyssLastFill) < 0.0025
-        ) return;
+        ) {
+          gate.classList.add("is-title-abyss-ready");
+          return;
+        }
 
         const frameSeconds = Number.isFinite(gap)
           ? clamp(gap / 1000, 0.008, 0.08)
@@ -5171,6 +5185,19 @@ const gateStyle = [
         });
         if (!postReleaseActive) {
           const titleFrame = getTitleReconstructionFrame(reconstruction);
+          const returnWeight = releaseReturnPose ? phaseProgress(reconstruction, .68, 1) : 0;
+          if (releaseReturnPose) {
+            setRuntimeStyle(gate, "--kisara-post-parallax-x", `${(releaseReturnPose.x * returnWeight).toFixed(3)}px`);
+            setRuntimeStyle(gate, "--kisara-post-parallax-y", `${(releaseReturnPose.y * returnWeight).toFixed(3)}px`);
+            setRuntimeStyle(gate, "--kisara-post-release-opacity", (releaseReturnPose.opacity * returnWeight).toFixed(3));
+            if (returnWeight <= .001 && releaseReturnPose.opacity > 0) {
+              releaseReturnPose.opacity = 0;
+              postReleaseParticles.length = 0;
+              clearPostReleaseCanvas();
+            }
+          }
+          const liquidPressure = .2 + titleFrame.finalFlow * .08;
+          if (titleFrame.sourceOpacity > .001) drawTitleAbyss(timestamp);
           drawTitleLens(timestamp, {
             centerX: (titleLensCanvas?.clientWidth || 0) * 0.5,
             centerY: (titleLensCanvas?.clientHeight || 0) * 0.5,
@@ -5178,9 +5205,12 @@ const gateStyle = [
             strength: 0, gravity: 0, collapse: 0, crush: 0,
             shockStrength: 0, shockRadius: 0, shockWidth: 12,
             coreRadius: 0, lensRadius: 1,
-            liquidPhase: postReleaseDataPhase,
-            liquidPressure: 0.2 + titleFrame.finalFlow * 0.08,
-            flowDirection: -1, flowFront: 0.5, parallax: 0, time: timestamp / 1000
+            liquidPhase: releaseReturnPose?.liquidPhase ?? postReleaseDataPhase,
+            liquidPressure: liquidPressure + ((releaseReturnPose?.liquidPressure ?? liquidPressure) - liquidPressure) * returnWeight,
+            flowDirection: releaseReturnPose?.flowDirection ?? -1,
+            flowFront: .5 + ((releaseReturnPose?.flowFront ?? .5) - .5) * returnWeight,
+            parallax: (releaseReturnPose?.parallax ?? 0) * returnWeight,
+            time: timestamp / 1000
           });
         }
       };
@@ -7586,8 +7616,8 @@ const gateStyle = [
         releaseBoost = 0;
         releaseVisualPressure = 0;
         releaseRewindVeil = 0;
-        releaseRewindStartedAt = 0;
         releaseRewindDuration = 0;
+        releaseRewindElapsed = 0;
         if (!resume) {
           releaseUsesReconstruction = Boolean(spaceLensRenderer) && releaseWarmupState.spaceLens
             && !releaseWarmupPending.spaceLens;
@@ -7607,11 +7637,26 @@ const gateStyle = [
       };
 
       const startReleaseRewind = (timestamp) => {
-        if (releaseMode !== "forward" || releaseTimeline >= releaseRewindCommitAt) return false;
+        if (!["forward", "complete"].includes(releaseMode) || pageMode !== "gate") return false;
+        if (releaseMode === "complete") {
+          releaseReturnPose = {
+            ...readPostReleaseTitlePose(),
+            x: postReleaseX, y: postReleaseY,
+            opacity: reducedMotion ? 1 : smoothstep(clamp((timestamp - postReleaseStartedAt) / 880, 0, 1))
+          };
+          setPostReleaseActive(false, true);
+          gate.classList.add("is-release-return");
+          chargeIntroProgress = gateRelease.introHandoff;
+          chargeIntroFrom = chargeIntroProgress;
+          chargeIntroTarget = chargeIntroProgress;
+          chargeIntroActive = false;
+          chargeIntroReversing = false;
+          releaseTimeline = 1;
+        }
         releaseMode = "rewinding";
         releaseRewindFromTimeline = releaseTimeline;
-        releaseRewindStartedAt = timestamp;
-        releaseRewindDuration = clamp(320 + releaseTimeline * 520, 320, 560);
+        releaseRewindDuration = reducedMotion ? 180 : clamp(320 + releaseTimeline * 520, 320, 560);
+        releaseRewindElapsed = 0;
         releaseLastTimestamp = timestamp;
         releasePlaybackRate = 1;
         releaseBoost = 0;
@@ -7620,12 +7665,22 @@ const gateStyle = [
         targetBurstProgress = burstProgress;
         burstVelocity = 0;
         clearReleaseTransientEffects(timestamp);
+        // Paint the receiving renderer before yielding; no source-font frame can leak.
+        render();
+        updateGatePresentation(timestamp, false);
         startAnimation();
         return true;
       };
 
       const handleReleaseInput = (delta, timestamp) => {
-        if (releaseMode === "rewinding") return true;
+        if (releaseMode === "rewinding") {
+          if (delta > 0) {
+            startReleaseAutoplay(timestamp, { resume: true });
+            startAnimation();
+          }
+          return true;
+        }
+        if (releaseMode === "complete") return delta < 0 && startReleaseRewind(timestamp);
         if (releaseMode === "paused") {
           if (delta > 0) {
             startReleaseAutoplay(timestamp, { resume: true });
@@ -7642,10 +7697,7 @@ const gateStyle = [
         }
         if (releaseMode !== "forward") return false;
         if (delta < 0) {
-          if (startReleaseRewind(timestamp)) return true;
-          releaseBoost = Math.max(releaseBoost, 0.72);
-          releasePlaybackRate = Math.max(releasePlaybackRate, 1.5);
-          releaseVisualPressure = Math.max(releaseVisualPressure, 0.72);
+          return startReleaseRewind(timestamp);
         } else {
           const impulse = clamp(delta, 0, 180) / 180;
           releaseBoost = clamp(releaseBoost + impulse * 0.28, 0, 0.8);
@@ -7791,8 +7843,11 @@ const gateStyle = [
           }
         }
         if (releaseMode === "rewinding") {
+          releaseRewindElapsed += releaseLastTimestamp
+            ? clamp(timestamp - releaseLastTimestamp, 0, 50) : 0;
+          releaseLastTimestamp = timestamp;
           const rewindProgress = clamp(
-            (timestamp - releaseRewindStartedAt) / Math.max(1, releaseRewindDuration),
+            releaseRewindElapsed / Math.max(1, releaseRewindDuration),
             0,
             1
           );
@@ -7808,8 +7863,9 @@ const gateStyle = [
             releaseMode = "paused";
             releaseTimeline = 0;
             releaseRewindVeil = 0;
-            releaseRewindStartedAt = 0;
             releaseRewindDuration = 0;
+            releaseRewindElapsed = 0;
+            if (releaseReturnPose) stopPostReleaseAnimation(true);
             burstProgress = mapReleaseAutoplayProgress(0);
             targetBurstProgress = burstProgress;
             burstVelocity = 0;
@@ -8072,6 +8128,7 @@ const gateStyle = [
       };
 
       const resetGateState = () => {
+        if (releaseReturnPose) stopPostReleaseAnimation(true);
         if (animationFrame) window.cancelAnimationFrame(animationFrame);
         if (energyFrame) window.cancelAnimationFrame(energyFrame);
         if (energyTimer) window.clearTimeout(energyTimer);
@@ -8095,8 +8152,10 @@ const gateStyle = [
         releaseBoost = 0;
         releaseVisualPressure = 0;
         releaseRewindFromTimeline = 0;
-        releaseRewindStartedAt = 0;
         releaseRewindDuration = 0;
+        releaseRewindElapsed = 0;
+        releaseReturnPose = null;
+        gate.classList.remove("is-release-return");
         releaseRewindVeil = 0;
         chargeIntroProgress = 0;
         chargeIntroActive = false;
@@ -8939,7 +8998,7 @@ const gateStyle = [
             enterNextPage();
             return;
           }
-          if (["forward", "rewinding", "paused"].includes(releaseMode)) {
+          if (["forward", "rewinding", "paused", "complete"].includes(releaseMode)) {
             const releaseInputHandled = handleReleaseInput(delta, performance.now());
             if (releaseInputHandled) {
               event.preventDefault();

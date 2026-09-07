@@ -13,8 +13,7 @@ export const gateRelease = {
   introDuration: 2150,
   introHandoff: 0.66,
   duration: 610,
-  phases: { start: 0.01 },
-  rewindCommitAt: 0.72
+  phases: { start: 0.01 }
 } as const;
 
 // The small nonzero start distinguishes release from the manual charge state.

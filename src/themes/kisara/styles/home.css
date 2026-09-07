@@ -1293,7 +1293,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   opacity: 0 !important;
 }
 
-.kisara-gate.is-post-release .kisara-title-lens-canvas {
+.kisara-gate:is(.is-post-release, .is-release-return) .kisara-title-lens-canvas {
   filter:
     drop-shadow(0 0 9px rgba(255, 226, 238, 0.3))
     drop-shadow(0 0 22px rgba(255, 48, 112, 0.24));
