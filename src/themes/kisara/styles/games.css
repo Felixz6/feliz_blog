@@ -40,6 +40,47 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   background: var(--game-ink);
 }
 
+.kisara-game-scene-bridge {
+  position: relative;
+  height: clamp(112px, 16svh, 180px);
+  margin-block: -1px;
+  overflow: hidden;
+  contain: paint;
+  background: linear-gradient(180deg, #dce5f4 0%, #b4bcc9 24%, #555866 56%, #20212c 78%, var(--game-ink));
+  pointer-events: none;
+}
+.kisara-game-scene-bridge .is-paper-edge {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 28px;
+  background: #dce5f4;
+  clip-path: polygon(0 0, 100% 0, 100% 28%, 82% 52%, 60% 35%, 39% 69%, 18% 47%, 0 76%);
+}
+.kisara-game-scene-bridge .is-channel-line {
+  position: absolute;
+  left: 12%;
+  top: 12%;
+  width: 64%;
+  height: 70%;
+  border-left: 1px solid #ee83a4a3;
+  border-bottom: 1px solid #ee83a4a3;
+  transform: skewX(-28deg);
+}
+.kisara-game-scene-bridge .is-return {
+  left: 25%;
+  top: 22%;
+  width: 58%;
+  height: 60%;
+  border-color: #91bcb099;
+}
+.kisara-arcade .kisara-arcade-backdrop::after {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 80px;
+  content: "";
+  background: linear-gradient(var(--game-ink), transparent);
+}
+
 .kisara-game-scene {
   position: relative;
   min-height: 100vh;

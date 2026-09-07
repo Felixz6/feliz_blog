@@ -25,7 +25,9 @@ const stylesheetBudgets = [
 
 const bundleBudgets = [
   ["Kisara shared layout runtime", "KisaraLayout.astro_astro_type_script_index_1_lang.", 9_000],
-  ["Kisara Home primary module", "HomePage.astro_astro_type_script_index_", 225_000]
+  ["Kisara Home primary module", "HomePage.astro_astro_type_script_index_", 225_000],
+  ["Kisara Blog page runtime", "blogPage.", 20_000],
+  ["Kisara Works page runtime", "worksPage.", 72_000]
 ];
 
 const formatBytes = (value) => `${(value / 1024).toFixed(1)} KiB`;

@@ -4340,3 +4340,69 @@ html[data-yuimi-performance="lite"] .kisara-works-slice-field {
     opacity: 1;
   }
 }
+
+/* Reusable ingredient artwork keeps the fruit and pantry rendering consistent. */
+.kisara-ingredient-symbols { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.kisara-works-fruit-art { display: block; width: 100%; height: 100%; overflow: visible; }
+.kisara-works-pantry-art { display: block; width: 66px; height: 66px; transition: transform 180ms cubic-bezier(.23, 1, .32, 1); }
+.kisara-board-art-piece { position: absolute; inset: 8px 9px; transition: transform 220ms cubic-bezier(.23, 1, .32, 1); }
+.kisara-board-art { display: block; width: 100%; height: 100%; }
+.kisara-board-art-piece:nth-child(1) { clip-path: polygon(0 0, 50% 0, 50% 50%, 0 50%); }
+.kisara-board-art-piece:nth-child(2) { clip-path: polygon(50% 0, 100% 0, 100% 50%, 50% 50%); }
+.kisara-board-art-piece:nth-child(3) { clip-path: polygon(0 50%, 50% 50%, 50% 100%, 0 100%); }
+.kisara-board-art-piece:nth-child(4) { clip-path: polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%); }
+.kisara-board-item[data-cut="1"] .kisara-board-art-piece:nth-child(odd) { transform: translateX(-4px); }
+.kisara-board-item[data-cut="1"] .kisara-board-art-piece:nth-child(even) { transform: translateX(4px); }
+.kisara-board-item[data-cut="2"] .kisara-board-art-piece:nth-child(1) { transform: translate(-5px, -5px); }
+.kisara-board-item[data-cut="2"] .kisara-board-art-piece:nth-child(2) { transform: translate(5px, -5px); }
+.kisara-board-item[data-cut="2"] .kisara-board-art-piece:nth-child(3) { transform: translate(-5px, 5px); }
+.kisara-board-item[data-cut="2"] .kisara-board-art-piece:nth-child(4) { transform: translate(5px, 5px); }
+.kisara-blender-art { display: block; width: 100%; height: 100%; }
+.kisara-blender-liquid > div .kisara-blender-ingredient-art { width: 34px; height: 34px; background: none; border: 0; box-shadow: none; border-radius: 0; }
+.kisara-works-slice-trails i.is-pooled { animation: none; opacity: 0; height: 3px; }
+.kisara-works-intro:not([data-works-active]) * { animation-play-state: paused !important; }
+.kisara-works-intro[data-video-state="fallback"] .kisara-works-intro-last-frame { opacity: 1; }
+.kisara-works-intro[data-video-state="complete"] .kisara-works-intro-video,
+.kisara-works-intro[data-video-state="fallback"] .kisara-works-intro-video { visibility: hidden; }
+.kisara-works-intro .kisara-works-editorial { width: min(43%, 540px); }
+.kisara-works-intro .kisara-works-title-primary {
+  color: #313438;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  font-size: 88px;
+  line-height: 1;
+  text-shadow: 1px 2px 0 #ffffff80;
+}
+.kisara-works-intro .kisara-works-title-secondary {
+  margin-top: 6px;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: #b64161;
+  font-size: 30px;
+  line-height: 1.25;
+  text-shadow: none;
+}
+.kisara-works-intro .kisara-works-editorial-lead { max-width: 400px; font-size: 15px; line-height: 1.85; }
+.kisara-works-intro .kisara-works-prep-rail button { border-radius: 0; transition: border-color 160ms ease, color 160ms ease, transform 120ms ease; }
+.kisara-works-intro .kisara-works-prep-rail button:active { transform: translateY(2px); }
+.kisara-kitchen-lab { background: #edf1ee; }
+.kisara-kitchen-counter { background: transparent; border: 0; box-shadow: none; border-radius: 0; }
+.kisara-kitchen-pantry { background: transparent; box-shadow: none; }
+.kisara-kitchen-lab .kisara-ingredient { border-radius: 6px; }
+.kisara-kitchen-lab .kisara-ingredient:focus-visible { outline: 2px solid #ad365c; outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) {
+  .kisara-ingredient:hover .kisara-works-pantry-art { transform: translateY(-3px) rotate(-4deg); }
+}
+@media (max-width: 900px) {
+  .kisara-works-intro .kisara-works-editorial { width: auto; }
+  .kisara-works-intro .kisara-works-title-primary { font-size: 68px; }
+  .kisara-works-intro .kisara-works-title-secondary { font-size: 25px; }
+}
+@media (max-width: 560px) {
+  .kisara-works-intro .kisara-works-title-primary { font-size: 52px; }
+  .kisara-works-intro .kisara-works-title-secondary { font-size: 20px; }
+  .kisara-works-intro .kisara-works-editorial-lead { max-width: 280px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kisara-works-pantry-art, .kisara-board-art-piece { transition: none; }
+}
