@@ -14,6 +14,7 @@ const lovebrainSource = readSource("src/themes/kisara/components/KisaraLovebrain
 const layoutSource = readSource("src/themes/kisara/layouts/KisaraLayout.astro");
 const homeSource = readSource("src/themes/kisara/pages/HomePage.astro");
 const homeEventSource = readSource("src/themes/kisara/components/KisaraHomeEventVideo.astro");
+const homeEventStyles = readSource("src/themes/kisara/styles/home-event-video.css");
 const homeStyles = readSource("src/themes/kisara/styles/home.css");
 
 test("Kisara keeps offscreen epilogue media out of the initial image queue", () => {
@@ -146,6 +147,8 @@ test("Kisara Home 003 uses a quiet one-shot media runtime and real favorite tags
   assert.match(homeEventSource, /kisara-home-tag/);
   assert.match(homeEventSource, /animeFavorites/);
   assert.match(homeEventSource, /favoriteGames/);
+  assert.match(homeEventStyles, /\.kisara-home-video-event \{[^]*display: block;[^]*min-height: 100svh/);
+  assert.match(homeEventStyles, /\.kisara-home-video-stage \{[^]*display: block;[^]*min-height: 100svh/);
   assert.doesNotMatch(homeEventSource, /data-home-event-progress|data-home-event-replay|data-notebook-tab/);
   assert.doesNotMatch(runtime, /requestVideoFrameCallback|requestAnimationFrame|animation\.currentTime/);
   assert.match(runtime, /prefers-reduced-motion: reduce/);

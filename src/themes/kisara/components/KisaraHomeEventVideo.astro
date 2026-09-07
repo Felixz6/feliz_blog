@@ -24,19 +24,27 @@ const tagGroups = [
       >
         <source data-src="/themes/kisara/assets/home-event-003-new.mp4" type="video/mp4" />
       </video>
-      <div class="kisara-home-video-running-head" aria-hidden="true"><b>003</b><span>AFTER CLASS<br />YUIMI LAB / FIELD NOTES</span></div>
+      <div class="kisara-home-video-running-head" aria-hidden="true">
+        <b>003</b>
+        <span>AFTER CLASS<br />PERSONAL INDEX</span>
+      </div>
     </div>
 
     <div class="kisara-home-tags" id="kisara-project-title">
       <header class="kisara-home-tags-heading">
-        <p>课后收藏 / AFTER CLASS</p>
-        <h2>喜欢的东西，<em>就摆在这里。</em></h2>
-        <a href={getThemePath("kisara", "/about/")}>更多关于我 <span aria-hidden="true">↗</span></a>
+        <div>
+          <p><span aria-hidden="true">03</span> / PERSONAL INDEX</p>
+          <h2>喜欢的东西<br /><em>会留下痕迹。</em></h2>
+        </div>
+        <a href={getThemePath("kisara", "/about/")}>完整档案 <span aria-hidden="true">↗</span></a>
       </header>
       <div class="kisara-home-tag-groups">
-        {tagGroups.map((group) => (
+        {tagGroups.map((group, index) => (
           <section class={`kisara-home-tag-group is-${group.accent}`} aria-labelledby={`kisara-tag-group-${group.id}`}>
-            <h3 id={`kisara-tag-group-${group.id}`}><span aria-hidden="true">/</span>{group.label}</h3>
+            <div class="kisara-home-tag-group-heading">
+              <span class="kisara-home-tag-group-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              <h3 id={`kisara-tag-group-${group.id}`}>{group.label}</h3>
+            </div>
             <div class="kisara-home-tag-list">
               {group.items.map((item) => (
                 <span class="kisara-home-tag">
