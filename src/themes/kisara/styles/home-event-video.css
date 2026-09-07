@@ -60,27 +60,85 @@
   letter-spacing: 0;
 }
 
+.kisara-home-board-folio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: #9b3554;
+  font: 700 12px/1 "Courier New", monospace;
+}
+
+.kisara-home-board-folio::before {
+  width: 38px;
+  height: 2px;
+  background: currentColor;
+  content: "";
+}
+
 .kisara-home-board-caption h2 {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0 .25em;
+  gap: 12px 18px;
   margin: 0;
-  font-size: 36px;
-  font-weight: 850;
-  line-height: 1.25;
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1.1;
   letter-spacing: 0;
 }
 
-.kisara-home-board-caption h2 span { white-space: nowrap; }
+.kisara-home-board-title {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  white-space: nowrap;
+  transform: rotate(-4deg);
+  text-shadow: 2px 3px 0 #fffdf5;
+}
+
+.kisara-home-board-title::after {
+  position: absolute;
+  z-index: -1;
+  left: -3%;
+  right: -4%;
+  bottom: -8px;
+  height: 10px;
+  background: #bc3c602e;
+  clip-path: polygon(0 34%, 98% 0, 100% 62%, 4% 100%);
+  content: "";
+}
+
+.kisara-home-board-title em {
+  position: relative;
+  display: inline-block;
+  margin-left: 3px;
+  font-style: normal;
+  color: #bd355c;
+  transform: translateY(-2px) rotate(3deg);
+}
+
+.kisara-home-board-aside {
+  padding-bottom: 4px;
+  border-bottom: 2px solid #bd355c;
+  color: #454047;
+  font: italic 700 16px/1.2 "Courier New", monospace;
+  white-space: nowrap;
+  transform: translateY(-7px) rotate(4deg);
+}
+
 .kisara-home-board-caption p {
-  margin: 10px 0 0;
-  font-size: 16px;
+  width: fit-content;
+  margin: 24px 0 0 26px;
+  font-family: KaiTi, STKaiti, "Microsoft YaHei", serif;
+  font-size: 19px;
   line-height: 1.5;
   letter-spacing: 0;
-  color: #5e5860;
+  color: #59515a;
+  transform: rotate(-3deg);
 }
 
+.kisara-home-board-caption p span { margin-right: 5px; color: #bd355c; }
 .kisara-home-portrait {
   position: absolute;
   left: var(--portrait-x);
@@ -292,15 +350,16 @@
 }
 
 @media (min-width: 1440px) {
-  .kisara-home-board-caption h2 { font-size: 44px; }
+  .kisara-home-board-caption h2 { font-size: 68px; }
 }
 
 @media (min-width: 2000px) {
-  .kisara-home-board-caption h2 { font-size: 52px; }
+  .kisara-home-board-caption h2 { font-size: 80px; }
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
-  .kisara-home-board-caption h2 { font-size: 28px; }
+  .kisara-home-board-caption h2 { font-size: 42px; gap: 14px; }
+  .kisara-home-board-aside { font-size: 13px; }
 }
 
 @media (max-width: 760px) {
@@ -311,8 +370,10 @@
     right: 20px;
     text-align: center;
   }
-  .kisara-home-board-caption h2 { justify-content: center; font-size: 24px; }
-  .kisara-home-board-caption p { margin-top: 6px; font-size: 14px; }
+  .kisara-home-board-folio { justify-content: center; margin-bottom: 12px; }
+  .kisara-home-board-caption h2 { justify-content: center; font-size: 36px; gap: 12px; }
+  .kisara-home-board-aside { font-size: 12px; transform: rotate(4deg); }
+  .kisara-home-board-caption p { margin: 18px auto 0; font-size: 16px; }
   .kisara-home-knife { width: 36px; height: 160px; }
   .kisara-home-knife-blade { height: 116px; }
   .kisara-home-knife-blade b { font-size: 14px; }
