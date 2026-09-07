@@ -9,11 +9,11 @@ setMaxListeners(0);
 const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-function fixture(reduced = false) {
+function fixture(reduced = false, withPortrait = false) {
   class Node extends EventTarget {
     dataset: Record<string, string> = {};
     attributes = new Map<string, string>();
-    style = { transform: "" };
+    style = { transform: "", setProperty() {} };
     hidden = false;
     tabIndex = 0;
     focused = false;
@@ -24,6 +24,7 @@ function fixture(reduced = false) {
     removeAttribute(key: string) { this.attributes.delete(key); }
     toggleAttribute(key: string, value: boolean) { if (value) this.attributes.set(key, ""); else this.attributes.delete(key); }
     focus() { this.focused = true; }
+    querySelector(): unknown { return null; }
   }
   const source = new Node() as Node & { src: string };
   source.dataset.src = "/fragment.mp4";
@@ -31,7 +32,7 @@ function fixture(reduced = false) {
   const timers = new Map<number, Function>();
   const motion = Object.assign(new EventTarget(), { matches: reduced });
   let id = 0;
-  let rect = { top: 2100, bottom: 3000, height: 900 };
+  let rect = { top: 2100, bottom: 3000, height: 900, width: 1440 };
   const playPromises: Array<() => Promise<void>> = [];
   const video = Object.assign(new Node(), {
     currentTime: 0,
@@ -54,12 +55,20 @@ function fixture(reduced = false) {
     },
     querySelector() { return source; },
   });
-  const selectors = new Map([
+  const rig = new Node(), bubble = new Node();
+  const knives = Array.from({ length: 3 }, () => new Node());
+  const frames = Array.from({ length: 4 }, () => new Node());
+  const selectors = new Map<string, Node>([
     ["[data-home-event-video]", video],
   ]);
+  if (withPortrait) {
+    selectors.set("[data-portrait-rig]", rig);
+    selectors.set("[data-portrait-bubble]", bubble);
+  }
   const root = Object.assign(new Node(), {
     getBoundingClientRect: () => rect,
     querySelector: (selector: string) => selectors.get(selector),
+    querySelectorAll: (selector: string) => selector === "[data-portrait-knife]" ? knives : frames,
   });
   const observers: FakeObserver[] = [];
   class FakeObserver {
@@ -81,8 +90,8 @@ function fixture(reduced = false) {
   const originals = new Map(Object.keys(globals).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   Object.entries(globals).forEach(([key, value]) => Object.defineProperty(globalThis, key, { configurable: true, value }));
   const runtime = bindHomeEvent(root as unknown as HTMLElement);
-  const show = () => { rect = { top: 0, bottom: 900, height: 900 }; observers[1].emit(); };
-  const hide = () => { rect = { top: -1000, bottom: -100, height: 900 }; observers[1].emit(false); };
+  const show = () => { rect = { top: 0, bottom: 900, height: 900, width: 1440 }; observers[1].emit(); };
+  const hide = () => { rect = { top: -1000, bottom: -100, height: 900, width: 1440 }; observers[1].emit(false); };
   return {
     video, root, timers, observers, motion, document, window, playPromises,
     runtime, show, hide,
@@ -166,7 +175,7 @@ test("003 a stale play promise cannot pause a newer visibility replay", async ()
   } finally { f.destroy(); }
 });
 
-test("003 a stalled play is bounded and recovers after leaving and re-entering", async () => {
+test("003 a stalled play falls back to the final board until explicitly reset", async () => {
   const f = fixture();
   try {
     f.playPromises.push(() => new Promise(() => {}));
@@ -175,6 +184,10 @@ test("003 a stalled play is bounded and recovers after leaving and re-entering",
     assert.equal(f.video.paused, true);
     assert.equal(f.root.dataset.state, "ready");
     f.hide();
+    f.show();
+    await flush();
+    assert.equal(f.video.plays, 1);
+    f.runtime.reset();
     f.show();
     await flush();
     assert.equal(f.video.plays, 2);
@@ -212,6 +225,43 @@ test("003 cleanup releases media frames, timers, observers and route listeners",
     assert.equal(f.timers.size, 0);
     assert.ok(f.observers.every(observer => observer.disconnected));
     f.window.dispatchEvent(new Event("pageshow"));
+    assert.equal(f.video.plays, 1);
+  } finally { f.destroy(); }
+});
+
+test("003 starts the portrait only after the film and suspends its timer with page visibility", async () => {
+  const f = fixture(false, true);
+  try {
+    f.show(); await flush();
+    f.video.dispatchEvent(new Event("playing"));
+    assert.equal(f.root.hasAttribute("data-portrait-ready"), false);
+    f.video.dispatchEvent(new Event("ended"));
+    assert.equal(f.root.hasAttribute("data-portrait-ready"), true);
+    assert.equal(f.timers.size, 1);
+    f.document.hidden = true;
+    f.document.dispatchEvent(new Event("visibilitychange"));
+    assert.equal(f.timers.size, 0);
+    f.document.hidden = false;
+    f.document.dispatchEvent(new Event("visibilitychange"));
+    assert.equal(f.timers.size, 1);
+    assert.equal(f.video.plays, 1);
+    f.runtime.reset();
+    assert.equal(f.root.hasAttribute("data-portrait-ready"), false);
+    assert.equal(f.timers.size, 0);
+  } finally { f.destroy(); }
+});
+
+test("003 autoplay failure reveals a usable still scene and ignores a late playing event", async () => {
+  const f = fixture(false, true);
+  try {
+    f.playPromises.push(() => Promise.reject(new Error("Autoplay blocked")));
+    f.show(); await flush();
+    assert.equal(f.root.dataset.state, "ready");
+    assert.equal(f.root.hasAttribute("data-portrait-ready"), true);
+    f.video.dispatchEvent(new Event("playing"));
+    assert.equal(f.root.dataset.state, "ready");
+    assert.equal(f.video.paused, true);
+    f.hide(); f.show();
     assert.equal(f.video.plays, 1);
   } finally { f.destroy(); }
 });
@@ -285,10 +335,10 @@ test("Chibi preserves group secrets while bounding background and drag work", ()
   assert.doesNotMatch(source, /will-change: transform, filter/);
 });
 
-test("003 exposes favorite tags and 004 uses real dates without duplicate blurred covers", () => {
+test("003 exposes the portrait scene and 004 uses real dates without duplicate blurred covers", () => {
   const notebook = read("src/themes/kisara/components/KisaraHomeEventVideo.astro");
-  assert.match(notebook, /animeFavorites/);
-  assert.match(notebook, /favoriteGames/);
+  assert.match(notebook, /data-portrait-rig/);
+  assert.match(notebook, /data-portrait-bubble/);
   assert.match(notebook, /xpFavorites/);
   assert.doesNotMatch(notebook, /data-home-event-progress|data-home-event-replay|data-notebook-tab/);
   const latest = read("src/themes/kisara/components/KisaraLatestNotes.astro");

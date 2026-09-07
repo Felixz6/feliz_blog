@@ -1,3 +1,5 @@
+import { bindHomeEventPortrait } from "./homeEventPortrait.ts";
+
 export function visibleSceneRatio(rect: Pick<DOMRect, "top" | "bottom" | "height">, viewport: number) {
   const height = Math.max(1, viewport);
   const overlap = Math.max(0, Math.min(rect.bottom, height) - Math.max(rect.top, 0));
@@ -10,6 +12,7 @@ export function bindHomeEvent(root: HTMLElement) {
   const video = root.querySelector<HTMLVideoElement>("[data-home-event-video]")!;
   const source = video.querySelector<HTMLSourceElement>("source[data-src]")!;
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const portrait = bindHomeEventPortrait(root);
   let visible = false;
   let suspended = document.hidden;
   let completed = false;
@@ -34,6 +37,12 @@ export function bindHomeEvent(root: HTMLElement) {
     clearWatchdog();
     video.pause();
   };
+  const showStill = (value: string) => {
+    completed = true;
+    pause();
+    state(value);
+    portrait.reveal();
+  };
   const play = async (restart = false) => {
     if (signal.aborted || suspended || !visible || pending || motion.matches) return;
     const attempt = ++generation;
@@ -48,8 +57,7 @@ export function bindHomeEvent(root: HTMLElement) {
     clearWatchdog();
     watchdog = window.setTimeout(() => {
       if (signal.aborted || attempt !== generation || completed) return;
-      pause();
-      state("ready");
+      showStill("ready");
     }, 6000);
     try {
       await video.play();
@@ -60,9 +68,7 @@ export function bindHomeEvent(root: HTMLElement) {
       if (suspended || !visible) pause();
     } catch {
       if (signal.aborted || attempt !== generation) return;
-      pending = false;
-      clearWatchdog();
-      state("ready");
+      showStill("ready");
     }
   };
   const refresh = () => {
@@ -70,6 +76,10 @@ export function bindHomeEvent(root: HTMLElement) {
     const next = !suspended && !document.hidden
       && visibleSceneRatio(root.getBoundingClientRect(), window.innerHeight) >= .35;
     root.toggleAttribute("data-scene-visible", next);
+    portrait.setActive(next);
+    if (next && motion.matches) {
+      showStill("complete");
+    }
     if (next === visible) return;
     visible = next;
     if (!next) pause();
@@ -80,6 +90,9 @@ export function bindHomeEvent(root: HTMLElement) {
     completed = false;
     started = false;
     visible = false;
+    root.removeAttribute("data-scene-visible");
+    portrait.setActive(false);
+    portrait.reset();
     try { video.currentTime = 0; } catch {}
     state("idle");
   };
@@ -87,6 +100,7 @@ export function bindHomeEvent(root: HTMLElement) {
     suspended = true;
     visible = false;
     root.removeAttribute("data-scene-visible");
+    portrait.setActive(false);
     pause();
   };
   const resume = () => {
@@ -95,8 +109,9 @@ export function bindHomeEvent(root: HTMLElement) {
   };
 
   video.addEventListener("playing", () => {
-    if (suspended || !visible) { pause(); return; }
+    if (suspended || !visible || completed) { pause(); return; }
     state("playing");
+    clearWatchdog();
   }, { signal });
   video.addEventListener("pause", () => {
     if (!completed && started) state("paused");
@@ -106,10 +121,10 @@ export function bindHomeEvent(root: HTMLElement) {
     pending = false;
     clearWatchdog();
     state("complete");
+    portrait.reveal();
   }, { signal });
   video.addEventListener("error", () => {
-    pause();
-    state("error");
+    showStill("error");
   }, { signal });
   document.addEventListener("visibilitychange", () => document.hidden ? suspend() : resume(), { signal });
   window.addEventListener("pagehide", suspend, { signal });
@@ -117,7 +132,10 @@ export function bindHomeEvent(root: HTMLElement) {
   document.addEventListener("freeze", suspend, { signal });
   document.addEventListener("resume", resume, { signal });
   motion.addEventListener("change", () => {
-    if (motion.matches) pause();
+    if (motion.matches) {
+      if (visible) showStill("complete");
+      else pause();
+    }
     else if (visible && !completed) void play();
   }, { signal });
 
@@ -138,6 +156,7 @@ export function bindHomeEvent(root: HTMLElement) {
     refresh,
     destroy() {
       pause();
+      portrait.destroy();
       controller.abort();
       preloadObserver?.disconnect();
       visibilityObserver?.disconnect();

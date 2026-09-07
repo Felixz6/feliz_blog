@@ -142,11 +142,14 @@ test("Kisara Home 003 keeps its full-screen fragment deferred and subtitle-free"
   assert.doesNotMatch(homeEventSource, /<source\b[^>]*\ssrc=/i);
 });
 
-test("Kisara Home 003 uses a quiet one-shot media runtime and real favorite tags", () => {
+test("Kisara Home 003 uses a one-shot board scene with a portrait and the four original XP images", () => {
   const runtime = readSource("src/themes/kisara/lib/homeEvent.ts");
-  assert.match(homeEventSource, /kisara-home-tag/);
-  assert.match(homeEventSource, /animeFavorites/);
-  assert.match(homeEventSource, /favoriteGames/);
+  assert.match(homeEventSource, /data-home-portrait/);
+  assert.match(homeEventSource, /猫娘控.*二次元死宅.*蒸鹅心/);
+  assert.match(homeEventSource, /xpFavorites\.map/);
+  assert.match(homeEventSource, /\/themes\/fuyukawa-kagari\/assets\/about\/xp-\$\{item\.key\}\.webp/);
+  assert.match(homeEventSource, /😋.*🤤.*😍.*😚/);
+  assert.doesNotMatch(homeEventSource, /kisara-home-tags|tagGroups|PERSONAL INDEX/);
   assert.match(homeEventStyles, /\.kisara-home-video-event \{[^]*display: block;[^]*min-height: 100svh/);
   assert.match(homeEventStyles, /\.kisara-home-video-stage \{[^]*display: block;[^]*min-height: 100svh/);
   assert.doesNotMatch(homeEventSource, /data-home-event-progress|data-home-event-replay|data-notebook-tab/);

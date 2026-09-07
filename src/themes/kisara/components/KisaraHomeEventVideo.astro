@@ -1,17 +1,15 @@
 ---
-import { getThemePath } from "@/core/themes/registry";
-import { animeFavorites, favoriteGames, xpFavorites } from "@/core/data/profile";
+import { profileIdentity, xpFavorites } from "@/core/data/profile";
 
-const tagGroups = [
-  { id: "anime", label: "喜欢的动漫", accent: "red", items: animeFavorites },
-  { id: "games", label: "喜欢的游戏", accent: "green", items: favoriteGames },
-  { id: "signals", label: "偏好的电波", accent: "blue", items: xpFavorites },
-] as const;
+const accusations = ["猫娘控", "二次元死宅", "蒸鹅心"];
+const reactions = ["😋", "🤤", "😍", "😚"];
 ---
 
-<section class="kisara-home-video-event" data-kisara-home-stop="003" aria-labelledby="kisara-project-title">
+<section class="kisara-home-video-event" data-kisara-home-stop="003" aria-label="木更与我的兴趣白板">
   <kisara-home-event-video class="kisara-home-video-stage" data-state="idle">
     <div class="kisara-home-video-media">
+      <img class="kisara-home-board-still" src="/themes/kisara/assets/home-event-003-new-last.webp"
+        width="1920" height="1080" alt="" loading="lazy" decoding="async" />
       <video
         data-home-event-video
         poster="/themes/kisara/assets/home-event-003-new-last.webp"
@@ -24,38 +22,33 @@ const tagGroups = [
       >
         <source data-src="/themes/kisara/assets/home-event-003-new.mp4" type="video/mp4" />
       </video>
-      <div class="kisara-home-video-running-head" aria-hidden="true">
-        <b>003</b>
-        <span>AFTER CLASS<br />PERSONAL INDEX</span>
-      </div>
     </div>
 
-    <div class="kisara-home-tags" id="kisara-project-title">
-      <header class="kisara-home-tags-heading">
-        <div>
-          <p><span aria-hidden="true">03</span> / PERSONAL INDEX</p>
-          <h2>喜欢的东西<br /><em>会留下痕迹。</em></h2>
+    <div class="kisara-home-portrait" data-home-portrait>
+      <div class="kisara-home-portrait-rig" data-portrait-rig data-impact="0">
+        <div class="kisara-home-portrait-photo">
+          <img src="/themes/kisara/assets/profile.webp" alt={`${profileIdentity.displayName}的头像`}
+            width="1080" height="1080" loading="lazy" decoding="async" />
         </div>
-        <a href={getThemePath("kisara", "/about/")}>完整档案 <span aria-hidden="true">↗</span></a>
-      </header>
-      <div class="kisara-home-tag-groups">
-        {tagGroups.map((group, index) => (
-          <section class={`kisara-home-tag-group is-${group.accent}`} aria-labelledby={`kisara-tag-group-${group.id}`}>
-            <div class="kisara-home-tag-group-heading">
-              <span class="kisara-home-tag-group-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <h3 id={`kisara-tag-group-${group.id}`}>{group.label}</h3>
-            </div>
-            <div class="kisara-home-tag-list">
-              {group.items.map((item) => (
-                <span class="kisara-home-tag">
-                  <b>{item.title}</b>
-                  <small>{item.subtitle}</small>
-                </span>
-              ))}
-            </div>
-          </section>
+        {accusations.map((label, index) => (
+          <span class={`kisara-home-knife is-knife-${index + 1}`} data-portrait-knife>
+            <span class="kisara-home-knife-flight">
+              <i class="kisara-home-knife-handle" aria-hidden="true"></i>
+              <span class="kisara-home-knife-blade"><b>{label}</b></span>
+            </span>
+          </span>
         ))}
       </div>
+      <button class="kisara-home-reaction" type="button" data-portrait-bubble
+        aria-label="切换下一张兴趣图片" aria-live="off">
+        {xpFavorites.map((item, index) => (
+          <span class="kisara-home-reaction-frame" data-portrait-reaction hidden={index !== 0}>
+            <span class="kisara-home-reaction-emoji" aria-hidden="true">{reactions[index]}</span>
+            <img src={`/themes/fuyukawa-kagari/assets/about/xp-${item.key}.webp`} alt={item.title}
+              width="900" height="675" loading="lazy" decoding="async" />
+          </span>
+        ))}
+      </button>
     </div>
   </kisara-home-event-video>
 </section>
