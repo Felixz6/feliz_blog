@@ -141,13 +141,13 @@ test("Kisara Home 003 keeps its full-screen fragment deferred and subtitle-free"
   assert.doesNotMatch(homeEventSource, /<source\b[^>]*\ssrc=/i);
 });
 
-test("Kisara Home 003 replaces decorative tracking with real, keyboard-readable notes", () => {
+test("Kisara Home 003 uses a quiet one-shot media runtime and real favorite tags", () => {
   const runtime = readSource("src/themes/kisara/lib/homeEvent.ts");
-  assert.match(homeEventSource, /data-notebook-tab/);
-  assert.match(homeEventSource, /data-notebook-panel/);
-  assert.doesNotMatch(homeEventSource, /data-home-event-cue|ANSWER.*LOCKED/);
-  assert.match(runtime, /requestVideoFrameCallback\(clock\)/);
-  assert.doesNotMatch(runtime, /requestAnimationFrame|animation\.currentTime/);
+  assert.match(homeEventSource, /kisara-home-tag/);
+  assert.match(homeEventSource, /animeFavorites/);
+  assert.match(homeEventSource, /favoriteGames/);
+  assert.doesNotMatch(homeEventSource, /data-home-event-progress|data-home-event-replay|data-notebook-tab/);
+  assert.doesNotMatch(runtime, /requestVideoFrameCallback|requestAnimationFrame|animation\.currentTime/);
   assert.match(runtime, /prefers-reduced-motion: reduce/);
 });
 
