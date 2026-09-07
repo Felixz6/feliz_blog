@@ -345,5 +345,9 @@ test("003 exposes the portrait scene and 004 uses real dates without duplicate b
   assert.match(latest, /post\.data\.updatedDate \?\? post\.data\.pubDate/);
   assert.match(latest, /datetime=\{date\.toISOString\(\)\}/);
   assert.match(latest, /posts\.length === 0/);
-  assert.doesNotMatch(latest, /blur\(|--transmission-cover|<script/);
+  assert.match(latest, /Latest notes\./);
+  assert.match(latest, /RECENT TRANSMISSIONS \/ 004/);
+  assert.match(latest, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.doesNotMatch(latest, /kisara-latest-ledger|is-lead/);
+  assert.doesNotMatch(latest, /blur\(|--transmission-cover:|<script/);
 });

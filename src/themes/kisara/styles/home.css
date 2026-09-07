@@ -1891,8 +1891,8 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   --transition-paper: #dce4e7;
   --transition-from: #f5f6f4;
   --transition-from-fade: rgba(245, 246, 244, 0.9);
-  --transition-to: #edf1f0;
-  --transition-to-fade: rgba(237, 241, 240, 0.9);
+  --transition-to: #dbe2ec;
+  --transition-to-fade: rgba(219, 226, 236, 0.9);
   --transition-dot: rgba(46, 57, 77, 0.27);
   height: clamp(78px, 6.4vw, 108px);
 }
@@ -2027,7 +2027,7 @@ html[data-yuimi-performance="lite"] .kisara-home-transition > i {
   margin-block: -3px;
   background:
     radial-gradient(ellipse 62% 38% at 50% 12%, rgba(220, 229, 240, 0.72), transparent 74%),
-      linear-gradient(180deg, #edf1f0 0%, #9ba9bb 24%, #48546a 56%, #151a31 82%, #070a1c 100%);
+      linear-gradient(180deg, #dbe2ec 0%, #9ba9bb 24%, #48546a 56%, #151a31 82%, #070a1c 100%);
 }
 
 .kisara-home-transition.is-latest-to-footer::before {
