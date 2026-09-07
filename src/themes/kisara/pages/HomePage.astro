@@ -7860,16 +7860,19 @@ const gateStyle = [
           targetBurstProgress = burstProgress;
           burstVelocity = 0;
           if (rewindProgress >= 1) {
-            releaseMode = "paused";
+            releaseMode = "manual";
             releaseTimeline = 0;
             releaseRewindVeil = 0;
             releaseRewindDuration = 0;
             releaseRewindElapsed = 0;
             if (releaseReturnPose) stopPostReleaseAnimation(true);
-            burstProgress = mapReleaseAutoplayProgress(0);
+            burstProgress = 0;
             targetBurstProgress = burstProgress;
             burstVelocity = 0;
             clearReleaseTransientEffects(timestamp);
+            // Continue through both shots to kiss, below the automatic intro trigger.
+            targetProgress = Math.min(targetProgress, 0.988);
+            transitionChargeIntro(0, timestamp);
           }
         } else if (releaseMode === "forward") {
           const releaseDelta = releaseLastTimestamp

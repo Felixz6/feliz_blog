@@ -66,7 +66,10 @@ function fixture(overrides: Record<string, unknown> = {}) {
     releaseWarmupState: { spaceLens: true }, releaseWarmupPending: { spaceLens: false },
     burstProgress: 0, targetBurstProgress: 0, burstVelocity: 0,
     heroAutoplayActive: false, heroAutoplayLastTimestamp: 0, heroAutoplayFillDuration: 4600,
-    clamp, mapReleaseAutoplayProgress, gateRelease,
+    clamp, mapReleaseAutoplayProgress, gateRelease, getTransformationFrame, getGateSceneHandoff,
+    getReconstructionProgress,
+    memorySceneRecords: Array.from({ length: 5 }, () => ({ kind: "memory" })),
+    transformationSceneRecords: transformationTimeline.map(() => ({ kind: "transformation" })),
     smoothstep: (value: number) => value * value * (3 - 2 * value),
     smootherstep: (value: number) => {
       const p = clamp(value, 0, 1);
@@ -77,6 +80,10 @@ function fixture(overrides: Record<string, unknown> = {}) {
   };
   state.window = { requestAnimationFrame: () => ++state.requested, scrollY: 0 };
   state.performance = { now: () => state.now };
+  state.phaseProgress = (value: number, start: number, end: number) =>
+    state.smoothstep(clamp((value - start) / (end - start), 0, 1));
+  state.setRuntimeStyle = () => {};
+  state.syncSceneSlots = (presentations: unknown) => { state.presentations = presentations; };
   state.startAnimation = () => { state.requested++; };
   state.scheduleReleaseWarmup = () => {};
   state.clearReleaseTransientEffects = () => { state.cleared++; state.effects.push("clear"); };
@@ -96,9 +103,13 @@ function fixture(overrides: Record<string, unknown> = {}) {
   state.render = () => {
     state.rendered++;
     state.effects.push("render");
+    api.syncMemorySequence(state.progress);
     api.syncGateProgressRail(state.progress, state.releaseMode === "complete", "inner-bind");
   };
   const functions = [
+    ["memoryTimeline", "setSceneSlotStyle"],
+    ["computeSceneHandoff", "syncMemorySequence"],
+    ["syncMemorySequence", "pointOnQuinticCurve"],
     ["transitionChargeIntro", "startChargeIntro"],
     ["startChargeIntro", "clearReleaseTransientEffects"],
     ["startReleaseAutoplay", "startReleaseRewind"],
@@ -178,26 +189,20 @@ test("new release reaches the original final state across refresh rates", () => 
   }
 });
 
-test("early rewind pauses at the new start, then moves straight back into the heart", () => {
-  const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1 });
+test("release rewind continues into the shots without a paused checkpoint or another gesture", () => {
+  const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: gateRelease.introHandoff });
   f.api.startReleaseAutoplay(1000);
   f.state.releaseTimeline = 0.2;
   f.state.burstProgress = mapReleaseAutoplayProgress(0.2);
   assert.equal(f.api.handleReleaseInput(-120, 1200), true);
   assert.equal(f.state.releaseMode, "rewinding");
   f.state.now = 1200;
-  f.until("paused");
-  assert.equal(f.state.releaseMode, "paused");
-  assert.equal(f.state.burstProgress, gateRelease.phases.start);
-  f.step(f.state.now + 16);
-  assert.equal(f.state.releaseMode, "paused");
-  assert.equal(f.api.handleReleaseInput(-120, f.state.now), false);
+  f.until("manual");
   assert.equal(f.state.burstProgress, 0);
   assert.equal(f.state.targetBurstProgress, 0);
-  f.api.addProgress(-120);
   assert.equal(f.state.chargeIntroTarget, 0);
   assert.equal(f.state.chargeIntroReversing, true);
-  f.step(f.state.now + f.state.chargeIntroTransitionDuration);
+  f.step(f.state.now + f.state.chargeIntroTransitionDuration + 1000 / 60);
   assert.equal(f.state.chargeIntroComplete, false);
   assert.equal(f.state.releaseMode, "manual");
   assert.equal(f.state.burstProgress, 0);
@@ -218,7 +223,7 @@ test("paused release resumes, and late reverse input now rewinds rather than fas
   assert.equal(f.state.releaseRewindFromTimeline, .8);
 });
 
-test("completed gate captures upward input and rewinds from the current frame to the original shot cue", () => {
+test("one upward gesture rewinds the final stage through both close-ups and settles on kiss", () => {
   for (const fps of [30, 60, 120]) {
     const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
       releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, postReleaseActive: true });
@@ -232,24 +237,58 @@ test("completed gate captures upward input and rewinds from the current frame to
     assert.equal(f.state.classes.has("is-release-return"), true);
     assert.deepEqual(f.state.effects, ["post:false:true", "clear", "render", "present"]);
     let previous = 1;
-    for (let i = 0; i < fps && f.state.releaseMode === "rewinding"; i++) {
+    const visibleShots: number[] = [];
+    for (let i = 0; i < fps * 2; i++) {
       f.step(f.state.now + 1000 / fps);
       assert.ok(f.state.burstProgress <= previous);
       previous = f.state.burstProgress;
+      assert.notEqual(f.state.releaseMode, "paused");
+      f.state.presentations.slice(5).forEach((scene: { opacity: number }, index: number) => {
+        if (scene.opacity > .7 && !visibleShots.includes(index)) visibleShots.push(index);
+      });
     }
-    assert.equal(f.state.releaseMode, "paused");
-    assert.equal(f.state.burstProgress, gateRelease.phases.start);
-    assert.equal(f.state.rail.progress, .7);
+    assert.deepEqual(visibleShots, [1, 0], "Both close-ups play in reverse order");
+    assert.equal(f.state.burstProgress, 0);
     assert.equal(f.state.releaseReturnPose, null);
     assert.equal(f.state.classes.has("is-release-return"), false);
-    assert.equal(f.input(-120), 1);
-    assert.equal(f.state.chargeIntroReversing, true);
-    assert.equal(f.state.chargeIntroFrom, .66);
-    f.step(f.state.now + f.state.chargeIntroTransitionDuration);
     assert.equal(f.state.chargeIntroProgress, 0);
+    assert.equal(f.state.chargeIntroActive, false);
+    assert.equal(f.state.chargeIntroComplete, false);
+    assert.equal(f.state.progress, .988);
+    assert.equal(f.state.targetProgress, .988, "Kiss stays below the automatic replay threshold");
+    assert.equal(f.state.presentations[4].opacity, .985);
+    assert.ok(f.state.presentations.every((scene: { opacity: number }, index: number) => index === 4 || scene.opacity === 0));
     assert.equal(f.state.releaseMode, "manual");
     assert.equal(f.state.nextPageEntries, 0);
+    f.step(f.state.now + 3000);
+    assert.equal(f.state.chargeIntroActive, false, "Waiting on kiss must not restart the intro");
+    assert.equal(f.state.presentations[4].opacity, .985);
+    f.input(120);
+    f.until("complete");
+    assert.equal(f.input(120), 1);
+    assert.equal(f.state.nextPageEntries, 1, "Kiss can replay forward, then enter 001");
   }
+});
+
+test("reversing direction during the close-up rewind resumes from that shot", () => {
+  const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
+    releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1 });
+  f.input(-120);
+  f.until("manual");
+  assert.equal(f.state.chargeIntroReversing, true);
+  f.step(f.state.now + 160);
+  const intro = f.state.chargeIntroProgress;
+  assert.ok(intro > 0 && intro < gateRelease.introHandoff);
+  const startedAt = f.state.chargeIntroStartedAt;
+  f.input(-120);
+  assert.equal(f.state.chargeIntroStartedAt, startedAt, "Repeated upward input cannot restart the shot clock");
+  f.input(120);
+  assert.equal(f.state.chargeIntroFrom, intro);
+  assert.equal(f.state.chargeIntroProgress, intro, "Direction changes do not jump to a shot boundary");
+  assert.equal(f.state.chargeIntroReversing, false);
+  assert.equal(f.state.chargeIntroTarget, 1);
+  f.until("complete");
+  assert.equal(f.state.burstProgress, 1);
 });
 
 test("opposite input resumes exactly where the reverse stopped; repeated gestures do not restart clocks", () => {
@@ -287,7 +326,12 @@ test("small wheel input, normalized touch/keyboard, reduced motion and long reve
     f.step(61000);
     assert.equal(f.state.releaseRewindElapsed, 50, "A delayed frame cannot skip the whole reverse");
     assert.equal(f.state.releaseMode, "rewinding");
-    f.until("paused");
+    f.until("manual");
+    assert.equal(f.state.chargeIntroReversing, true);
+    f.step(f.state.now + f.state.chargeIntroTransitionDuration + 1000 / 60);
+    assert.equal(f.state.chargeIntroProgress, 0);
+    assert.equal(f.state.chargeIntroActive, false);
+    assert.equal(f.state.presentations[4].opacity, .985);
   }
   const blocked = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
     releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, comicTransition: { active: true } });
