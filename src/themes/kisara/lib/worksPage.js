@@ -558,7 +558,8 @@ export function bindWorksPage() {
     if (length < .001) return null;
     const nx = -dy / length, ny = dx / length;
     const offset = (state.width / 2 - a.x) * nx + (state.height / 2 - a.y) * ny;
-    const safeOffset = Math.min(state.width, state.height) * .3;
+    // Keep both visible pieces substantial, including inset and pointed artwork.
+    const safeOffset = Math.min(state.width, state.height) * .16;
     const correction = offset - Math.max(-safeOffset, Math.min(safeOffset, offset));
     a.x += nx * correction;
     a.y += ny * correction;
@@ -667,8 +668,8 @@ export function bindWorksPage() {
     fruitPhysics.forEach((state, fruit) => {
       if (state.isPig || state.phase !== "whole") return;
       const center = { x: state.x, y: state.y };
-      const previous = { x: state.previousX ?? state.x, y: state.previousY ?? state.y };
-      if (Math.min(pointToSegmentDistance(center, start, blockedEnd), pointToSegmentDistance(previous, start, blockedEnd)) <= state.hitRadiusX + 6) {
+      // Require entry into the body, not a transparent margin or a former position.
+      if (pointToSegmentDistance(center, start, blockedEnd) <= state.hitRadiusX * .72) {
         sliceFruit(fruit, start, blockedEnd);
       }
     });

@@ -37,6 +37,20 @@ test("Fruit cuts partition the complete image and compute valid mass centers at 
   assert.equal(getFruitCut({ x: 0, y: 0, width: 76, height: 76, angle: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }), null);
 });
 
+test("Glancing cuts still produce two substantial pieces instead of a tiny corner", () => {
+  for (const angle of [0, 30, 45, 90, 147, 270]) {
+    for (const offset of [-42, -30, 30, 42]) {
+      const cut = getFruitCut(
+        { x: 160, y: 140, width: 76, height: 76, angle },
+        { x: 80, y: 140 + offset }, { x: 240, y: 140 + offset }
+      );
+      assert.ok(cut);
+      const fraction = Math.min(cut.leftCenter.area, cut.rightCenter.area) / (76 * 76);
+      assert.ok(fraction >= .29, `Small fragment at ${angle} degrees: ${fraction}`);
+    }
+  }
+});
+
 function slicedFruit(angle = 45) {
   const fruit = new Element();
   const state: any = {
@@ -140,6 +154,28 @@ test("Slow one-pixel pointer samples accumulate into a cut instead of resetting 
   const still = pointerFixture();
   for (let i = 0; i < 10; i++) still.move(100, 100, 1000 + i * 8);
   assert.equal(still.cuts.length, 0);
+});
+
+test("Blade must enter the fruit body; tip grazes and old positions do not trigger cuts", () => {
+  for (const y of [65, 70, 130, 135, 140]) {
+    const f = pointerFixture();
+    f.move(20, y, 1000);
+    f.move(180, y, 1016);
+    assert.equal(f.cuts.length, 0, `Edge graze at y=${y}`);
+  }
+  for (const y of [80, 100, 120]) {
+    const f = pointerFixture();
+    f.move(20, y, 1000);
+    f.move(180, y, 1016);
+    assert.equal(f.cuts.length, 1, `Body swipe at y=${y}`);
+  }
+  const f = pointerFixture();
+  const state = [...f.states.values()][0];
+  state.previousX = 100;
+  state.previousY = 150;
+  f.move(20, 150, 1000);
+  f.move(180, 150, 1016);
+  assert.equal(f.cuts.length, 0);
 });
 
 test("A stale pointer jump does not cut across the scene, and the pig still stops the blade", () => {
