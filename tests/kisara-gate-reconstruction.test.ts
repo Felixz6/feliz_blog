@@ -91,6 +91,7 @@ test("reconstruction uses one target texture, bounded canvases, and no repeated 
         for (const progress of [0.1, 0.5, 0.9]) {
           renderer.draw({ reconstruction: progress, opacity: 0.92, centerX: 0.5, centerY: 0.52, time: run });
           assert.equal(f.uniforms.get("uProgress")![0], progress);
+          assert.equal(f.uniforms.get("uCellSize")![0], profile === "desktop" ? 14 : 9);
         }
         renderer.clear();
         assert.equal(f.canvas.style.opacity, "0");

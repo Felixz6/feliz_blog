@@ -369,4 +369,14 @@ test("the production presentation resets diffusion, settles the final frame, and
   context.chargeIntroProgress = 0;
   update(3000, false);
   assert.equal(styles.get("--kisara-reconstruction-wash-opacity"), "0.000");
+  context.burstProgress = gateRelease.phases.start + .3 * (1 - gateRelease.phases.start);
+  context.releaseUsesReconstruction = true;
+  update(3200, false);
+  const gpuRadius = Number.parseFloat(styles.get("--kisara-reconstruction-outer-radius")!);
+  context.releaseUsesReconstruction = false;
+  update(3300, false);
+  const fallbackRadius = Number.parseFloat(styles.get("--kisara-reconstruction-outer-radius")!);
+  assert.ok(gpuRadius < fallbackRadius, "The clean wash trails visible packets only when the GPU layer is available");
+  const expected = getReconstructionRadii(.3, 1600, 900, 800, 900 * .48);
+  assert.ok(Math.abs(fallbackRadius - expected.outer) < .001, "No GPU keeps the original bright diffusion fallback");
 });
