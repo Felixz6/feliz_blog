@@ -28,7 +28,8 @@
 - Fuyukawa's 18-page generated-output audit also passes. Its sources and assets are unchanged.
 - Test/build processes have exited. Final logs are under `%TEMP%`: `blank-redesign-theme-final.log`, `blank-redesign-repository-final.log`, and `blank-redesign-build-final.log`.
 - Git whitespace checks pass. The unrelated root note remains exactly 457 added lines; none is staged for this task.
-- Implementation is complete and automatically tested, pending human visual acceptance. Local checkpoint to be recorded after commit; no push.
+- Implementation is complete and automatically tested, pending human visual acceptance.
+- Local implementation checkpoint: `4fbca7440df0b311457c0ef2735cf14edfc45d22` (`feat(blank): rebuild theme as a monochrome editorial journal`), containing only 16 Blank files. No push.
 - Human visual acceptance remains separate; no browser verification is authorized.
 
 ## Design Decisions
