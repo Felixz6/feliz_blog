@@ -1,5 +1,5 @@
 ---
-title: "Codex App 用久以后,我留下的这些使用习惯"
+title: "GPT5.6时期 Codex App 的一些使用心得"
 description: "功能确实前沿,客户端也确实不省心.这是一篇写给刚开始使用 Codex 的经验分享:怎么放项目、怎么拆线程、怎么记笔记,以及什么时候该叫子代理帮忙."
 pubDate: 2026-07-27
 updatedDate: 2026-08-17
