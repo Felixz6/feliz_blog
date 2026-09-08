@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { Icon } from "astro-icon/components";
 import { projectEntries, projectTechLines } from "@/core/data/projects";
+import MangaArt from "../components/MangaArt.astro";
 
 const techIcons = {
   unity: "simple-icons:unity",
@@ -30,18 +31,16 @@ const projectCards = projectEntries.map((project) => ({
   <section class="works-shell" aria-labelledby="works-title">
     <div class="works-hero">
       <div>
-        <p class="section-kicker">Little things in progress</p>
+        <p class="section-kicker">02 / The atelier</p>
         <h1 id="works-title">灵感工坊<span class="page-title-en">Projects</span></h1>
         <p>
           从一个小念头开始，让喜欢的技术慢慢长成作品。这里收着正在做的实验，也留着下一次继续的线索。
         </p>
       </div>
-      <div class="works-hero-orbit" aria-hidden="true">
-        {techLines.slice(0, 4).map((item) => (
-          <span>
-            <Icon name={item.icon} />
-          </span>
-        ))}
+      <div class="workshop-scene" aria-hidden="true">
+        <MangaArt image="workshop-strip" class="workshop-panel" eager />
+        <MangaArt image="haruto-gift" class="workshop-character" eager />
+        <span class="manga-handwritten">Made of little ideas.</span>
       </div>
     </div>
 
@@ -66,8 +65,9 @@ const projectCards = projectEntries.map((project) => ({
     </section>
 
     <section class="works-grid" aria-label="Project cards">
-      {projectCards.map((project) => (
+      {projectCards.map((project, index) => (
         <article class={`works-card works-card--${project.accent}`} data-project-line={project.line}>
+          <span class="works-page-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
           <div class="works-card-head">
             <span class="works-card-icon" aria-hidden="true">
               <Icon name={project.icon} />
@@ -91,6 +91,7 @@ const projectCards = projectEntries.map((project) => ({
             <strong>{project.status}</strong>
             <p>下一步会把相关笔记、截图或可玩的 demo 慢慢补到这里。</p>
           </div>
+          {index === 0 && <MangaArt image="kagari-thinking" class="works-card-companion" />}
         </article>
       ))}
     </section>
@@ -115,6 +116,7 @@ const projectCards = projectEntries.map((project) => ({
         cards.forEach((card) => {
           const isMatch = filter === "all" || card.dataset.projectLine === filter;
           card.classList.toggle("is-dimmed", !isMatch);
+          card.hidden = !isMatch;
         });
         lineCards.forEach((card) => {
           const isMatch = filter === "all" || card.dataset.lineCard === filter;

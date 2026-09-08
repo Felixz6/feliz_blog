@@ -1,6 +1,9 @@
 ---
 import "../styles/theme.css";
 import "@/themes/fuyukawa-kagari/styles/refresh.css";
+import "@/themes/fuyukawa-kagari/styles/manga.css";
+import refreshPagesHref from "../styles/refresh-pages.css?url";
+import mangaPagesHref from "../styles/manga-pages.css?url";
 import { site } from "@/lib/site";
 import type { BlogPost } from "@/core/content/blog";
 import { Icon } from "astro-icon/components";
@@ -12,6 +15,7 @@ import PerformanceProfile from "@/core/PerformanceProfile.astro";
 import SeoMeta from "@/core/SeoMeta.astro";
 import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
+import MangaRuntime from "../components/MangaRuntime.astro";
 
 interface Props {
   title?: string;
@@ -68,6 +72,8 @@ const themedNotFoundRedirectScript = `(() => {
     <link rel="icon" type="image/png" href={kagariAssets.favicon} />
     <link rel="apple-touch-icon" href={kagariAssets.appleTouchIcon} />
     <title>{title}</title>
+    {canonicalPath !== "/" && <link rel="stylesheet" href={refreshPagesHref} />}
+    {canonicalPath !== "/" && <link rel="stylesheet" href={mangaPagesHref} />}
     <ClientRouter />
     <ConsoleEasterEgg />
   </head>
@@ -222,10 +228,12 @@ const themedNotFoundRedirectScript = `(() => {
           <p>🌸 Yuimi Lab 已落地：<time data-elapsed-from="2026-05-18T00:00:00+08:00" data-elapsed-mode="second">计算中...</time></p>
           <p>💍 契约之吻：<time data-elapsed-from="2022-09-24T00:00:00+08:00" data-elapsed-mode="days">计算中...</time>，第二季仍未响应</p>
           <p class="footer-status-line">sakura: falling / pig: on duty / tea: warm</p>
+          <p class="manga-art-credit">插画与漫画：葉佐乃《儚いキミは猛攻をはじめる》 · 冬川篝主题手帖</p>
         </div>
       </footer>
     </div>
     <ThemeLongPressMenu />
+    <MangaRuntime />
 
     <script>
       let pigScrollTimer = 0;
