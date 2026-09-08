@@ -44,32 +44,34 @@ body[data-fuyukawa] .skip-to-content {
 }
 body[data-fuyukawa] .skip-to-content:focus { top: 12px; }
 
-/* A permanent, predictable navigation rail. */
+/* Equal side tracks keep the glass navigation centered in the viewport. */
 body[data-fuyukawa] .site-header {
   top: 0; min-height: 68px; padding: 7px max(28px, calc((100% - 1240px) / 2));
-  grid-template-columns: minmax(150px, 1fr) auto;
-  gap: 24px; background: #ffffffdf; border-bottom: 1px solid #e5eaf2;
-  box-shadow: 0 2px 16px #8599b408; backdrop-filter: blur(16px);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 16px; background: transparent; border-bottom: 0;
+  box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 body[data-fuyukawa] .site-header::before,
 body[data-fuyukawa] .site-header::after,
 body[data-fuyukawa] .nav-links a::after { display: none; }
-body[data-fuyukawa] .brand { display: inline-flex; font-size: 1.1rem; gap: 9px; font-family: "Segoe Print", "Microsoft YaHei", sans-serif; color: #627b95; }
+body[data-fuyukawa] .brand { display: inline-flex; justify-self: start; font-size: 1.1rem; gap: 9px; font-family: "Segoe Print", "Microsoft YaHei", sans-serif; color: #627b95; }
 body[data-fuyukawa] .brand img { width: 36px; height: 34px; filter: none; }
 body[data-fuyukawa] .nav-links {
-  justify-self: end; width: auto; max-width: 100%; gap: 6px; padding: 0; border: 0;
-  background: transparent; box-shadow: none; backdrop-filter: none; border-radius: 0;
+  grid-column: 2; justify-self: center; justify-content: center; width: auto; max-width: 100%;
+  gap: 6px; padding: 5px; border: 1px solid #ffffffb8;
+  background: #ffffff45; box-shadow: 0 4px 18px #8599b410;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 999px;
 }
 body[data-fuyukawa] .nav-links a {
-  min-height: 46px; padding: 7px 13px; border: 0; border-radius: 6px;
+  min-height: 46px; padding: 7px 13px; border: 0; border-radius: 999px;
   color: var(--ink-soft); background: transparent; box-shadow: none;
 }
 body[data-fuyukawa] .nav-links a:hover,
 body[data-fuyukawa] .nav-links a[aria-current="page"] {
-  color: var(--accent); background: #edf5fd; transform: none;
+  color: var(--accent); background: #edf5fd80; transform: none;
 }
 body[data-fuyukawa] .nav-links a:nth-child(even)[aria-current="page"] {
-  color: var(--rose); background: var(--pink-soft);
+  color: var(--rose); background: #fceff580;
 }
 body[data-fuyukawa] .nav-links a[aria-current="page"] { box-shadow: inset 0 -2px 0 #a9cbe4; }
 body[data-fuyukawa] .nav-icon { background: none; border: 0; box-shadow: none; width: 22px; height: 26px; }
@@ -191,7 +193,7 @@ body[data-fuyukawa] .journal-grid { display: grid; grid-template-columns: repeat
 body[data-fuyukawa] .journal-entry { position: relative; min-width: 0; border-bottom: 2px solid #d9e8f5; padding-bottom: 22px; }
 body[data-fuyukawa] .journal-entry:nth-child(2) { border-color: #efd1e1; }
 body[data-fuyukawa] .journal-entry:nth-child(3) { border-color: #cfe5de; }
-body[data-fuyukawa] .journal-entry > img { width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: cover; border-radius: 6px; }
+body[data-fuyukawa] .journal-entry > img { width: 100%; height: auto; aspect-ratio: 7 / 10; object-fit: contain; object-position: center; align-self: start; border-radius: 6px; }
 body[data-fuyukawa] .journal-entry > div { padding-top: 16px; }
 body[data-fuyukawa] .journal-entry time { font-size: .74rem; color: var(--accent); font-variant-numeric: tabular-nums; }
 body[data-fuyukawa] .journal-entry h3 { margin: 8px 0; font-size: 1.16rem; line-height: 1.6; }
@@ -213,7 +215,7 @@ body[data-fuyukawa] :is(.page-title h1, .works-hero h1) { margin: 0; font-size: 
 body[data-fuyukawa] .page-title-en { display: inline-block; padding-left: 20px; color: var(--rose); font-size: 1.08rem; font-weight: 500; vertical-align: middle; font-family: "Segoe Print", "Comic Sans MS", cursive; }
 body[data-fuyukawa] :is(.page-title p:not(.section-kicker), .works-hero p:not(.section-kicker)) { max-width: 740px; margin: 14px 0 0; color: var(--ink-soft); font-size: .95rem; }
 
-/* Archive and search. Covers have a real, stable landscape viewport. */
+/* Portrait frames preserve the entire illustration, including non-portrait art. */
 body[data-fuyukawa] .blog-search-card {
   width: min(1144px, calc(100% - 80px)); margin: 0 auto; padding: 26px 0;
   display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px;
@@ -245,8 +247,8 @@ body[data-fuyukawa] .blog-timeline-item:nth-child(even) .blog-post-row { box-sha
 body[data-fuyukawa] .blog-post-row::after,
 body[data-fuyukawa] .post-cover-frame::before,
 body[data-fuyukawa] .post-cover-frame::after { display: none; }
-body[data-fuyukawa] .post-cover-frame { align-self: center; aspect-ratio: 8 / 5; min-height: 0; padding: 0; overflow: hidden; border: 0; border-radius: 6px; background: var(--paper-soft); box-shadow: none; transform: none; }
-body[data-fuyukawa] .post-cover-frame img { height: 100%; min-height: 0; object-fit: cover; filter: none; border-radius: 0; }
+body[data-fuyukawa] .post-cover-frame { align-self: center; aspect-ratio: 7 / 10; min-height: 0; padding: 0; overflow: hidden; border: 0; border-radius: 6px; background: transparent; box-shadow: none; transform: none; }
+body[data-fuyukawa] .post-cover-frame img { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: center; filter: none; border-radius: 0; }
 body[data-fuyukawa] .blog-post-copy h2 { font-size: 1.35rem; line-height: 1.6; margin: 10px 0; }
 body[data-fuyukawa] .blog-post-row:hover h2 { color: var(--accent); }
 body[data-fuyukawa] .blog-post-copy > p { margin: 0 0 14px; font-size: .88rem; color: var(--ink-soft); }
@@ -457,6 +459,7 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .hero { background-size: auto 100%; background-color: #f5f6f6; }
 }
 @media (max-width: 1100px) {
+  body[data-fuyukawa] .brand span { display: none; }
   body[data-fuyukawa] .about-profile-shell { grid-template-columns: 210px minmax(0, 1fr); gap: 32px; }
   body[data-fuyukawa] .about-tech-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body[data-fuyukawa] .about-media-grid,
@@ -467,10 +470,10 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .game-room { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  body[data-fuyukawa] .site-header { min-height: 66px; padding: 8px 18px; gap: 14px; grid-template-columns: auto 1fr; }
-  body[data-fuyukawa] .brand { display: inline-flex; }
+  body[data-fuyukawa] .site-header { min-height: 66px; padding: 8px 18px; gap: 0; grid-template-columns: minmax(0, 1fr); }
+  body[data-fuyukawa] .brand { display: none; }
   body[data-fuyukawa] .brand span { display: none; }
-  body[data-fuyukawa] .nav-links { max-width: 100%; width: auto; gap: 2px; justify-content: end; overflow: visible; }
+  body[data-fuyukawa] .nav-links { grid-column: 1; max-width: 100%; width: auto; gap: 2px; justify-content: center; overflow: visible; }
   body[data-fuyukawa] .nav-links a { display: flex; flex-direction: column; padding: 4px 10px; min-height: 44px; gap: 3px; }
   body[data-fuyukawa] .nav-icon { width: 20px; height: 21px; }
   body[data-fuyukawa] .nav-label { font-size: .58rem; }

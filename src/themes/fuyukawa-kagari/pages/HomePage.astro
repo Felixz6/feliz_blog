@@ -188,7 +188,7 @@ const fallingTags = [
     <div class="journal-grid">
       {recentPosts.map((post) => (
         <a class="journal-entry" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
-          <img src={post.data.cover ?? kagariAssets.heroWallpaper} alt="" width="640" height="400" loading="lazy" />
+          <img src={post.data.cover ?? kagariAssets.heroWallpaper} alt="" width="700" height="1000" loading="lazy" />
           <div>
             <time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toLocaleDateString("zh-CN")}</time>
             <h3>{post.data.title}</h3>
