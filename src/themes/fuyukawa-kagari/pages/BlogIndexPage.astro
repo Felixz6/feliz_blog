@@ -40,9 +40,9 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
 
 <BaseLayout title="Blog | Yuimi Lab" description="技术笔记、二次元随笔与个人记录。">
   <section class="page-title blog-hero-card">
-    <p class="section-kicker">Archive</p>
-    <h1>Blog</h1>
-    <p>开发经验、站点折腾、兴趣记录都会先夹在这里。每篇文章像一张贴进手账的照片，隔一阵回来，也能看见当时为什么这么想。</p>
+    <p class="section-kicker">Notebook / {String(posts.length).padStart(2, "0")} entries</p>
+    <h1>笔记存档<span class="page-title-en">Blog</span></h1>
+    <p>一些认真折腾的记录，一些舍不得忘掉的瞬间。</p>
   </section>
 
   <section class="blog-search-card" data-pagefind-ignore data-theme-route-prefix={themeRoutePrefix}>
@@ -112,7 +112,9 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
     }
   </section>
 
-  <script>
+  <script is:inline data-astro-rerun>
+    (() => {
+    window.__fuyukawaSearchCleanup?.();
     const searchInput = document.querySelector("[data-blog-search]");
     const searchResults = document.querySelector("[data-blog-search-results]");
     const themeRoutePrefix = document.querySelector("[data-theme-route-prefix]")?.dataset.themeRoutePrefix ?? "";
@@ -186,7 +188,9 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
     };
 
     let searchTimer = 0;
-    searchInput?.addEventListener("input", () => {
+    let searchVersion = 0;
+    const onSearch = () => {
+      const version = ++searchVersion;
       window.clearTimeout(searchTimer);
       const query = searchInput.value.trim();
       if (!query) {
@@ -200,6 +204,7 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
           const pagefind = await loadPagefind();
           const search = await pagefind.search(query);
           const data = await Promise.all(search.results.slice(0, 5).map((result) => result.data()));
+          if (version !== searchVersion || !searchInput?.isConnected) return;
 
           if (!data.length) {
             renderSearchState("没有找到相关笔记。");
@@ -214,9 +219,20 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
             </a>
           `).join("");
         } catch {
+          if (version !== searchVersion || !searchInput?.isConnected) return;
           fallbackLocalSearch(query);
         }
       }, 180);
-    });
+    };
+    searchInput?.addEventListener("input", onSearch);
+    const cleanup = () => {
+      ++searchVersion;
+      window.clearTimeout(searchTimer);
+      searchInput?.removeEventListener("input", onSearch);
+      document.removeEventListener("astro:before-swap", cleanup);
+    };
+    window.__fuyukawaSearchCleanup = cleanup;
+    document.addEventListener("astro:before-swap", cleanup, { once: true });
+    })();
   </script>
 </BaseLayout>

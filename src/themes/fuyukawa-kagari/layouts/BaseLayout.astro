@@ -1,5 +1,6 @@
 ---
 import "../styles/theme.css";
+import "@/themes/fuyukawa-kagari/styles/refresh.css";
 import { site } from "@/lib/site";
 import type { BlogPost } from "@/core/content/blog";
 import { Icon } from "astro-icon/components";
@@ -55,7 +56,7 @@ const themedNotFoundRedirectScript = `(() => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <PerformanceProfile />
     <SeoMeta title={title} description={description} canonical={canonical} isArticlePage={isArticlePage} article={article} />
-    <meta name="theme-color" content="#fff8ec" />
+    <meta name="theme-color" content="#f6fbfa" />
     {isAlternateThemeRoute && <meta name="robots" content="noindex,follow" />}
     {
       redirectThemedNotFound && (
@@ -71,10 +72,12 @@ const themedNotFoundRedirectScript = `(() => {
     <ConsoleEasterEgg />
   </head>
   <body
+    data-fuyukawa
     data-pagefind-ignore={isAlternateThemeRoute ? true : undefined}
     data-yuimi-selection-lock={isArticlePage ? undefined : "true"}
     data-yuimi-article-page={isArticlePage ? "true" : undefined}
   >
+    <a class="skip-to-content" href="#page-content">跳至正文</a>
     <div class="sakura-rain" aria-hidden="true">
       {Array.from({ length: 34 }).map(() => <span></span>)}
     </div>
@@ -88,8 +91,8 @@ const themedNotFoundRedirectScript = `(() => {
       </div>
     </div>
     <aside class="toy-dock" aria-label="Yuimi Lab toy dock" transition:persist="yuimi-toy-dock">
-      <button class="toy-dock-handle" type="button" aria-label="打开侧边工具">
-        <span>TOOLS</span>
+      <button class="toy-dock-handle" type="button" aria-label="打开音乐与看板娘工具" title="音乐与看板娘">
+        <Icon name="tabler:sparkles" aria-hidden="true" />
       </button>
       <div class="toy-dock-panel">
         <section class="toy-widget live2d-control-widget" aria-label="Live2D 看板娘控制">
@@ -198,7 +201,7 @@ const themedNotFoundRedirectScript = `(() => {
         <nav class="nav-links" aria-label="Main navigation">
           {
             navItems.map((item) => (
-              <a href={item.href} aria-label={`${item.label}: ${item.hint}`}>
+              <a href={item.href} aria-label={`${item.label}: ${item.hint}`} aria-current={(item.href === themeHomePath ? Astro.url.pathname === item.href : Astro.url.pathname.startsWith(item.href)) ? "page" : undefined}>
                 <span class="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
                 <span class="nav-label">{item.label}</span>
                 <span class="nav-hint">{item.hint}</span>
@@ -207,7 +210,7 @@ const themedNotFoundRedirectScript = `(() => {
           }
         </nav>
       </header>
-      <main>
+      <main id="page-content" tabindex="-1">
         <slot />
       </main>
       <footer class="site-footer" data-footer-timers>
