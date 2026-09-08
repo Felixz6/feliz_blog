@@ -53,7 +53,7 @@ const nowDoing = currentSignals;
       </div>
 
       <div class="about-id-card">
-        <p class="about-kicker">Profile README</p>
+        <p class="about-kicker">Behind the notebook</p>
         <h1 id="about-title">{profileIdentity.displayName}</h1>
         <p class="about-handle">{profileIdentity.handle} · {profileIdentity.siteName}</p>
         <p class="about-bio">{profileIdentity.bio}</p>
@@ -86,8 +86,8 @@ const nowDoing = currentSignals;
     <section class="about-readme" aria-label="Yuimi README">
       <div class="about-readme-hero">
         <div>
-          <p class="section-kicker">README.md</p>
-          <h2>Hi, I am Yuimi-chaya</h2>
+          <p class="section-kicker">About me / Anime & code</p>
+          <h2>很高兴，在这里遇见你。</h2>
           <p>
             这里是一间把技术笔记、二次元兴趣、小游戏和看板娘机关放在一起的小房间。
             我会记录 AstrBot、插件开发、部署踩坑，也会把喜欢的番剧、游戏和角色审美认真摆上架。
@@ -217,12 +217,8 @@ const nowDoing = currentSignals;
 
   <style>
     .about-profile-shell {
-      width: min(1360px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 96px 0 72px;
       display: grid;
-      grid-template-columns: minmax(250px, 288px) minmax(0, 1fr);
-      gap: 22px;
       align-items: start;
     }
 
@@ -249,99 +245,45 @@ const nowDoing = currentSignals;
 
     .about-sidebar {
       position: sticky;
-      top: 112px;
       display: grid;
-      gap: 16px;
     }
 
     .about-avatar-card,
-    .about-id-card,
-    .about-status-card,
-    .about-readme-hero,
-    .about-section {
+.about-id-card,
+.about-status-card,
+.about-readme-hero,
+.about-section {
       position: relative;
       isolation: isolate;
       overflow: visible;
-      border: 2px solid var(--glass-line);
-      border-radius: 8px;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 226, 234, 0.05) 44%, rgba(220, 238, 250, 0.08)),
-        rgba(255, 252, 246, 0.18);
-      box-shadow:
-        inset 0 0 0 1px var(--glass-edge),
-        var(--glass-shadow);
-      backdrop-filter: blur(2px) saturate(1.03);
-      -webkit-backdrop-filter: blur(2px) saturate(1.03);
     }
 
     .about-avatar-card {
       display: grid;
       place-items: center;
       min-height: 250px;
-      padding: 20px;
-      background:
-        radial-gradient(circle at 18% 18%, rgba(255, 226, 234, 0.54), transparent 32%),
-        radial-gradient(circle at 78% 72%, rgba(220, 238, 250, 0.5), transparent 34%),
-        rgba(255, 252, 246, 0.18);
     }
 
     .about-avatar-card img {
-      width: min(188px, 72vw);
-      height: min(188px, 72vw);
       aspect-ratio: 1;
       object-fit: cover;
-      border: 4px solid rgba(255, 255, 255, 0.82);
       border-radius: 50%;
-      box-shadow:
-        0 18px 34px rgba(67, 82, 106, 0.16),
-        0 0 0 10px rgba(255, 226, 234, 0.32);
-    }
-
-    .about-tape {
-      position: absolute;
-      top: -10px;
-      left: 26px;
-      z-index: 2;
-      width: 78px;
-      height: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.58);
-      border-radius: 999px;
-      background:
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 5px, transparent 5px 10px),
-        rgba(255, 222, 139, 0.7);
-      box-shadow: 0 8px 16px rgba(91, 110, 139, 0.12);
-      transform: rotate(-9deg);
     }
 
     .about-avatar-flower {
       position: absolute;
-      right: 34px;
-      bottom: 34px;
       display: grid;
       place-items: center;
-      width: 42px;
-      height: 42px;
       color: #fffaf1;
-      background: linear-gradient(135deg, var(--pink), var(--blue));
       border: 2px solid rgba(255, 255, 255, 0.82);
       border-radius: 50%;
-      box-shadow: 0 10px 22px rgba(91, 110, 139, 0.16);
-    }
-
-    .about-id-card,
-    .about-status-card,
-    .about-readme-hero,
-    .about-section {
-      padding: 24px;
     }
 
     .about-kicker,
-    .about-mini-title,
-    .about-section-heading p {
+.about-mini-title,
+.about-section-heading p {
       margin: 0;
-      color: var(--pink);
       font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
-      font-size: 0.75rem;
       font-weight: 800;
       letter-spacing: 0;
       text-transform: uppercase;
@@ -355,15 +297,8 @@ const nowDoing = currentSignals;
       letter-spacing: 0;
     }
 
-    .about-id-card h1 {
-      font-size: clamp(2.1rem, 8vw, 3.15rem);
-      line-height: 1;
-    }
-
     .about-handle {
       margin: 8px 0 0;
-      color: var(--ink);
-      font-weight: 800;
     }
 
     .about-bio,
@@ -376,7 +311,6 @@ const nowDoing = currentSignals;
     .about-link-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
       margin-top: 18px;
     }
 
@@ -384,16 +318,10 @@ const nowDoing = currentSignals;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      min-height: 38px;
-      padding: 8px 13px;
       color: var(--ink);
-      font-size: 0.92rem;
       font-weight: 800;
       text-decoration: none;
-      background: rgba(255, 255, 255, 0.54);
       border: 1px solid rgba(93, 113, 145, 0.18);
-      border-radius: 999px;
-      box-shadow: 0 10px 20px rgba(67, 82, 106, 0.08);
     }
 
     .about-link-row svg,
@@ -432,73 +360,30 @@ const nowDoing = currentSignals;
 
     .about-readme {
       display: grid;
-      gap: 18px;
-      min-width: 0;
     }
 
     .about-readme-hero {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 136px;
-      gap: 18px;
       align-items: center;
-      min-height: 220px;
-    }
-
-    .about-readme-hero h2 {
-      font-size: clamp(2.4rem, 4.2vw, 4.85rem);
-      line-height: 1.02;
     }
 
     .about-readme-badge {
       display: grid;
       place-items: center;
       align-content: center;
-      width: 136px;
-      height: 136px;
       color: var(--ink);
       text-align: center;
-      background:
-        radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.9), transparent 24%),
-        linear-gradient(135deg, var(--pink-soft), var(--blue-soft));
-      border: 2px solid rgba(255, 255, 255, 0.76);
-      border-radius: 50%;
-      box-shadow: 0 18px 34px rgba(67, 82, 106, 0.12);
-      transform: rotate(4deg);
-    }
-
-    .about-readme-badge svg {
-      width: 36px;
-      height: 36px;
-      color: var(--pink);
     }
 
     .about-readme-badge span {
       margin-top: 8px;
       font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
-      font-size: 0.72rem;
       font-weight: 800;
       line-height: 1.3;
     }
 
     .about-section {
       display: grid;
-      gap: 18px;
-    }
-
-    .about-section::before {
-      position: absolute;
-      top: -9px;
-      right: 24px;
-      width: 86px;
-      height: 22px;
-      content: "";
-      background:
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.54) 0 4px, transparent 4px 8px),
-        rgba(220, 238, 250, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.58);
-      border-radius: 999px;
-      box-shadow: 0 8px 16px rgba(91, 110, 139, 0.12);
-      transform: rotate(5deg);
     }
 
     .about-section-heading {
@@ -512,38 +397,23 @@ const nowDoing = currentSignals;
       width: 38px;
       height: 38px;
       padding: 8px;
-      color: var(--ink);
-      background: rgba(255, 255, 255, 0.62);
-      border: 1px solid rgba(93, 113, 145, 0.18);
       border-radius: 8px;
-      box-shadow: 0 10px 20px rgba(67, 82, 106, 0.08);
     }
 
     .about-tech-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(140px, 1fr));
-      gap: 12px;
     }
 
     .about-tech-card {
       display: grid;
-      gap: 12px;
-      min-height: 168px;
-      padding: 16px;
       color: var(--ink);
-      background: rgba(255, 255, 255, 0.5);
-      border: 1px solid rgba(93, 113, 145, 0.18);
       border-radius: 8px;
-      box-shadow: 0 12px 24px rgba(67, 82, 106, 0.08);
     }
 
     .about-tech-icon {
       display: grid;
       place-items: center;
-      width: 46px;
-      height: 46px;
       background: var(--blue-soft);
-      border-radius: 8px;
     }
 
     .about-tech-card--orange .about-tech-icon {
@@ -594,25 +464,32 @@ const nowDoing = currentSignals;
 
     .about-media-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
     }
 
     .about-media-card,
-    .about-xp-card,
-    .about-game-card {
+.about-xp-card,
+.about-game-card {
       overflow: hidden;
-      background: rgba(255, 255, 255, 0.52);
-      border: 1px solid rgba(93, 113, 145, 0.18);
       border-radius: 8px;
-      box-shadow: 0 12px 24px rgba(67, 82, 106, 0.08);
     }
 
-    .about-media-card img,
-    .about-xp-card img,
-    .about-game-card img {
+    .about-media-card img {
       display: block;
       width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .about-xp-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: var(--paper-soft);
+    }
+
+    .about-game-card img {
+      display: block;
       aspect-ratio: 16 / 9;
       object-fit: cover;
       background: var(--paper-soft);
@@ -621,10 +498,6 @@ const nowDoing = currentSignals;
     .about-media-card img {
       height: auto;
       object-fit: contain;
-      padding: 8px;
-      background:
-        radial-gradient(circle at 40% 34%, rgba(255, 226, 234, 0.58), transparent 38%),
-        linear-gradient(135deg, rgba(255, 250, 241, 0.72), rgba(220, 238, 250, 0.38));
     }
 
     .about-xp-card img {
@@ -643,11 +516,6 @@ const nowDoing = currentSignals;
       padding: 10px 12px 12px;
     }
 
-    .about-section--split {
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-      gap: 22px;
-    }
-
     .about-section--split > div {
       min-width: 0;
       display: grid;
@@ -657,14 +525,6 @@ const nowDoing = currentSignals;
 
     .about-xp-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .about-game-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
     }
 
     .about-game-card {
@@ -673,7 +533,6 @@ const nowDoing = currentSignals;
 
     .about-game-card img {
       aspect-ratio: 16 / 9;
-      height: auto;
       object-fit: cover;
     }
 
@@ -701,16 +560,10 @@ const nowDoing = currentSignals;
     .about-activity-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
     }
 
     .about-activity-grid article {
       min-height: 132px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.52);
-      border: 1px solid rgba(93, 113, 145, 0.18);
-      border-radius: 8px;
-      box-shadow: 0 12px 24px rgba(67, 82, 106, 0.08);
     }
 
     .about-activity-grid span {
@@ -724,10 +577,6 @@ const nowDoing = currentSignals;
     }
 
     @media (max-width: 1080px) {
-      .about-profile-shell {
-        grid-template-columns: 1fr;
-        padding-top: 82px;
-      }
 
       .about-sidebar {
         position: static;
@@ -742,92 +591,33 @@ const nowDoing = currentSignals;
       .about-status-card ul {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
-
-      .about-tech-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .about-media-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
     }
 
     @media (max-width: 760px) {
-      .about-profile-shell {
-        width: min(100% - 24px, 1280px);
-        padding-top: 72px;
-      }
 
       .about-sidebar,
-      .about-readme-hero,
-      .about-section--split,
-      .about-status-card ul,
-      .about-activity-grid {
+.about-status-card ul,
+.about-activity-grid {
         grid-template-columns: 1fr;
       }
 
       .about-readme-badge {
-        width: 118px;
-        height: 118px;
         justify-self: start;
       }
 
       .about-readme-hero h2 {
-        font-size: clamp(2.1rem, 12vw, 3.2rem);
         overflow-wrap: anywhere;
-      }
-
-      .about-tech-grid,
-      .about-xp-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .about-media-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .about-section--split {
-        grid-template-columns: 1fr;
-      }
-
-      .about-game-card {
-        grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 520px) {
-      .about-id-card,
-      .about-status-card,
-      .about-readme-hero,
-      .about-section {
-        padding: 18px;
-      }
-
-      .about-tech-grid,
-      .about-xp-grid {
-        grid-template-columns: 1fr;
-      }
 
       .about-media-card {
         grid-template-columns: 1fr;
       }
 
-      .about-tech-card {
-        min-height: 124px;
-      }
-
-      .about-game-list,
-      .about-xp-grid,
-      .about-media-grid {
-        grid-template-columns: 1fr;
-      }
-
       .about-game-card img {
         aspect-ratio: 16 / 9;
-      }
-
-      .about-id-card h1 {
-        font-size: clamp(2rem, 16vw, 2.8rem);
       }
     }
   </style>

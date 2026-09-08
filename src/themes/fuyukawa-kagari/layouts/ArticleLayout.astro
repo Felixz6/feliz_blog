@@ -2,6 +2,7 @@
 import BaseLayout from "./BaseLayout.astro";
 import { categoryLabel } from "@/lib/site";
 import { getThemePath } from "@/core/themes/registry";
+import { Icon } from "astro-icon/components";
 
 const { frontmatter } = Astro.props;
 const title = `${frontmatter.seoTitle ?? frontmatter.title} | Yuimi Lab`;
@@ -16,8 +17,16 @@ const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth 
 
 <BaseLayout title={title} description={description} isArticlePage article={frontmatter}>
   <div class="article-shell">
+    {headings.length > 0 && (
+      <details class="article-mobile-toc" data-pagefind-ignore>
+        <summary><Icon name="tabler:book-2" aria-hidden="true" />这篇笔记的目录<Icon name="tabler:chevron-down" aria-hidden="true" /></summary>
+        <nav aria-label="移动端文章导航">
+          {headings.map((heading) => <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>{heading.text}</a>)}
+        </nav>
+      </details>
+    )}
     <article class="article" data-pagefind-body>
-      <a class="back-link" href={getThemePath("fuyukawa-kagari", "/blog/")}>← 回到文章列表</a>
+      <a class="back-link" href={getThemePath("fuyukawa-kagari", "/blog/")}><Icon name="tabler:arrow-left" aria-hidden="true" />回到笔记存档</a>
       <header class="article-header">
         <div class="meta-row">
           <span>{categoryLabel[frontmatter.category]}</span>
@@ -36,7 +45,7 @@ const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth 
     {
       headings.length > 0 && (
         <aside class="article-toc" aria-label="文章导航" data-pagefind-ignore>
-          <p>ON THIS PAGE</p>
+          <p>这篇笔记的目录</p>
           <nav>
             {headings.map((heading) => (
               <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>

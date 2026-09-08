@@ -2,8 +2,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { noticeContent } from "../data/noticeContent";
 import { kagariAssets } from "../assets";
+import { Icon } from "astro-icon/components";
+import { getPublishedPosts } from "@/core/content/blog";
+import { getThemePath } from "@/core/themes/registry";
 
 const noticeContentPayload = JSON.stringify(noticeContent);
+const recentPosts = (await getPublishedPosts()).slice(0, 3);
 
 const fallingTags = [
   "Unity3D",
@@ -42,8 +46,9 @@ const fallingTags = [
         今日公告
       </button>
       <div class="hero-copy" data-hero-copy>
-        <p class="eyebrow">Personal scrapbook / Anime diary</p>
+        <p class="eyebrow">Fuyukawa Kagari · Personal diary</p>
         <h1 data-title="Yuimi Lab">Yuimi Lab</h1>
+        <p class="hero-diary-line">把喜欢的事，写进每一个平凡日子。</p>
         <p class="hero-text terminal-line" aria-label="typing subtitle">
           <span class="hero-terminal-badge" aria-hidden="true"></span>
           <span class="hero-terminal-stack">
@@ -53,7 +58,7 @@ const fallingTags = [
               <span></span>
             </span>
             <span class="hero-terminal-command">
-              <span class="terminal-prefix">asteria@lab:~$</span>
+              <span class="terminal-prefix"><Icon name="tabler:flower" aria-hidden="true" /></span>
               <span class="terminal-typing" data-terminal-typing></span>
             </span>
           </span>
@@ -103,7 +108,7 @@ const fallingTags = [
       </div>
 
       <a class="scroll-cue" href="#main-content" aria-label="Scroll to content">
-        <span class="scroll-cue__prompt">scroll@home:~$</span>
+        <span class="scroll-cue__prompt">翻开下一页</span>
         <span class="scroll-cue__arrows" aria-hidden="true">
           <span>&gt;</span>
           <span>&gt;</span>
@@ -165,12 +170,35 @@ const fallingTags = [
       <div class="home-welcome-bubble">
         <span aria-hidden="true">“</span>
         <strong>哇，你终于回来了～</strong>
-        <p>这里会掉下一点兴趣标签，等它们堆在底下再慢慢消失。</p>
+        <p>喜欢的故事、偶然的灵感，还有今天想分享的小事。</p>
         <span aria-hidden="true">”</span>
       </div>
       <canvas class="tag-rain-canvas" data-tag-rain-canvas aria-hidden="true"></canvas>
     </section>
   </div>
+
+  <section class="home-journal" aria-labelledby="home-journal-title">
+    <header class="journal-heading">
+      <div>
+        <p class="section-kicker">From my notebook</p>
+        <h2 id="home-journal-title">最近写下的事</h2>
+      </div>
+      <a href={getThemePath("fuyukawa-kagari", "/blog/")}>全部笔记 <Icon name="tabler:arrow-right" aria-hidden="true" /></a>
+    </header>
+    <div class="journal-grid">
+      {recentPosts.map((post) => (
+        <a class="journal-entry" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
+          <img src={post.data.cover ?? kagariAssets.heroWallpaper} alt="" width="640" height="400" loading="lazy" />
+          <div>
+            <time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toLocaleDateString("zh-CN")}</time>
+            <h3>{post.data.title}</h3>
+            <p>{post.data.description}</p>
+          </div>
+          <Icon name="tabler:arrow-up" class="journal-arrow" aria-hidden="true" />
+        </a>
+      ))}
+    </div>
+  </section>
 
   <script data-astro-rerun>
     (() => {
