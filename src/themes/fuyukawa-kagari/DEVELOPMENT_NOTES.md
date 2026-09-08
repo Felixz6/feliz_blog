@@ -56,6 +56,9 @@ Kisara history remain authoritative in the repository note, which is not edited.
   was used. Root notes retain their unrelated 457-line addition; other themes and
   original media are untouched. Scoped checkpoint subject:
   `fix(fuyukawa): polish viewport utilities and sakura petals`. Nothing is pushed.
+- Code checkpoint created: `911fa6fd2bef6e6900b1b0dadfc04340d81d7b54`,
+  10 theme-only files. Scoped staging and whitespace checks passed; the previous
+  `2c73400` recovery point remains available.
 - Requested: refresh every Fuyukawa page and section with a fresh anime aesthetic.
 - Main agent only. Edit only `src/themes/fuyukawa-kagari/` and its dedicated
   `public/themes/fuyukawa-kagari/` assets.
