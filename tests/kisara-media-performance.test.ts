@@ -161,7 +161,7 @@ test("Kisara Home 003 uses a one-shot board scene with a portrait and the four o
 });
 
 test("Kisara Home 003 reveals the foreground composition when it enters view", () => {
-  const source = read("src/themes/kisara/lib/homeEvent.ts");
+  const source = readSource("src/themes/kisara/lib/homeEvent.ts");
   const refresh = source.slice(source.indexOf("  const refresh ="), source.indexOf("  const reset ="));
   assert.match(refresh, /if \(next\) portrait\.reveal\(\)/);
   assert.ok(refresh.indexOf("portrait.reveal()") < refresh.indexOf("else if (!completed) void play"));

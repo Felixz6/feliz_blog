@@ -229,12 +229,12 @@ test("003 cleanup releases media frames, timers, observers and route listeners",
   } finally { f.destroy(); }
 });
 
-test("003 starts the portrait only after the film and suspends its timer with page visibility", async () => {
+test("003 starts the portrait on scene entry and suspends its timer with page visibility", async () => {
   const f = fixture(false, true);
   try {
     f.show(); await flush();
+    assert.equal(f.root.hasAttribute("data-portrait-ready"), true);
     f.video.dispatchEvent(new Event("playing"));
-    assert.equal(f.root.hasAttribute("data-portrait-ready"), false);
     f.video.dispatchEvent(new Event("ended"));
     assert.equal(f.root.hasAttribute("data-portrait-ready"), true);
     assert.equal(f.timers.size, 1);
