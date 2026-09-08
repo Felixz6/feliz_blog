@@ -94,23 +94,19 @@ function fixture() {
   };
   const scene = make("kisara-comic", {}, "kisara-opening-memory-scene");
   const paper = make("kisara-comic-paper");
-  for (let i = 0; i < 4; i++) paper.append(make("kisara-comic-panel"));
-  const portrait = make("kisara-comic-portrait");
-  portrait.rect = { left: 650, top: 60, right: 1210, bottom: 1040, width: 560, height: 980 };
   const image = make("", { comicSrc: "/comic.webp" }, "img");
-  portrait.append(image);
   scene.append(paper);
-  scene.append(portrait);
-  const caption = make("kisara-comic-navigation", { comicCaption: "" });
+  const caption = make("kisara-comic-navigation");
   caption.setAttribute("id", "navigation");
-  const branches = ["home", "blog"].map(id => {
-    const branch = make("", { kisaraRouteBranch: id });
+  const branches = ["home", "blog", "games", "projects", "about"].map(id => {
+    const branch = make("kisara-comic-panel", { kisaraRouteBranch: id });
     const link = make("", { kisaraRouteKind: "page", kisaraRouteId: id }, "a");
     branch.append(link);
     caption.append(branch);
     return branch;
   });
-  const groups = ["home", "blog"].map(id => {
+  branches[0].querySelector("a")!.append(image);
+  const groups = ["home", "blog", "games", "projects", "about"].map(id => {
     const group = make("", { comicRoutes: id });
     group.hidden = id !== "home";
     caption.append(group);
@@ -242,7 +238,7 @@ test("Aborting a Gate flight never clears the exposed material or commits the re
   }
 });
 
-test("Entry grows the actual comic from its subject before committing the scroll", async () => {
+test("Entry reveals five framed page links over the paper before committing the scroll", async () => {
   const f = fixture();
   const controller = new AbortController();
   try {
@@ -260,13 +256,14 @@ test("Entry grows the actual comic from its subject before committing the scroll
     assert.equal(f.nodes[0].children[0].inert, true);
     assert.equal(f.nodes[0].inert, false, "The outer input blocker must still receive pointer hits");
     assert.equal(f.nodes[0].querySelectorAll("[id]").length, 0);
-    const subject = f.animations.find(animation => animation.node.className === "kisara-comic-portrait")!;
+    const panels = f.animations.filter(animation => animation.node.className === "kisara-comic-panel");
     const paper = f.animations.find(animation => animation.node.className === "kisara-comic-paper")!;
-    assert.equal(subject.options.delay, 0);
-    assert.ok(Number(paper.options.delay) > Number(subject.options.delay));
+    assert.equal(panels.length, 5);
+    assert.equal(paper.options.delay, 0);
+    assert.deepEqual(panels.map(panel => panel.options.delay), [80, 115, 150, 185, 220]);
     assert.equal(paper.options.easing, "cubic-bezier(.23,1,.32,1)");
     assert.ok(Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration))) <= 530);
-    assert.ok(subject.frames.every(frame => frame.clipPath === undefined), "Reveal the whole silhouette, not a horizontal cut");
+    assert.ok(panels.every(panel => panel.frames.every(frame => frame.clipPath === undefined)));
     assert.deepEqual(paper.frames.map(frame => frame.opacity), [0, .55, .95, 1]);
     assert.match(String(paper.frames[0].clipPath), /^polygon\(/);
     f.finish();
@@ -277,7 +274,7 @@ test("Entry grows the actual comic from its subject before committing the scroll
   } finally { controller.abort(); f.restore(); }
 });
 
-test("Exit removes paper before the subject, then holds black for the fridge's fresh frame", async () => {
+test("Exit retracts all five panels before paper, then waits for the fridge's fresh frame", async () => {
   const f = fixture();
   const controller = new AbortController();
   try {
@@ -287,16 +284,17 @@ test("Exit removes paper before the subject, then holds black for the fridge's f
     const run = transition.run({ scene: f.scene, mode: "leave", commit: () => { commits++; return firstFrame.promise; } });
     await flush();
     assert.equal(commits, 0, "Do not start opening the fridge under the outgoing comic");
-    const subject = f.animations.find(animation => animation.node.className === "kisara-comic-portrait")!;
+    const panels = f.animations.filter(animation => animation.node.className === "kisara-comic-panel");
     const paper = f.animations.find(animation => animation.node.className === "kisara-comic-paper")!;
-    assert.ok(Number(subject.options.delay) > Number(paper.options.delay));
+    assert.deepEqual(panels.map(panel => panel.options.delay), [100, 75, 50, 25, 0]);
+    assert.ok(panels.every(panel => Number(panel.options.delay) < Number(paper.options.delay)));
     const exitDuration = Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration)));
     assert.ok(exitDuration <= 480);
     f.finish();
     await flush();
     assert.equal(commits, 1);
     assert.equal(paper.node.style.opacity, "0");
-    assert.equal(subject.node.style.opacity, "0");
+    assert.ok(panels.every(panel => panel.node.style.opacity === "0"));
     assert.equal(f.nodes.length, 1);
     assert.match(f.nodes[0].className, /is-leave/);
     const count = f.animations.length;
@@ -475,6 +473,19 @@ test("The editorial index keeps focus, expanded state, and two-tap navigation in
     f.scene.dispatchEvent(escape);
     assert.equal(f.groups[0].hidden, false);
     assert.equal(f.branches[1].querySelector("a")?.getAttribute("aria-expanded"), "false");
+  } finally { runtime.destroy(); f.restore(); }
+});
+
+test("Each of the five framed page links selects only its own route group", () => {
+  const f = fixture();
+  const runtime = bindComicOpening(f.scene);
+  try {
+    for (let index = 0; index < 5; index++) {
+      f.branches[index].dispatchEvent(new Event("focusin"));
+      assert.deepEqual(f.groups.map(group => group.hidden), f.groups.map((_, i) => i !== index));
+      assert.deepEqual(f.branches.map(branch => branch.querySelector("a")?.getAttribute("aria-expanded")),
+        f.branches.map((_, i) => String(i === index)));
+    }
   } finally { runtime.destroy(); f.restore(); }
 });
 

@@ -78,7 +78,7 @@ test("001 is opaque and viewport-filling with no old transparent bridge markup",
 test("Comic assets are deferred; 001 no longer downloads or drives its former footage", () => {
   for (const id of ["quiet", "action", "smile", "candle"]) assert.match(opening, new RegExp(`id: "${id}"`));
   assert.match(opening, /hero-hybrid\.webp/);
-  assert.match(opening, /hero-structure\.svg/);
+  assert.doesNotMatch(opening, /hero-structure\.svg|kisara-comic-portrait/);
   assert.match(opening, /data-comic-src/);
   assert.match(runtime, /await image\.decode\(\)/);
   assert.match(runtime, /Promise\.allSettled/);
@@ -88,7 +88,7 @@ test("Comic assets are deferred; 001 no longer downloads or drives its former fo
   assert.match(runtime, /serial !== generation/);
 });
 
-test("Comic entrance and return use the subject-led spread, not black shutters or page sliding", () => {
+test("Comic entrance and return retain paper spread without a standalone portrait or page sliding", () => {
   const entry = home.slice(home.indexOf("const enterNextPage ="), home.indexOf("const finalizeLovebrainExit ="));
   const back = home.slice(home.indexOf("const returnToGate ="), home.indexOf("const clearHomeGateReturnArm ="));
   assert.match(entry, /runComicHandoff\("opening"/);
@@ -109,15 +109,22 @@ test("Comic entrance and return use the subject-led spread, not black shutters o
   assert.doesNotMatch(motion + transition, /requestAnimationFrame|setInterval|feTurbulence/);
 });
 
-test("The comic index has editorial columns and synchronized accessible route groups", () => {
-  assert.match(opening, /kisara-comic-contents-head/);
+test("Five comic panels each represent one page and share synchronized accessible route groups", () => {
+  for (const [page, art] of [["home", "hero"], ["blog", "quiet"], ["games", "action"], ["projects", "smile"], ["about", "candle"]]) {
+    assert.match(opening, new RegExp(`${page}: \\{ id: "${art}"`));
+  }
+  assert.match(opening, /const panel = panels\[branch\.id\]/);
+  assert.match(opening, /"kisara-comic-branch", "kisara-comic-panel"/);
+  assert.match(opening, /href=\{branch\.href\}[^]*<figure>/);
+  assert.doesNotMatch(opening, /kisara-comic-portrait|kisara-comic-art/);
   assert.match(opening, /kisara-comic-page-number/);
   assert.match(opening, /aria-controls=\{`comic-routes-/);
   assert.match(runtime, /setAttribute\("aria-expanded", String\(selected\)\)/);
   const navigation = css.match(/\.kisara-comic-navigation\s*\{([^}]+)\}/)?.[1] ?? "";
-  assert.match(navigation, /grid-template-columns/);
+  assert.match(navigation, /grid-template-rows/);
   assert.doesNotMatch(navigation, /background:|border-radius:|box-shadow:/);
-  assert.match(css, /grid-template-rows: repeat\(5,28px\)/);
+  assert.match(css, /grid-template-columns: repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\); grid-template-rows: repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /kisara-comic-route-details \[hidden\] \{ display: none; \}/);
 });
 

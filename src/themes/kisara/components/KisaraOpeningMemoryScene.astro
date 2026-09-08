@@ -3,52 +3,44 @@ import { Icon } from "astro-icon/components";
 import { hiddenRoutes, routeBranches } from "../data/openingRoutes";
 
 const assetRoot = "/themes/kisara/assets/home-comic";
-const panels = [
-  { id: "quiet", width: 430, height: 583, label: "01 / REMEMBER" },
-  { id: "action", width: 454, height: 720, label: "02 / CREATE" },
-  { id: "smile", width: 610, height: 560, label: "03 / FEEL" },
-  { id: "candle", width: 310, height: 644, label: "04 / KEEP" },
-];
+const panels = {
+  home: { id: "hero", file: "hero-hybrid.webp", width: 752, height: 1148 },
+  blog: { id: "quiet", file: "quiet.webp", width: 430, height: 583 },
+  games: { id: "action", file: "action.webp", width: 454, height: 720 },
+  projects: { id: "smile", file: "smile.webp", width: 610, height: 560 },
+  about: { id: "candle", file: "candle.webp", width: 310, height: 644 },
+};
 ---
 
 <kisara-opening-memory-scene class="kisara-comic" data-kisara-opening-memory>
-  <div class="kisara-comic-paper" aria-hidden="true">
-    <div class="kisara-comic-art">
-      {panels.map((panel) => (
-        <figure class:list={["kisara-comic-panel", `is-${panel.id}`]}>
-          <img data-comic-src={`${assetRoot}/${panel.id}.webp`} width={panel.width} height={panel.height} decoding="async" alt="" />
-          <figcaption>{panel.label}</figcaption>
-        </figure>
-      ))}
-      <span class="kisara-comic-registration"></span>
-    </div>
-  </div>
-  <div class="kisara-comic-portrait">
-    <img data-comic-src={`${assetRoot}/hero-structure.svg`} width="752" height="1148" decoding="async" alt="" />
-    <img data-comic-src={`${assetRoot}/hero-hybrid.webp`} width="752" height="1148" decoding="async" alt="黑白漫画中的木更" />
-    <noscript><img src={`${assetRoot}/hero-hybrid.webp`} width="752" height="1148" alt="黑白漫画中的木更" /></noscript>
-  </div>
-  <div class="kisara-comic-running-head" data-comic-caption><span>KISARA</span><span>ENGAGE KISS / THE THINGS WE KEEP</span></div>
+  <div class="kisara-comic-paper" aria-hidden="true"></div>
   <header class="kisara-comic-copy" data-comic-caption>
     <p class="kisara-comic-index"><b>001</b><span>A PERSONAL ARCHIVE</span></p>
-    <h2 id="kisara-opening-title">YUIMI<br /><em>LAB.</em></h2>
-    <p class="kisara-comic-line">Some things<br />are worth keeping.</p>
+    <h2 id="kisara-opening-title">YUIMI <em>LAB.</em></h2>
     <p class="kisara-comic-note">把想法写下来，把喜欢的留下来。</p>
   </header>
-  <nav class="kisara-comic-navigation" data-kisara-opening-route-map data-comic-caption aria-label="站点导航">
-    <div class="kisara-comic-contents-head"><span>CONTENTS <b>目录</b></span><span>01 / 05</span></div>
+  <nav class="kisara-comic-navigation" data-kisara-opening-route-map aria-label="站点导航">
     <ol class="kisara-comic-pages">
-      {routeBranches.map((branch, index) => (
-        <li class:list={["kisara-comic-branch", { "is-active": branch.id === "home" }]} data-kisara-route-branch={branch.id}>
+      {routeBranches.map((branch, index) => {
+        const panel = panels[branch.id];
+        return (
+        <li class:list={["kisara-comic-branch", "kisara-comic-panel", `is-${panel.id}`, { "is-active": branch.id === "home" }]} data-kisara-route-branch={branch.id}>
           <a href={branch.href} data-kisara-route-kind="page" data-kisara-route-id={branch.id} data-astro-prefetch="hover" aria-expanded={branch.id === "home"} aria-controls={`comic-routes-${branch.id}`} aria-label={`${branch.label}：${branch.detail}`}>
-            <span class="kisara-comic-page-number">{String(index + 1).padStart(2, "0")}</span>
-            <span class="kisara-comic-page-name">{branch.label}</span>
-            <Icon name="tabler:arrow-right" aria-hidden="true" />
+            <figure>
+              <img data-comic-src={`${assetRoot}/${panel.file}`} width={panel.width} height={panel.height} decoding="async" alt="" />
+              <noscript><img src={`${assetRoot}/${panel.file}`} width={panel.width} height={panel.height} alt="" /></noscript>
+              <figcaption>
+                <span class="kisara-comic-page-number">{String(index + 1).padStart(2, "0")}</span>
+                <span class="kisara-comic-page-name">{branch.label}</span>
+                <Icon name="tabler:arrow-right" aria-hidden="true" />
+                <span class="kisara-comic-page-detail">{branch.detail}</span>
+              </figcaption>
+            </figure>
           </a>
         </li>
-      ))}
+      ); })}
     </ol>
-    <div class="kisara-comic-route-details">
+    <div class="kisara-comic-route-details" data-comic-caption>
       {routeBranches.map((branch) => (
         <section id={`comic-routes-${branch.id}`} data-comic-routes={branch.id} hidden={branch.id !== "home"} aria-label={branch.detail}>
           <h3><span>{branch.detail}</span><small>{String(branch.routes.length).padStart(2, "0")}</small></h3>
