@@ -158,3 +158,6 @@ Kisara history remain authoritative in the repository note, which is not edited.
   other themes, shared routes/content, all original images and both MP4s are intact.
 - Scoped local milestone subject:
   `feat(fuyukawa): build a layered manga notebook`. Nothing is pushed.
+- Code checkpoint created: `787fa0c`, 49 theme-only files. The scoped staging
+  audit and whitespace check pass; the original `671b016` recovery point and
+  external intermediate snapshot remain available.
