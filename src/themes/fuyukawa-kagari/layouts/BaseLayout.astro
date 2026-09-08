@@ -16,6 +16,7 @@ import SeoMeta from "@/core/SeoMeta.astro";
 import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
 import MangaRuntime from "../components/MangaRuntime.astro";
+import SakuraRain from "../components/SakuraRain.astro";
 
 interface Props {
   title?: string;
@@ -84,9 +85,7 @@ const themedNotFoundRedirectScript = `(() => {
     data-yuimi-article-page={isArticlePage ? "true" : undefined}
   >
     <a class="skip-to-content" href="#page-content">跳至正文</a>
-    <div class="sakura-rain" aria-hidden="true">
-      {Array.from({ length: 34 }).map(() => <span></span>)}
-    </div>
+    <SakuraRain />
     <div class="pig-scrollbar" data-pig-scrollbar aria-hidden="true">
       <div class="pig-scrollbar-track">
         <div class="pig-scrollbar-fill"></div>
@@ -97,13 +96,13 @@ const themedNotFoundRedirectScript = `(() => {
       </div>
     </div>
     <aside class="toy-dock" aria-label="Yuimi Lab toy dock" transition:persist="yuimi-toy-dock">
-      <button class="toy-dock-handle" type="button" aria-label="打开音乐与看板娘工具" title="音乐与看板娘">
+      <button class="toy-dock-handle" type="button" aria-label="打开音乐与看板娘工具" title="音乐与看板娘" aria-expanded="false" aria-controls="toy-dock-panel">
         <Icon name="tabler:sparkles" aria-hidden="true" />
       </button>
-      <div class="toy-dock-panel">
+      <div class="toy-dock-panel" id="toy-dock-panel">
         <section class="toy-widget live2d-control-widget" aria-label="Live2D 看板娘控制">
           <div class="toy-widget-title">
-            <span>✦</span>
+            <span><Icon name="tabler:sparkles" aria-hidden="true" /></span>
             <strong>Live2D 控制台</strong>
           </div>
           <p class="live2d-status" data-live2d-status>正在唤醒看板娘...</p>
@@ -130,7 +129,7 @@ const themedNotFoundRedirectScript = `(() => {
                   </div>
                 </div>
               </div>
-              <span class="music-cover-caption">now spinning</span>
+              <span class="music-cover-caption" data-music-status>待播放</span>
             </div>
             <div class="music-info-area">
               <span class="music-meta">Yuimi playlist</span>
@@ -147,14 +146,17 @@ const themedNotFoundRedirectScript = `(() => {
           </div>
           <div class="music-bottom-row">
             <div class="music-controls" aria-label="播放控制">
-              <button type="button" data-music-prev aria-label="上一首">‹</button>
-              <button type="button" data-music-toggle aria-label="播放或暂停音乐">▶</button>
-              <button type="button" data-music-next aria-label="下一首">›</button>
+              <button type="button" data-music-prev aria-label="上一首" title="上一首"><Icon name="tabler:player-skip-forward" aria-hidden="true" /></button>
+              <button type="button" data-music-toggle aria-label="播放音乐" title="播放音乐" aria-pressed="false">
+                <Icon class="music-play-icon" name="tabler:player-play" aria-hidden="true" />
+                <Icon class="music-pause-icon" name="tabler:player-pause" aria-hidden="true" />
+              </button>
+              <button type="button" data-music-next aria-label="下一首" title="下一首"><Icon name="tabler:player-skip-forward" aria-hidden="true" /></button>
             </div>
             <div class="music-volume">
               <div class="music-control-label">
                 <span>音量</span>
-                <strong>volume</strong>
+                <strong data-music-volume-label>28%</strong>
               </div>
               <input data-music-volume type="range" min="0" max="1" value="0.28" step="0.01" aria-label="音量" />
             </div>
@@ -236,6 +238,8 @@ const themedNotFoundRedirectScript = `(() => {
     <MangaRuntime />
 
     <script>
+      import { mountWaifuAnchor } from "../lib/waifu-anchor.mjs";
+
       let pigScrollTimer = 0;
       let pigScrollFrame = 0;
 
@@ -323,6 +327,23 @@ const themedNotFoundRedirectScript = `(() => {
 
       let toyDockCloseTimer = 0;
       const getToyDock = () => document.querySelector(".toy-dock");
+      const syncToyDock = () => {
+        const toyDock = getToyDock();
+        if (!toyDock) return;
+        const open = !toyDock.classList.contains("is-dismissed")
+          && (toyDock.classList.contains("is-pinned") || toyDock.matches(":hover, :focus-within"));
+        const handle = toyDock.querySelector(".toy-dock-handle");
+        handle?.setAttribute("aria-expanded", String(open));
+        handle?.setAttribute("aria-label", open ? "收起音乐与看板娘工具" : "打开音乐与看板娘工具");
+      };
+      const dismissToyDock = () => {
+        const toyDock = getToyDock();
+        if (!toyDock) return;
+        toyDock.classList.remove("is-pinned");
+        toyDock.classList.add("is-dismissed");
+        toyDock.querySelector(":focus")?.blur();
+        syncToyDock();
+      };
       const isInsideToyDock = (target) => {
         const toyDock = getToyDock();
         return Boolean(toyDock && target instanceof Node && toyDock.contains(target));
@@ -331,11 +352,17 @@ const themedNotFoundRedirectScript = `(() => {
         const handle = event.target instanceof Element ? event.target.closest(".toy-dock-handle") : null;
         if (!handle) return;
         const toyDock = getToyDock();
-        toyDock?.classList.toggle("is-pinned");
+        if (!toyDock) return;
+        const pinned = toyDock.classList.toggle("is-pinned");
+        toyDock.classList.toggle("is-dismissed", !pinned);
+        if (!pinned) handle.blur();
+        syncToyDock();
       });
       document.addEventListener("pointerover", (event) => {
         if (!isInsideToyDock(event.target) || isInsideToyDock(event.relatedTarget)) return;
         window.clearTimeout(toyDockCloseTimer);
+        getToyDock()?.classList.remove("is-dismissed");
+        syncToyDock();
       });
       document.addEventListener("pointerout", (event) => {
         if (!isInsideToyDock(event.target) || isInsideToyDock(event.relatedTarget)) return;
@@ -344,20 +371,27 @@ const themedNotFoundRedirectScript = `(() => {
         if (toyDock.classList.contains("is-pinned")) return;
         toyDockCloseTimer = window.setTimeout(() => {
           toyDock.querySelector(":focus")?.blur();
+          syncToyDock();
         }, 180);
       });
+      document.addEventListener("focusin", (event) => {
+        if (!isInsideToyDock(event.target)) return;
+        getToyDock()?.classList.remove("is-dismissed");
+        syncToyDock();
+      });
+      document.addEventListener("focusout", () => queueMicrotask(syncToyDock));
       window.addEventListener("pointerdown", (event) => {
         const toyDock = getToyDock();
         if (!toyDock || toyDock.contains(event.target)) return;
-        toyDock.classList.remove("is-pinned");
-        toyDock.querySelector(":focus")?.blur();
+        dismissToyDock();
       });
       window.addEventListener("keydown", (event) => {
         const toyDock = getToyDock();
         if (event.key !== "Escape" || !toyDock) return;
-        toyDock.classList.remove("is-pinned");
-        toyDock.querySelector(":focus")?.blur();
+        dismissToyDock();
       });
+      document.addEventListener("astro:before-swap", dismissToyDock);
+      document.addEventListener("astro:page-load", syncToyDock);
 
       const live2dBase = "https://fastly.jsdelivr.net/npm/live2d-widgets@1.0.0-rc.6/dist/";
       const live2dStatus = document.querySelector("[data-live2d-status]");
@@ -372,8 +406,15 @@ const themedNotFoundRedirectScript = `(() => {
       let live2dInitStarted = false;
       let live2dIdleHandle = 0;
       let live2dFallbackTimer = 0;
+      let live2dVisibilityTimer = 0;
+      let live2dGeneration = 0;
+      let waifuAnchorCleanup = null;
       const live2dConnection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
       const live2dResources = new Map();
+      const anchorWaifu = (waifu) => {
+        waifuAnchorCleanup?.();
+        waifuAnchorCleanup = mountWaifuAnchor(waifu);
+      };
 
       const setLive2dStatus = (text) => {
         if (live2dStatus) live2dStatus.textContent = text;
@@ -405,6 +446,10 @@ const themedNotFoundRedirectScript = `(() => {
       };
 
       const removeLive2dWidget = () => {
+        live2dGeneration++;
+        window.clearTimeout(live2dVisibilityTimer);
+        waifuAnchorCleanup?.();
+        waifuAnchorCleanup = null;
         removeLocalWaifuFallback();
         document.getElementById("waifu")?.remove();
         document.getElementById("waifu-toggle")?.remove();
@@ -436,13 +481,14 @@ const themedNotFoundRedirectScript = `(() => {
       };
 
       const loadExternalResource = (url, type) => {
-        if (live2dResources.has(url)) return live2dResources.get(url);
         const existing = Array.from(document.head.querySelectorAll("link[href], script[src]"))
           .find((element) => element.href === url || element.src === url);
-        if (existing) return Promise.resolve(url);
+        if (existing) return live2dResources.get(url) ?? Promise.resolve(url);
 
+        // Astro may discard a dynamically injected head node on a route swap.
+        live2dResources.delete(url);
+        const tag = type === "css" ? document.createElement("link") : document.createElement("script");
         const promise = new Promise((resolve, reject) => {
-          const tag = type === "css" ? document.createElement("link") : document.createElement("script");
           if (type === "css") {
             tag.rel = "stylesheet";
             tag.href = url;
@@ -454,7 +500,8 @@ const themedNotFoundRedirectScript = `(() => {
           tag.onerror = () => reject(url);
           document.head.appendChild(tag);
         }).catch((error) => {
-          live2dResources.delete(url);
+          if (live2dResources.get(url) === promise) live2dResources.delete(url);
+          tag.remove();
           throw error;
         });
 
@@ -465,6 +512,7 @@ const themedNotFoundRedirectScript = `(() => {
       const setWaifuVisibility = (visible, options = {}) => {
         const { persist = true } = options;
         const waifu = document.getElementById("waifu");
+        window.clearTimeout(live2dVisibilityTimer);
         live2dVisible = visible;
         if (live2dToggle) live2dToggle.textContent = visible ? "隐藏看板娘" : "显示看板娘";
         setLive2dStatus(visible ? "看板娘正在左下角待机。" : "看板娘已收起。");
@@ -475,11 +523,12 @@ const themedNotFoundRedirectScript = `(() => {
 
         if (visible) {
           waifu.classList.remove("waifu-hidden");
-          window.setTimeout(() => waifu.classList.add("waifu-active"), 0);
+          waifu.classList.add("waifu-active");
+          anchorWaifu(waifu);
         } else {
           waifu.classList.remove("waifu-active");
           if (persist) localStorage.setItem("waifu-display", Date.now().toString());
-          window.setTimeout(() => waifu.classList.add("waifu-hidden"), 320);
+          live2dVisibilityTimer = window.setTimeout(() => waifu.classList.add("waifu-hidden"), 180);
         }
       };
 
@@ -491,14 +540,15 @@ const themedNotFoundRedirectScript = `(() => {
         window.setTimeout(() => tips.classList.remove("waifu-tips-active"), 4200);
       };
 
-      const waitForWaifu = (callback, retries = 30) => {
+      const waitForWaifu = (callback, retries = 30, generation = live2dGeneration) => {
+        if (generation !== live2dGeneration || !isHomeRoute()) return;
         const waifu = document.getElementById("waifu");
         if (waifu) {
           callback(waifu);
           return;
         }
         if (retries <= 0) return;
-        window.setTimeout(() => waitForWaifu(callback, retries - 1), 300);
+        window.setTimeout(() => waitForWaifu(callback, retries - 1, generation), 300);
       };
 
       const ensureLocalWaifuFallback = () => {
@@ -559,6 +609,7 @@ const themedNotFoundRedirectScript = `(() => {
         if (!isHomeRoute()) return;
         clearLive2dSchedule();
         if (hasLive2dWidget()) {
+          void loadExternalResource(`${live2dBase}waifu.css`, "css").catch(() => {});
           live2dReady = true;
           live2dInitStarted = false;
           setWaifuVisibility(true, { persist: false });
@@ -566,13 +617,15 @@ const themedNotFoundRedirectScript = `(() => {
         }
         if (live2dInitStarted) return;
         live2dInitStarted = true;
+        const generation = ++live2dGeneration;
         try {
           resetLive2dStorage();
           setLive2dControlsLocked(false);
           await Promise.all([
             loadExternalResource(`${live2dBase}waifu.css`, "css"),
-            loadExternalResource(`${live2dBase}waifu-tips.js`, "js")
+            typeof window.initWidget === "function" ? Promise.resolve() : loadExternalResource(`${live2dBase}waifu-tips.js`, "js")
           ]);
+          if (generation !== live2dGeneration || !isHomeRoute()) return;
           window.initWidget({
             waifuPath: `${live2dBase}waifu-tips.json`,
             cdnPath: "https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/",
@@ -580,7 +633,7 @@ const themedNotFoundRedirectScript = `(() => {
             cubism5Path: "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js",
             tools: ["photo", "quit"],
             logLevel: "warn",
-            drag: true
+            drag: false
           });
           live2dReady = true;
           live2dVisible = true;
@@ -589,11 +642,13 @@ const themedNotFoundRedirectScript = `(() => {
           waitForWaifu((waifu) => {
             waifu.classList.remove("waifu-hidden");
             waifu.classList.add("waifu-active");
+            anchorWaifu(waifu);
             window.setTimeout(() => showWaifuMessage("欢迎来到 Yuimi Lab，今天也要开心写代码。"), 900);
             window.setTimeout(reconcileWaifuFallback, 4200);
             window.setTimeout(activateWaifuFallbackIfBlank, 12000);
           });
         } catch (error) {
+          if (generation !== live2dGeneration || !isHomeRoute()) return;
           live2dInitStarted = false;
           ensureLocalWaifuFallback();
           setLive2dStatus("看板娘加载失败，请检查网络。");
@@ -630,6 +685,10 @@ const themedNotFoundRedirectScript = `(() => {
       };
 
       const hideLive2dForRoute = () => {
+        live2dGeneration++;
+        window.clearTimeout(live2dVisibilityTimer);
+        waifuAnchorCleanup?.();
+        waifuAnchorCleanup = null;
         clearLive2dSchedule();
         removeLocalWaifuFallback();
         const waifu = document.getElementById("waifu");
@@ -650,6 +709,7 @@ const themedNotFoundRedirectScript = `(() => {
 
         setLive2dControlsLocked(false);
         if (hasLive2dWidget()) {
+          void loadExternalResource(`${live2dBase}waifu.css`, "css").catch(() => {});
           setWaifuVisibility(true, { persist: false });
           window.setTimeout(reconcileWaifuFallback, 800);
           return;
@@ -666,6 +726,7 @@ const themedNotFoundRedirectScript = `(() => {
       syncLive2dRouteState();
       document.addEventListener("astro:page-load", syncLive2dRouteState);
       document.addEventListener("astro:after-swap", syncLive2dRouteState);
+      document.addEventListener("astro:before-swap", hideLive2dForRoute);
       window.addEventListener("pageshow", syncLive2dRouteState);
       window.addEventListener("pagehide", clearLive2dSchedule);
 
@@ -773,13 +834,15 @@ const themedNotFoundRedirectScript = `(() => {
             track: document.querySelector(".music-track"),
             current: document.querySelector("[data-music-current]"),
             duration: document.querySelector("[data-music-duration]"),
-            note: document.querySelector("[data-music-note]")
+            note: document.querySelector("[data-music-note]"),
+            status: document.querySelector("[data-music-status]"),
+            volumeLabel: document.querySelector("[data-music-volume-label]")
           };
         };
 
         const updateMusicUi = () => {
           queryElements();
-          const { toggle, volume, seek, track, current, duration, note } = player.elements;
+          const { toggle, volume, seek, track, current, duration, note, status, volumeLabel } = player.elements;
           const currentTrack = player.tracks[player.index];
           if (track) track.textContent = currentTrack?.title ?? "Yuimi Radio";
           if (current) current.textContent = formatAudioTime(audio.currentTime);
@@ -788,8 +851,18 @@ const themedNotFoundRedirectScript = `(() => {
             const progress = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
             seek.value = String(progress || 0);
           }
-          if (volume) volume.value = String(audio.volume || 0.28);
-          if (toggle) toggle.textContent = audio.paused ? "▶" : "Ⅱ";
+          if (seek) seek.style.setProperty("--range-fill", `${seek.value}%`);
+          if (volume) {
+            volume.value = String(audio.volume);
+            volume.style.setProperty("--range-fill", `${audio.volume * 100}%`);
+          }
+          if (volumeLabel) volumeLabel.textContent = `${Math.round(audio.volume * 100)}%`;
+          if (status) status.textContent = audio.paused ? "待播放" : "播放中";
+          if (toggle) {
+            toggle.setAttribute("aria-label", audio.paused ? "播放音乐" : "暂停音乐");
+            toggle.setAttribute("title", audio.paused ? "播放音乐" : "暂停音乐");
+            toggle.setAttribute("aria-pressed", String(!audio.paused));
+          }
           if (note && player.tracks.length) note.textContent = `${player.index + 1} / ${player.tracks.length}`;
           document.body.classList.toggle("is-music-playing", !audio.paused);
         };
@@ -908,6 +981,7 @@ const themedNotFoundRedirectScript = `(() => {
 
           player.elements.seek?.addEventListener("input", () => {
             player.seeking = true;
+            player.elements.seek.style.setProperty("--range-fill", `${player.elements.seek.value}%`);
             if (!audio.duration) return;
             const target = (Number(player.elements.seek.value) / 100) * audio.duration;
             if (player.elements.current) player.elements.current.textContent = formatAudioTime(target);

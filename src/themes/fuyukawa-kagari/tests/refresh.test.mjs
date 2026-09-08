@@ -12,6 +12,7 @@ const inlineScript = (file) => read(file).match(/<script is:inline data-astro-re
 test("refresh selectors cannot style another theme", () => {
   const root = postcss.parse(css);
   root.walkRules((rule) => {
+    if (rule.parent.type === "atrule" && rule.parent.name.endsWith("keyframes")) return;
     for (const selector of postcss.list.comma(rule.selector)) {
       assert.ok(selector.startsWith("body[data-fuyukawa]") || selector.startsWith("html:has(body[data-fuyukawa])"), selector);
     }
@@ -72,7 +73,7 @@ test("all theme templates parse without errors", async () => {
     "layouts/BaseLayout.astro", "layouts/ArticleLayout.astro",
     "pages/HomePage.astro", "pages/BlogIndexPage.astro", "pages/GamesPage.astro",
     "pages/ProjectsPage.astro", "pages/AboutPage.astro", "pages/NotFoundPage.astro",
-    "components/GameCover.astro"
+    "components/GameCover.astro", "components/SakuraRain.astro"
   ]) {
     const result = await parse(read(path));
     assert.deepEqual(result.diagnostics.filter((diagnostic) => diagnostic.severity === 1), [], path);
