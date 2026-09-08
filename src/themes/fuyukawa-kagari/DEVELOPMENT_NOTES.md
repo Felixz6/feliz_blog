@@ -8,6 +8,54 @@ Kisara history remain authoritative in the repository note, which is not edited.
 
 ## Current State
 
+- September 9 follow-up: the user approves the overall manga direction and asks
+  for five localized corrections: clipped utility drawer/player, sakura petals,
+  Live2D leaving the viewport after scrolling, oversized About game thumbnails,
+  and low-contrast Home lettering. This is not blanket acceptance of every edge.
+- During the follow-up the user rejects the first new petal as an elongated heart
+  and too transparent. Superseded: deep symmetric notch, 1.32-height frame,
+  narrow .35 flutter scale and compounded .26-.59 opacity. Current correction:
+  side-edge shallow notch (not a central heart cleft), square frame,
+  .7-1 flutter scale and .79-.98 steady
+  combined opacity. Earlier candidate is backed up outside the repository at
+  `C:\Users\a1234\Desktop\codex-backups\fuyukawa-utility-20260909\petal-heart-candidate.svg`.
+- Recovery point for this follow-up: `2c73400aa95135ec6c741f734c1c5aa698125931`
+  (code milestone `787fa0c`); theme clean before edits. Preserve unrelated root
+  note/media changes. Main agent only; browser/subagents remain prohibited.
+- Confirmed causes: drawer keeps intrinsic grid row sizes inside a max-height
+  scroll area while hiding its scrollbar; mobile top offset is not included in
+  that height. About game cards specify columns without `display: grid`, so their
+  full-width images ignore the intended thumbnail column. Home white lettering
+  has insufficient separation from white manga panels.
+- Live2D's own theme rule does not define fixed positioning or hidden/active
+  states; it relies on dynamically injected external CSS. That stylesheet is not
+  persisted across Astro head swaps. Pinning/state styling will be theme-owned.
+  The exact user scroll sequence is not browser-reproduced.
+- Implemented utility follow-up: viewport-bounded, visibly scrollable drawer;
+  compact record deck and native icon/range controls; corrected muted-volume UI;
+  theme-owned Live2D fixed/hidden states, bounded pointer drag, stale async/hide
+  guards and stylesheet reattachment after swaps; 92x64 contained game thumbnails;
+  dark handwritten title interiors with white stroke. Final verification passes
+  38 theme tests and 181 repository tests, direct Astro production build (74
+  routes / 75 indexed pages), and all 17 unchanged performance budgets. Home HTML
+  is 96.7/97.7 KiB and CSS is 102.5/109.4 KiB.
+- The generated CSS audit caught Astro's higher-specificity scoped About rules
+  overriding some global thumbnail declarations. Game card geometry now has one
+  owner in `AboutPage.astro`; the old conflicting image rules were removed. Do not
+  reintroduce competing image sizes in `refresh-pages.css`.
+- Built-output audit: 18 theme pages / 172 images / 77 inline scripts / 154 local
+  links / 57 stylesheets pass, plus an explicit emitted scoped-CSS assertion for
+  92x64 contained game thumbnails. Existing 4321 routes/CSS/final petal return 200.
+  The existing server (PID 23024) was not restarted. Build/test processes exited.
+- A 168x168, 9188-byte offline raster review of the final petal is at
+  `%TEMP%\fuyukawa-petal-final-review.png`; it is not a browser screenshot.
+  Source art hashes, hero layer pixels and prior cover/header tests still pass.
+  Logs: `%TEMP%\fuyukawa-utilities-{focused,repository,build}-final.log`.
+- This follow-up is implemented and non-browser verified. Human acceptance of
+  the revised petal and actual drawer/drag feel is pending; no browser or subagent
+  was used. Root notes retain their unrelated 457-line addition; other themes and
+  original media are untouched. Scoped checkpoint subject:
+  `fix(fuyukawa): polish viewport utilities and sakura petals`. Nothing is pushed.
 - Requested: refresh every Fuyukawa page and section with a fresh anime aesthetic.
 - Main agent only. Edit only `src/themes/fuyukawa-kagari/` and its dedicated
   `public/themes/fuyukawa-kagari/` assets.

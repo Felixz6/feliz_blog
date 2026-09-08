@@ -108,10 +108,10 @@ body[data-fuyukawa] .section-kicker::before {
   box-shadow: 3px 3px 0 #dcebf7; background: var(--pink); transform: rotate(-12deg);
 }
 body[data-fuyukawa] .hero h1 {
-  color: #ffffff; font-size: 5.5rem; line-height: 1.25;
+  color: #495675; font-size: 5.5rem; line-height: 1.25;
   font-family: "Segoe Print", "Comic Sans MS", "Microsoft YaHei", cursive;
-  font-weight: 700; background: none; -webkit-text-stroke: 1px #83a7bf; filter: none;
-  text-shadow: 3px 4px 0 #e9b9d0, -2px -2px 0 #ffffff, 0 8px 20px #8c9dbb48;
+  font-weight: 700; background: none; -webkit-text-stroke: 3px #ffffff; paint-order: stroke fill; filter: none;
+  text-shadow: 3px 4px 0 #e9b9d0, 0 2px 12px #ffffff;
 }
 body[data-fuyukawa] .hero h1::before { display: none; }
 body[data-fuyukawa] .hero-diary-line {
@@ -222,26 +222,101 @@ body[data-fuyukawa] .article-toc .toc-depth-3 { padding-left: 14px; font-size: .
 
 /* Utility surfaces use the same palette without competing with the content. */
 body[data-fuyukawa] .toy-dock {
-  top: 140px; width: min(360px, calc(100vw - 52px)); transform: translateX(-100%);
+  --dock-top: 100px;
+  top: var(--dock-top); bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 52px)); transform: translateX(-100%);
+  display: flex; flex-direction: column; pointer-events: none;
+  transition: transform 240ms cubic-bezier(.32, .72, 0, 1);
 }
 body[data-fuyukawa] .toy-dock:hover,
 body[data-fuyukawa] .toy-dock:focus-within,
 body[data-fuyukawa] .toy-dock.is-pinned { transform: translateX(0); }
-body[data-fuyukawa] .toy-dock-panel { width: 100%; max-height: calc(100svh - 172px); overflow-y: auto; background: #fffffffa; border-color: var(--line); border-radius: 0 8px 8px 0; box-shadow: var(--shadow); }
+body[data-fuyukawa] .toy-dock-panel {
+  width: 100%; min-height: 0; max-height: 100%; flex: 0 1 auto; display: block;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain;
+  scrollbar-width: thin; scrollbar-color: #bbcadd #f0f5fa; scrollbar-gutter: stable;
+  padding: 16px; background: #fffffff5; border: 1px solid #d7e2ee;
+  border-left: 0; border-radius: 0 8px 8px 0; box-shadow: 4px 6px 0 #e8edf680, var(--shadow);
+  pointer-events: auto; scroll-padding-block: 16px;
+}
+body[data-fuyukawa] .toy-dock-panel::-webkit-scrollbar { display: block; width: 5px; }
+body[data-fuyukawa] .toy-dock-panel::-webkit-scrollbar-thumb { background: #bbcadd; border-radius: 4px; }
 body[data-fuyukawa] .toy-dock:not(:hover):not(:focus-within):not(.is-pinned) .toy-dock-panel { visibility: hidden; }
-body[data-fuyukawa] .toy-dock-handle { right: -38px; width: 38px; height: 70px; background: #f9f3f9; border-color: #e7d2e3; color: var(--rose); box-shadow: 2px 3px 0 #eef0f8; border-radius: 0 6px 6px 0; }
+body[data-fuyukawa] .toy-dock-handle { top: 20px; right: -38px; width: 38px; height: 62px; background: #f9f3f9; border-color: #e7d2e3; color: var(--rose); box-shadow: 2px 3px 0 #eef0f8; border-radius: 0 6px 6px 0; pointer-events: auto; }
 body[data-fuyukawa] .toy-dock-handle svg { width: 21px; height: 21px; }
-body[data-fuyukawa] .toy-widget { background: none; border: 0; border-radius: 0; box-shadow: none; }
+body[data-fuyukawa] .toy-dock.is-dismissed { transform: translateX(-100%); }
+body[data-fuyukawa] .toy-dock.is-dismissed .toy-dock-panel { visibility: hidden; }
+body[data-fuyukawa] .toy-widget { min-width: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
 body[data-fuyukawa] .toy-widget::before { display: none; }
-body[data-fuyukawa] .live2d-control-widget { border-bottom: 1px solid var(--line); padding-bottom: 20px; }
-body[data-fuyukawa] .live2d-controls button { background: #eef7f2; border: 1px solid var(--line); border-radius: 6px; box-shadow: none; color: var(--accent); }
-body[data-fuyukawa] .music-player-shell { border-radius: 6px; background: #f4f9f7; box-shadow: none; }
-body[data-fuyukawa] .music-widget { background: none; }
+body[data-fuyukawa] .toy-widget-title { gap: 8px; }
+body[data-fuyukawa] .toy-widget-title > span { width: 26px; height: 26px; box-shadow: none; background: #fbeaf2; }
+body[data-fuyukawa] .toy-widget-title svg { width: 16px; height: 16px; }
+body[data-fuyukawa] .toy-widget-title strong { font-size: .86rem; }
+body[data-fuyukawa] .live2d-control-widget { border-bottom: 1px dashed #d4dfeb; padding-bottom: 16px; margin-bottom: 16px; }
+body[data-fuyukawa] .live2d-status { padding: 8px 0 2px; border: 0; background: none; font-size: .72rem; font-weight: 400; line-height: 1.6; }
+body[data-fuyukawa] .live2d-controls { gap: 6px; }
+body[data-fuyukawa] .live2d-controls button { min-height: 36px; padding: 5px 4px; background: #f0f5fc; border: 1px solid #dce6ef; border-radius: 5px; box-shadow: none; color: var(--accent); font-weight: 600; transform: none; }
+body[data-fuyukawa] .live2d-controls button:disabled { color: #8992a2; background: #f3f5f7; cursor: not-allowed; }
+body[data-fuyukawa] .music-widget { gap: 14px; background: none; }
+body[data-fuyukawa] .music-widget .toy-widget-title { justify-content: flex-start; }
+body[data-fuyukawa] .music-player-shell { grid-template-columns: 108px minmax(0, 1fr); gap: 14px; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+body[data-fuyukawa] .music-cover-area { gap: 6px; }
+body[data-fuyukawa] .music-cover-caption { display: flex; align-items: center; gap: 5px; font-size: .57rem; font-weight: 500; }
+body[data-fuyukawa] .music-cover-caption::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #c3ccda; }
+body[data-fuyukawa].is-music-playing .music-cover-caption::before { background: #75aa97; }
+body[data-fuyukawa] .music-info-area { gap: 8px; }
+body[data-fuyukawa] .music-meta { font-size: .6rem; font-weight: 500; }
+body[data-fuyukawa] .music-track { font-family: inherit; font-size: .95rem; font-weight: 600; white-space: normal; line-height: 1.5; }
+body[data-fuyukawa] .music-widget .music-note { padding: 0; min-height: 0; background: none; border: 0; font-size: .68rem; font-weight: 400; }
+body[data-fuyukawa] .music-widget .record-player { width: 108px; height: 108px; border-radius: 8px; border: 1px solid #ccdae6; background: linear-gradient(135deg, #fff5f8, #e4eff8); box-shadow: inset 0 0 0 4px #ffffffaa, 0 4px 0 #dce4ed; }
+body[data-fuyukawa] .music-widget .record-disc { width: 82px; height: 82px; border: 3px solid #bec8d4; background: repeating-radial-gradient(circle, #ffffff10 0 1px, transparent 1px 4px), #303544; box-shadow: 0 3px 5px #38475f22; animation: record-spin 5.6s linear infinite; animation-play-state: paused; }
+body[data-fuyukawa].is-music-playing .record-disc { animation-play-state: running; }
+body[data-fuyukawa] .toy-dock:not(:hover):not(:focus-within):not(.is-pinned) .record-disc,
+body[data-fuyukawa] .toy-dock.is-dismissed .record-disc { animation-play-state: paused; }
+body[data-fuyukawa] .music-widget .record-label { width: 30px; height: 30px; background: #f4cfdf; box-shadow: none; border: 2px solid #fffc; }
+body[data-fuyukawa] .music-widget .record-label img { width: 22px; height: 20px; }
+body[data-fuyukawa] .music-widget .record-arm { top: 12px; right: 12px; width: 42px; height: 15px; border-width: 3px; border-color: #8598ac; filter: none; transform: translate(7px, 6px) rotate(-58deg); transition: transform 240ms var(--manga-ease); }
+body[data-fuyukawa].is-music-playing .record-arm { transform: translate(-5px, 7px) rotate(-14deg); }
+body[data-fuyukawa] .record-arm::before { width: 13px; height: 13px; right: -8px; top: -8px; border-width: 2px; background: #edf3f9; }
+body[data-fuyukawa] .record-arm::after { width: 8px; height: 10px; left: -4px; bottom: -7px; border-radius: 2px; box-shadow: none; background: #be8da8; }
 body[data-fuyukawa] :is(.music-track, .toy-widget-title strong) { color: var(--ink); }
 body[data-fuyukawa] :is(.music-note, .music-meta, .music-cover-caption, .music-control-label, .music-control-label strong) { color: var(--ink-soft); }
-body[data-fuyukawa] .music-controls button { background: white; border: 1px solid var(--line); box-shadow: none; color: var(--accent); }
+body[data-fuyukawa] :is(.music-progress, .music-volume) { gap: 4px; padding: 0; border: 0; border-radius: 0; background: none; overflow: visible; }
+body[data-fuyukawa] .music-control-label { gap: 8px; flex-wrap: wrap; }
+body[data-fuyukawa] .music-control-label > span { font-family: inherit; font-size: .7rem; font-weight: 400; }
+body[data-fuyukawa] .music-control-label strong { font-size: .69rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+body[data-fuyukawa] .music-bottom-row { grid-template-columns: 124px minmax(0, 1fr); align-items: center; gap: 16px; padding-top: 4px; }
+body[data-fuyukawa] .music-controls { grid-template-columns: 34px 40px 34px; gap: 8px; }
+body[data-fuyukawa] .music-controls button { display: grid; place-items: center; padding: 0; min-width: 0; height: 38px; background: white; border: 1px solid var(--line); border-radius: 6px; box-shadow: none; color: var(--accent); transform: none; }
+body[data-fuyukawa] .music-controls svg { width: 17px; height: 17px; }
+body[data-fuyukawa] [data-music-prev] svg { transform: rotate(180deg); }
 body[data-fuyukawa] .music-controls button[data-music-toggle] { background: var(--accent); color: white; }
+body[data-fuyukawa] [data-music-toggle] .music-pause-icon,
+body[data-fuyukawa].is-music-playing [data-music-toggle] .music-play-icon { display: none; }
+body[data-fuyukawa].is-music-playing [data-music-toggle] .music-pause-icon { display: block; }
 body[data-fuyukawa] input[type="range"] { accent-color: var(--accent); }
+body[data-fuyukawa] .music-widget input[type="range"] { --range-fill: 0%; display: block; appearance: none; -webkit-appearance: none; width: 100%; height: 24px; margin: 0; cursor: pointer; background: transparent; }
+body[data-fuyukawa] .music-widget input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #7198b5 var(--range-fill), #e1e9f1 var(--range-fill)); }
+body[data-fuyukawa] .music-widget input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: #e1e9f1; }
+body[data-fuyukawa] .music-widget input[type="range"]::-moz-range-progress { height: 4px; background: #7198b5; }
+body[data-fuyukawa] .music-widget input[type="range"]::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 2px solid white; border-radius: 50%; background: #7198b5; box-shadow: 0 0 0 1px #c7d8e5; }
+body[data-fuyukawa] .music-widget input[type="range"]::-moz-range-thumb { box-sizing: border-box; width: 14px; height: 14px; border: 2px solid white; border-radius: 50%; background: #7198b5; box-shadow: 0 0 0 1px #c7d8e5; }
+/* Own viewport anchoring even when Astro discards the widget's injected CSS. */
+body[data-fuyukawa] #waifu {
+  --waifu-size: min(280px, calc(100dvh - 64px), calc(100vw - 32px));
+  position: fixed !important; top: auto !important; right: auto !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important; left: 14px !important;
+  width: var(--waifu-size); height: var(--waifu-size); margin: 0 !important; z-index: 19 !important;
+  transform: none !important; opacity: 0; pointer-events: none;
+  transition: opacity 180ms ease;
+}
+body[data-fuyukawa] #waifu.waifu-active { opacity: 1; pointer-events: auto; }
+body[data-fuyukawa] #waifu.waifu-hidden { display: none !important; }
+body[data-fuyukawa] #waifu-tips { position: absolute; top: -24px; left: 0; margin: 0 14px; width: 238px !important; opacity: 0; pointer-events: none; padding: 8px 10px; font-size: .78rem; line-height: 1.6; transition: opacity 180ms ease; }
+body[data-fuyukawa] #waifu-tips.waifu-tips-active { opacity: 1; }
+body[data-fuyukawa] #waifu-tool { position: absolute; display: flex; flex-direction: column; }
+body[data-fuyukawa] #live2d { width: 100% !important; height: 100% !important; touch-action: none; cursor: grab; }
+body[data-fuyukawa] .is-waifu-dragging #live2d { cursor: grabbing; }
 body[data-fuyukawa] .custom-context-menu { background: #fffffffa; border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 8px; }
 body[data-fuyukawa] .custom-context-menu button:hover { background: #eaf5ef; box-shadow: none; transform: none; }
 body[data-fuyukawa] .context-theme-group button[aria-pressed="true"] { color: var(--accent); background: #eaf5ef; }
@@ -258,8 +333,34 @@ body[data-fuyukawa] .home-notice-entry.is-primary { background: none; border: 0;
 body[data-fuyukawa] .home-notice-entry-title strong { color: var(--accent); }
 body[data-fuyukawa] .home-notice-skip { color: var(--ink-soft); font-size: .8rem; }
 body[data-fuyukawa] .home-notice-skip input { accent-color: var(--accent); }
-body[data-fuyukawa] .sakura-rain { opacity: .55; }
-body[data-fuyukawa] .sakura-rain span:nth-child(n + 17) { display: none; }
+body[data-fuyukawa] .sakura-rain { inset: 0; opacity: 1; }
+body[data-fuyukawa] .sakura-rain span {
+  top: -24px; width: var(--sakura-size); height: var(--sakura-size);
+  border: 0; border-radius: 0; background: none; box-shadow: none; opacity: 0;
+  animation: fuyukawa-petal-fall var(--sakura-duration) linear infinite;
+  animation-delay: var(--sakura-delay);
+}
+body[data-fuyukawa] .sakura-rain i {
+  display: block; width: 100%; height: 100%;
+  background: url("/themes/fuyukawa-kagari/assets/sakura-petal.svg") center / contain no-repeat;
+  animation: fuyukawa-petal-flutter 5.6s ease-in-out infinite alternate;
+  animation-delay: var(--sakura-delay); transform-origin: 50% 70%;
+}
+body[data-fuyukawa] .sakura-rain span:nth-child(3n) { --petal-drift: -72px; }
+body[data-fuyukawa] .sakura-rain span:nth-child(3n + 1) { --petal-drift: 96px; }
+body[data-fuyukawa] .sakura-rain span:nth-child(3n + 2) { --petal-drift: 40px; }
+body[data-fuyukawa] .sakura-rain span:nth-child(even) i { animation-direction: alternate-reverse; animation-duration: 7s; opacity: .92; }
+@keyframes fuyukawa-petal-fall {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  8% { opacity: var(--sakura-opacity); }
+  88% { opacity: var(--sakura-opacity); }
+  100% { opacity: 0; transform: translate3d(var(--petal-drift), calc(100vh + 48px), 0); }
+}
+@keyframes fuyukawa-petal-flutter {
+  0% { transform: rotate(-28deg) scaleX(.85); }
+  50% { transform: rotate(12deg) scaleX(1); }
+  100% { transform: rotate(58deg) scaleX(.7); }
+}
 body[data-fuyukawa] .pig-scrollbar-track { width: 5px; background: #e8f3ed; box-shadow: none; border: 1px solid white; }
 body[data-fuyukawa] .pig-scrollbar-fill { background: var(--pink); box-shadow: none; }
 
@@ -307,7 +408,8 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .article-mobile-toc .toc-depth-3 { padding-left: 16px; color: var(--ink-soft); }
   body[data-fuyukawa] .site-footer { padding: 40px 24px 76px; }
   body[data-fuyukawa] .footer-inner { grid-template-columns: 1fr; gap: 10px; }
-  body[data-fuyukawa] .toy-dock { top: 164px; }
+  body[data-fuyukawa] .toy-dock { --dock-top: 86px; }
+  body[data-fuyukawa] .sakura-rain span:nth-child(n + 9) { display: none; }
 }
 @media (max-width: 480px) {
   body[data-fuyukawa] .site-header { padding: 8px 12px; gap: 6px; }
@@ -334,8 +436,33 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .home-notice-head h2 { font-size: 1.1rem; }
   body[data-fuyukawa] .home-notice-scroll-area { padding: 30px 24px; }
   body[data-fuyukawa] .pig-scrollbar { display: none; }
+  body[data-fuyukawa] .toy-dock-panel { padding: 12px; }
+  body[data-fuyukawa] .live2d-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body[data-fuyukawa] #waifu { --waifu-size: min(220px, calc(100dvh - 64px), calc(100vw - 32px)); left: 8px !important; }
+  body[data-fuyukawa] #waifu-tips { width: 190px !important; margin-left: 8px !important; }
+}
+@media (max-width: 360px) {
+  body[data-fuyukawa] .music-player-shell { grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
+  body[data-fuyukawa] .music-widget .record-player { width: 92px; height: 92px; }
+  body[data-fuyukawa] .music-widget .record-disc { width: 70px; height: 70px; }
+  body[data-fuyukawa] .music-bottom-row { grid-template-columns: 1fr; gap: 12px; }
+  body[data-fuyukawa] .music-controls { justify-content: center; }
+}
+@media (max-height: 600px) {
+  body[data-fuyukawa] .toy-dock { --dock-top: 76px; }
+}
+@media (hover: hover) and (pointer: fine) {
+  body[data-fuyukawa] .music-controls button:hover { background: #edf5fb; }
+  body[data-fuyukawa] .music-controls button[data-music-toggle]:hover { background: #496f91; }
+  body[data-fuyukawa] .live2d-controls button:not(:disabled):hover { background: #e7eff9; border-color: #b9cede; }
+}
+html:has(body[data-fuyukawa])[data-yuimi-performance="lite"] .sakura-rain { display: none; }
+html:has(body[data-fuyukawa])[data-yuimi-visibility="hidden"] :is(.sakura-rain span, .sakura-rain i, .record-disc) { animation-play-state: paused !important; }
+@media (pointer: coarse) {
+  body[data-fuyukawa] .sakura-rain span:nth-child(n + 9) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
+  body[data-fuyukawa] .sakura-rain { display: none; }
   html:has(body[data-fuyukawa]) { scroll-behavior: auto; }
   body[data-fuyukawa] *, body[data-fuyukawa] *::before, body[data-fuyukawa] *::after {
     animation-duration: .01ms !important; animation-iteration-count: 1 !important;

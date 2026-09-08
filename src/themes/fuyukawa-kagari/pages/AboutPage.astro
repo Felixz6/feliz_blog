@@ -498,9 +498,13 @@ const nowDoing = currentSignals;
 
     .about-game-card img {
       display: block;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      background: var(--paper-soft);
+      width: 92px;
+      height: 64px;
+      min-height: 0;
+      aspect-ratio: 23 / 16;
+      object-fit: contain;
+      background: #f0f5fa;
+      border-radius: 4px;
     }
 
     .about-media-card img {
@@ -536,33 +540,52 @@ const nowDoing = currentSignals;
     }
 
     .about-game-card {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      align-items: center;
+      min-width: 0;
       min-height: 0;
-    }
-
-    .about-game-card img {
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
+      gap: 12px;
+      padding: 12px;
     }
 
     .about-game-card div {
       display: grid;
-      grid-template-columns: 30px minmax(0, 1fr);
-      column-gap: 8px;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 4px 6px;
       align-items: start;
-      min-height: 78px;
-      padding: 10px 12px 12px;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
     }
 
     .about-game-card span {
       display: inline-grid;
       place-items: center;
-      width: 28px;
-      height: 28px;
+      width: 22px;
+      height: 22px;
       grid-row: span 2;
       margin-bottom: 0;
       color: var(--ink);
       background: var(--blue-soft);
-      border-radius: 8px;
+      border-radius: 4px;
+    }
+
+    .about-game-card span svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .about-game-card h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .about-game-card p {
+      margin: 0;
+      font-size: 0.72rem;
+      line-height: 1.6;
     }
 
     .about-activity-grid {
@@ -622,10 +645,6 @@ const nowDoing = currentSignals;
 
       .about-media-card {
         grid-template-columns: 1fr;
-      }
-
-      .about-game-card img {
-        aspect-ratio: 16 / 9;
       }
     }
   </style>
