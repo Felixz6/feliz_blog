@@ -82,6 +82,9 @@ export function bindHomeEvent(root: HTMLElement) {
     }
     if (next === visible) return;
     visible = next;
+    // The portrait scene is the foreground composition; do not wait for the
+    // one-shot background video to finish before it enters.
+    if (next) portrait.reveal();
     if (!next) pause();
     else if (!completed) void play(!started);
   };
