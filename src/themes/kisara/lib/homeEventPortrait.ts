@@ -4,14 +4,15 @@ export function homePortraitLayout(width: number, height: number) {
   const mediaWidth = 1920 * scale, mediaHeight = 1080 * scale;
   const size = Math.min(180, Math.max(112, width * .105));
   const tipX = 750 * scale, tipY = 373 * scale;
-  const bubbleHalf = Math.min(316, width - 40) / 2;
+  const bubbleWidth = Math.min(width <= 760 ? 316 : 380, width - 40);
+  const bubbleHalf = bubbleWidth / 2;
   const desiredTip = width <= 760 ? width * .7 : tipX + (width - mediaWidth) / 2;
   const safeTip = Math.max(bubbleHalf + 20 + size * .46,
     Math.min(width - bubbleHalf - 20 + size * .46, desiredTip));
   const x = Math.max(width - mediaWidth, Math.min(0, safeTip - tipX));
   const y = (height - mediaHeight) / 2;
   return {
-    mediaWidth, mediaHeight, x, y, size,
+    mediaWidth, mediaHeight, x, y, size, bubbleWidth,
     portraitX: tipX + x - size * .46,
     portraitY: tipY + y - size * .12,
   };
@@ -27,7 +28,7 @@ export function bindHomeEventPortrait(root: HTMLElement) {
   const { signal } = controller;
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let active = false, revealed = false, hovering = false, focused = false;
-  let step = 0, frame = 0, timer = 0, due = 0, remaining = 450;
+  let step = 0, frame = 0, timer = 0, due = 0, remaining = 220;
   const layout = () => {
     const rect = root.getBoundingClientRect();
     const box = homePortraitLayout(rect.width, rect.height);
@@ -35,6 +36,7 @@ export function bindHomeEventPortrait(root: HTMLElement) {
       "board-width": box.mediaWidth, "board-height": box.mediaHeight,
       "board-x": box.x, "board-y": box.y, "portrait-size": box.size,
       "portrait-x": box.portraitX, "portrait-y": box.portraitY,
+      "bubble-width": box.bubbleWidth,
     };
     for (const [key, value] of Object.entries(values)) root.style.setProperty(`--${key}`, `${value}px`);
   };
@@ -58,7 +60,7 @@ export function bindHomeEventPortrait(root: HTMLElement) {
         const index = Math.floor(step / 2);
         if (step % 2 === 0) knives[index]?.setAttribute("data-landed", "");
         else rig.dataset.impact = String(index + 1);
-        remaining = step % 2 === 0 ? 180 : 520;
+        remaining = step % 2 === 0 ? 120 : 260;
         step++;
       } else if (step === 6) {
         root.setAttribute("data-bubble-ready", "");
@@ -83,6 +85,7 @@ export function bindHomeEventPortrait(root: HTMLElement) {
     if (revealed || signal.aborted) return;
     revealed = true;
     root.setAttribute("data-portrait-ready", "");
+    root.setAttribute("data-bubble-ready", "");
     frames.forEach(item => {
       const image = item.querySelector<HTMLImageElement>("img");
       if (image) image.loading = "eager";
@@ -91,7 +94,8 @@ export function bindHomeEventPortrait(root: HTMLElement) {
     else schedule();
   };
   bubble.addEventListener("click", () => {
-    if (step < 7) return;
+    if (!revealed) return;
+    if (step < 7) { nextFrame(); return; }
     stop();
     nextFrame();
     remaining = 3200;
@@ -116,7 +120,7 @@ export function bindHomeEventPortrait(root: HTMLElement) {
       stop();
       revealed = false;
       step = frame = 0;
-      remaining = 450;
+      remaining = 220;
       root.removeAttribute("data-portrait-ready");
       root.removeAttribute("data-bubble-ready");
       rig.dataset.impact = "0";

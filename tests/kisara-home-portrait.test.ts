@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { bindHomeEventPortrait, homePortraitLayout } from "../src/themes/kisara/lib/homeEventPortrait.ts";
 
@@ -67,31 +68,45 @@ test("003 portrait stays attached to the mapped knife tip and its bubble fits na
     assert.ok(box.mediaWidth >= width && box.mediaHeight >= height);
     assert.ok(Math.abs(box.portraitX + box.size * .46 - (750 * scale + box.x)) < .001);
     assert.ok(Math.abs(box.portraitY + box.size * .12 - (373 * scale + box.y)) < .001);
-    const half = Math.min(316, width - 40) / 2;
+    const half = box.bubbleWidth / 2;
     assert.ok(box.portraitX - half >= 19.99, `${width}: bubble left edge`);
     assert.ok(box.portraitX + half <= width - 19.99, `${width}: bubble right edge`);
     assert.ok(box.portraitY + box.size / 2 + 30 + 200 < height);
   }
 });
 
-test("003 lands three knives in order, shakes after each hit, then reveals the paired bubble", () => {
+test("003 expanded reaction and mobile caption have separate space inside the scene", () => {
+  for (const [width, height] of [[320, 820], [390, 844], [760, 820], [768, 1200], [1280, 820], [1920, 1080]]) {
+    const box = homePortraitLayout(width, height);
+    const imageHeight = (box.bubbleWidth - 32 - 52 - 12) * .75;
+    const bubbleBottom = box.portraitY + box.size / 2 + 24 + 32 + imageHeight + 12 + 31;
+    assert.ok(bubbleBottom < height, `${width}: reaction bottom`);
+    if (width <= 760) {
+      const captionTop = box.portraitY + box.size / 2 + 284;
+      assert.ok(captionTop - bubbleBottom >= 16, `${width}: caption gap`);
+      assert.ok(captionTop + 145 < height, `${width}: caption bottom`);
+    }
+  }
+});
+
+test("003 reveals the paired bubble immediately and lands three short strikes before cycling", () => {
   const f = fixture();
   try {
     f.runtime.reveal();
+    assert.equal(f.root.hasAttribute("data-bubble-ready"), true);
     f.advance(5000);
     assert.equal(f.timers.size, 0);
     f.runtime.setActive(true);
-    f.advance(449);
+    f.advance(219);
     assert.ok(f.knives.every(knife => !knife.hasAttribute("data-landed")));
     for (let index = 0; index < 3; index++) {
-      f.advance(index === 0 ? 1 : 520);
+      f.advance(index === 0 ? 1 : 260);
       assert.equal(f.knives[index].hasAttribute("data-landed"), true);
       assert.notEqual(f.rig.dataset.impact, String(index + 1));
-      f.advance(180);
+      f.advance(120);
       assert.equal(f.rig.dataset.impact, String(index + 1));
     }
-    assert.equal(f.root.hasAttribute("data-bubble-ready"), false);
-    f.advance(520);
+    f.advance(260);
     assert.equal(f.root.hasAttribute("data-bubble-ready"), true);
     assert.ok(f.frames.every(frame => frame.image.loading === "eager"));
     for (const expected of [1, 2, 3, 0]) {
@@ -106,13 +121,13 @@ test("003 pauses the remaining strike delay offscreen without a catch-up burst",
   try {
     f.runtime.setActive(true);
     f.runtime.reveal();
-    f.advance(500);
+    f.advance(250);
     f.runtime.setActive(false);
     assert.equal(f.timers.size, 0);
     f.advance(10000);
     assert.equal(f.rig.dataset.impact, undefined);
     f.runtime.setActive(true);
-    f.advance(129);
+    f.advance(89);
     assert.equal(f.rig.dataset.impact, undefined);
     f.advance(1);
     assert.equal(f.rig.dataset.impact, "1");
@@ -122,6 +137,36 @@ test("003 pauses the remaining strike delay offscreen without a catch-up burst",
     f.advance(10000);
     assert.deepEqual(f.frames.map(frame => frame.hidden), hidden);
   } finally { f.destroy(); }
+});
+
+test("003 bubble can be clicked during knife entry without cancelling the strikes", () => {
+  const f = fixture();
+  try {
+    f.runtime.setActive(true);
+    f.runtime.reveal();
+    f.bubble.dispatchEvent(new Event("click"));
+    assert.equal(f.frames[1].hidden, false);
+    assert.equal(f.timers.size, 1);
+    f.advance(1400);
+    assert.equal(f.rig.dataset.impact, "3");
+    assert.ok(f.knives.every(knife => knife.hasAttribute("data-landed")));
+    f.runtime.reveal();
+    assert.equal(f.timers.size, 1);
+    assert.equal(f.frames[1].hidden, false);
+  } finally { f.destroy(); }
+});
+
+test("003 uses outlined single-edge blades behind the portrait rim and a matching impact clock", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  const css = read("src/themes/kisara/styles/home-event-video.css");
+  const component = read("src/themes/kisara/components/KisaraHomeEventVideo.astro");
+  assert.match(component, /class="kisara-home-knife-art" viewBox="0 0 64 224"/);
+  assert.doesNotMatch(component, /kisara-home-knife-handle|kisara-home-knife-blade/);
+  assert.match(css, /\.kisara-home-portrait-photo \{[^}]*z-index: 2/);
+  assert.match(css, /\.kisara-home-knife \{[^}]*z-index: 1/);
+  assert.match(css, /kisara-knife-arrive 120ms/);
+  assert.match(css, /prefers-reduced-motion: reduce[^]*animation: none/);
+  assert.doesNotMatch(css, /rotate\(-1[126]deg\)|translateY\(-130px\)/);
 });
 
 test("003 reduced motion settles without timers while all four pairs remain keyboard-clickable", () => {
