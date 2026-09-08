@@ -61,5 +61,29 @@ Kisara history remain authoritative in the repository note, which is not edited.
   The root development note's pre-existing changes are untouched.
 - Test/build logs: `%TEMP%/fuyukawa-refresh-{focused-final,tests-final,build-final}.log`.
   Test and build processes exited normally. No browser or subagent was used.
-- The user rejected the first candidate only. The revised title scale, paper
-  details, mobile layout and interaction appearance still need human review.
+- Visual acceptance is still pending. Subsequent cover/header feedback and its
+  corrections are recorded below; earlier automated passes do not imply approval.
+
+## Cover and Header Correction
+
+- User feedback on `97a78da6561078d5a96e6a2f3ca7880c0122872e`: Home and Blog covers
+  cut off the subjects, and the user prefers a transparent centered header.
+  This supersedes the earlier landscape-frame and opaque header decisions.
+- Root cause: portrait sources were fitted with `cover` into forced 8:5 boxes.
+  The screenshot's sources are 1003x1416, 1319x2000 and 1400x2207, respectively.
+- Both listings now use stable 7:10 frames with centered `contain`, including
+  square/landscape fallbacks. Images are not edited; old Blog crop offsets removed.
+- Header band is transparent; equal side grid tracks place the glass navigation
+  at viewport center independently of the brand. Narrow screens center only the
+  navigation and omit the brand to avoid overlap.
+- Recovery point: `97a78da`. Scope limited to Fuyukawa cover/header presentation,
+  targeted tests and this note. No browser or subagent use.
+- Verification: 12/12 theme tests, 181/181 repository tests, 74 built pages and
+  75 Pagefind pages. All 17 budgets pass; Fuyukawa Home CSS is 106.0/109.4 KiB.
+  Test/build processes exited normally. Logs use `%TEMP%/fuyukawa-cover-header-*`.
+- Existing 4321 Home, Blog and stylesheet return HTTP 200; the served CSS contains
+  the 7:10 frames, contain fitting and symmetric navigation tracks. No server was
+  restarted and no image, shared route, other theme or root note was changed.
+- Implemented and automatically verified; actual visual acceptance remains with
+  the user. Scoped local checkpoint subject:
+  `fix(fuyukawa): preserve cover artwork and center transparent navigation`.

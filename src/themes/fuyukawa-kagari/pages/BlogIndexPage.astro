@@ -29,12 +29,6 @@ const formatter = new Intl.DateTimeFormat("zh-CN", {
   day: "2-digit"
 });
 
-const coverFocus: Record<string, string> = {
-  "/blog-covers/cover-03.webp": "50% 32%",
-  "/blog-covers/cover-08.webp": "50% 30%",
-  "/blog-covers/cover-09.webp": "50% 28%",
-  "/blog-covers/cover-10.webp": "50% 30%"
-};
 const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "");
 ---
 
@@ -70,7 +64,7 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
           </div>
           <a class="post-row blog-post-row" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
             <div class="post-cover-frame">
-              <img src={post.cover} alt="" loading="lazy" style={`object-position: ${coverFocus[post.cover] ?? "50% 32%"}`} />
+              <img src={post.cover} alt="" loading="lazy" />
             </div>
             <div class="blog-post-copy">
               <div class="meta-row">

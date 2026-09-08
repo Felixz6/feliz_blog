@@ -27,7 +27,44 @@ test("refresh uses bounded typography, reduced motion, and compact-screen layout
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(css, /max-width: 480px/);
   assert.match(css, /max-width: 760px/);
-  assert.match(css, /\.post-cover-frame[^}]*aspect-ratio: 8 \/ 5/);
+  assert.match(css, /\.post-cover-frame[^}]*aspect-ratio: 7 \/ 10/);
+});
+
+test("home and archive preserve complete covers in stable portrait frames", () => {
+  const rules = new Map();
+  postcss.parse(css).walkRules((rule) => {
+    if (rule.parent.type !== "root") return;
+    rules.set(rule.selector, Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value])));
+  });
+  const home = rules.get("body[data-fuyukawa] .journal-entry > img");
+  const frame = rules.get("body[data-fuyukawa] .post-cover-frame");
+  const image = rules.get("body[data-fuyukawa] .post-cover-frame img");
+  assert.equal(home["aspect-ratio"], "7 / 10");
+  assert.equal(frame["aspect-ratio"], "7 / 10");
+  for (const cover of [home, image]) {
+    assert.equal(cover["object-fit"], "contain");
+    assert.equal(cover["object-position"], "center");
+  }
+  assert.equal(image.position, "absolute");
+  assert.equal(image.height, "100%");
+  assert.doesNotMatch(read("pages/BlogIndexPage.astro"), /coverFocus|style={`object-position:/);
+  assert.match(read("pages/HomePage.astro"), /width="700" height="1000" loading="lazy"/);
+});
+
+test("header stays transparent with symmetric centered navigation", () => {
+  const rules = new Map();
+  postcss.parse(css).walkRules((rule) => {
+    if (rule.parent.type !== "root") return;
+    rules.set(rule.selector, Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value])));
+  });
+  const header = rules.get("body[data-fuyukawa] .site-header");
+  const nav = rules.get("body[data-fuyukawa] .nav-links");
+  assert.equal(header.background, "transparent");
+  assert.equal(header["backdrop-filter"], "none");
+  assert.equal(header["grid-template-columns"], "minmax(0, 1fr) auto minmax(0, 1fr)");
+  assert.equal(nav["grid-column"], "2");
+  assert.equal(nav["justify-self"], "center");
+  assert.match(css, /max-width: 760px[^]*?\.nav-links \{ grid-column: 1;[^}]*justify-content: center/);
 });
 
 test("all theme templates parse without errors", async () => {
