@@ -160,6 +160,13 @@ test("Kisara Home 003 uses a one-shot board scene with a portrait and the four o
   assert.match(runtime, /prefers-reduced-motion: reduce/);
 });
 
+test("Kisara Home 003 reveals the foreground composition when it enters view", () => {
+  const source = read("src/themes/kisara/lib/homeEvent.ts");
+  const refresh = source.slice(source.indexOf("  const refresh ="), source.indexOf("  const reset ="));
+  assert.match(refresh, /if \(next\) portrait\.reveal\(\)/);
+  assert.ok(refresh.indexOf("portrait.reveal()") < refresh.indexOf("else if (!completed) void play"));
+});
+
 test("Kisara Home masks chapter seams with motion-paper transitions", () => {
   assert.match(homeSource, /is-fridge-to-event[^]*is-event-to-latest/);
   assert.doesNotMatch(homeSource, /class="kisara-home-transition is-memory-to-fridge"/);
