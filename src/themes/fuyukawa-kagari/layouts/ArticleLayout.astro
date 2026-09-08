@@ -3,6 +3,7 @@ import BaseLayout from "./BaseLayout.astro";
 import { categoryLabel } from "@/lib/site";
 import { getThemePath } from "@/core/themes/registry";
 import { Icon } from "astro-icon/components";
+import MangaArt from "../components/MangaArt.astro";
 
 const { frontmatter } = Astro.props;
 const title = `${frontmatter.seoTitle ?? frontmatter.title} | Yuimi Lab`;
@@ -41,6 +42,10 @@ const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth 
       <div class="prose">
         <slot />
       </div>
+      <footer class="article-colophon" data-pagefind-ignore>
+        <MangaArt image="hand-note" />
+        <div><span class="manga-handwritten">To be continued.</span><p>这一页，先写到这里。</p><a href={getThemePath("fuyukawa-kagari", "/blog/")}>再翻一篇笔记 <Icon name="tabler:arrow-right" aria-hidden="true" /></a></div>
+      </footer>
     </article>
     {
       headings.length > 0 && (
@@ -53,6 +58,7 @@ const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth 
               </a>
             ))}
           </nav>
+          <MangaArt image="kagari-thinking" class="article-margin-character" />
         </aside>
       )
     }

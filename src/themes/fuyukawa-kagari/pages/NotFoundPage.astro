@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getThemePath } from "@/core/themes/registry";
-import { kagariAssets } from "../assets";
+import MangaArt from "../components/MangaArt.astro";
 ---
 
 <BaseLayout
@@ -19,7 +19,9 @@ import { kagariAssets } from "../assets";
       <a class="back-link" href={getThemePath("fuyukawa-kagari", "/blog/")}>去笔记存档看看</a>
     </div>
     <figure class="not-found-visual">
-      <img src={kagariAssets.notFound} alt="404 illustration" />
+      <MangaArt image="fireworks-page" class="lost-manga-page" eager />
+      <MangaArt image="haruto-thinking" class="lost-page-character" alt="站在散落漫画页旁思考的小角色" eager />
+      <figcaption class="manga-handwritten">A page out of the story.</figcaption>
     </figure>
   </section>
 </BaseLayout>

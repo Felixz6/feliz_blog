@@ -6,7 +6,7 @@ import postcss from "postcss";
 import { parse } from "@astrojs/compiler";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
-const css = read("styles/refresh.css");
+const css = read("styles/refresh.css") + "\n" + read("styles/refresh-pages.css");
 const inlineScript = (file) => read(file).match(/<script is:inline data-astro-rerun>([\s\S]*?)<\/script>/)?.[1];
 
 test("refresh selectors cannot style another theme", () => {

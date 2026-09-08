@@ -9,10 +9,12 @@ Kisara history remain authoritative in the repository note, which is not edited.
 ## Current State
 
 - Requested: refresh every Fuyukawa page and section with a fresh anime aesthetic.
-- Main agent only. Edit only `src/themes/fuyukawa-kagari/`.
+- Main agent only. Edit only `src/themes/fuyukawa-kagari/` and its dedicated
+  `public/themes/fuyukawa-kagari/` assets.
 - The user explicitly prohibits browser and subagent use in this task without
   permission. Source, fixture tests, build and HTTP checks are not visual acceptance.
-- Baseline: `main`, HEAD `4fba1e1663f24a1f0e4f71e03c1575fbf0c36abc`.
+- Original refresh baseline: `main`, `4fba1e1663f24a1f0e4f71e03c1575fbf0c36abc`.
+  The layered manga iteration starts from `671b016`; see the final section.
 - Original theme copied to
   `C:\Users\a1234\Desktop\codex-backups\fuyukawa-refresh-20260909-001424\fuyukawa-kagari`.
 - Existing root note edits and untracked media are unrelated and must stay intact.
@@ -87,3 +89,72 @@ Kisara history remain authoritative in the repository note, which is not edited.
 - Implemented and automatically verified; actual visual acceptance remains with
   the user. Scoped local checkpoint subject:
   `fix(fuyukawa): preserve cover artwork and center transparent navigation`.
+
+## Layered Manga Art Direction
+
+- New request: separate the Home character and manga backdrop without harming
+  either, add parallax, and design all theme pages around the supplied artwork.
+- Recovery checkpoint: `671b0161a53f468550e873ed5de81b8fe375cdd0`, theme clean.
+- The user authorizes deriving crops, cutouts and redraws from all 55 still images
+  under root `fuyukawa/`; the two MP4s are excluded. Sources remain read-only.
+- Keep the recently corrected complete article covers and centered transparent
+  navigation. Preserve original assets under their existing filenames.
+- Only the main agent, no browser/subagents. Use local compressed contact sheets,
+  deterministic media checks, runtime fixtures, compilation and HTTP verification;
+  none of these is human visual acceptance.
+- Original source images total 12.33 MiB. Inspection copies go to
+  `%TEMP%/fuyukawa-art-review`; generated production artwork stays theme-local.
+- Media implemented: 19 derivatives (about 2.94 MiB), including five transparent
+  stickers, a lossless 1920x1080 character cutout and a rebuilt manga background.
+  `tools/prepare-art.mjs` records source/output hashes and exact crop provenance.
+- The flattened poster has no recoverable hidden background. A first edge-fill
+  attempt visibly smeared manga lines and was rejected internally. The current
+  background keeps five intact original panel regions pixel-identical and composes
+  clean supplied panels in the center. No claim of recovering the original layers.
+  The original poster is unchanged and remains the failed-load fallback.
+- Runtime: small bounded pointer spring + scroll depth; transform on each image,
+  no global input capture, atomic decode, idle/offscreen/hidden/lite/reduced-motion
+  handling and Astro navigation cleanup. The existing profile reveal state machine
+  is mechanically extracted into `lib/home-hero.mjs`, not redesigned.
+- Page direction implemented: horizontal chapter leaves, category-spine archive,
+  numbered workshop sheets, illustrated playroom, personal colour-plate album,
+  and article colophon/margin art. Complete article covers and centered nav remain.
+- Intermediate snapshot before CSS loading split:
+  `C:\Users\a1234\Desktop\codex-backups\fuyukawa-manga-before-style-split-20260909`.
+- First media/runtime fixtures: 13/13 pass, previous refresh fixtures: 12/12 pass.
+  Pixel test caught a 9px panel overlap; reconstruction tile moved, and intact
+  panel byte comparisons now pass. Build caught unavailable icons; reused allowed
+  existing icons without changing shared config. Final results are recorded below.
+- Inner-page-only rules move to `refresh-pages.css` / `manga-pages.css`. Ordinary
+  per-page imports still bundled them into Home through the theme barrel exports.
+  BaseLayout now conditionally links their Vite `?url` assets on non-Home routes;
+  no shared route, barrel or budget changes are needed.
+
+### Final State And Verification
+
+- Implemented and automatically verified; not browser-verified or human-accepted.
+  The user still needs to judge the art direction, hair/earmuff cutout edges,
+  parallax feel and actual mobile typography. Do not label this visually approved.
+- Home's foreground uses contain fitting with a 16px lower movement allowance,
+  while the independently rebuilt background fills the scene. Original opaque
+  character pixels and five preserved background rectangles compare exactly.
+  This is deterministic masking/compositing, not generative restoration.
+- The old duplicate Blog list was removed so category filtering has one source
+  of truth. Search intentionally continues searching the whole archive.
+- Existing profile reveal states are preserved by a VM interaction test.
+  Hero cleanup now cancels initial-scroll and avatar timers. Before-swap cleanup
+  also stops the old tag-rain/notice runtime and releases the notice body lock.
+- Theme tests: 26/26. Repository tests: 181/181. Production: 74 routes and
+  75 Pagefind pages. All 17 unchanged performance budgets pass.
+  Home HTML 93.5/97.7 KiB; Home CSS 92.7/109.4 KiB (previously 106.0 KiB).
+- `tools/audit-build.mjs`: 18 theme documents, 172 image references, 77 inline
+  scripts, 154 local links and 57 stylesheet references pass. No duplicate IDs,
+  unresolved controls, missing assets or inner-page styles on Home.
+- Original 4321 preview responds HTTP 200 for Home/Blog/Works/Game/About and both
+  split hero images. No preview server was started or stopped. Build/test
+  processes exited normally. Logs: `%TEMP%/fuyukawa-manga-*-final.log`.
+- Only this theme's source and `public/themes/fuyukawa-kagari/assets/manga/`
+  derivatives belong to the patch. The root note's pre-existing 457-line addition,
+  other themes, shared routes/content, all original images and both MP4s are intact.
+- Scoped local milestone subject:
+  `feat(fuyukawa): build a layered manga notebook`. Nothing is pushed.

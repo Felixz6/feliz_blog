@@ -2,6 +2,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { Icon } from "astro-icon/components";
 import { kagariAsset, kagariAssets } from "../assets";
+import MangaArt from "../components/MangaArt.astro";
+import MemoryAlbum from "../components/MemoryAlbum.astro";
 import {
   animeFavorites,
   currentSignals,
@@ -81,23 +83,29 @@ const nowDoing = currentSignals;
           ))}
         </ul>
       </div>
+      <MangaArt image="kagari-tea" class="about-side-character" />
     </aside>
 
     <section class="about-readme" aria-label="Yuimi README">
       <div class="about-readme-hero">
         <div>
-          <p class="section-kicker">About me / Anime & code</p>
+          <p class="section-kicker">04 / Dear reader</p>
           <h2>很高兴，在这里遇见你。</h2>
           <p>
             这里是一间把技术笔记、二次元兴趣、小游戏和看板娘机关放在一起的小房间。
             我会记录 AstrBot、插件开发、部署踩坑，也会把喜欢的番剧、游戏和角色审美认真摆上架。
           </p>
         </div>
-        <div class="about-readme-badge" aria-hidden="true">
-          <Icon name="tabler:mood-smile" />
-          <span>anime x code</span>
-        </div>
+        <MangaArt image="letter-page" class="about-letter-art" eager />
       </div>
+
+      <nav class="about-bookmarks" aria-label="个人手帐章节">
+        <a href="#memory-album-title"><Icon name="tabler:heart" aria-hidden="true" />片刻</a>
+        <a href="#tech-line-title"><Icon name="tabler:code" aria-hidden="true" />技术</a>
+        <a href="#anime-shelf-title"><Icon name="tabler:movie" aria-hidden="true" />番剧</a>
+        <a href="#now-doing-title"><Icon name="tabler:flower" aria-hidden="true" />近况</a>
+      </nav>
+      <MemoryAlbum />
 
       <section class="about-section" aria-labelledby="tech-line-title">
         <div class="about-section-heading">

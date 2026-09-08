@@ -5,6 +5,7 @@ import { categoryLabel } from "@/lib/site";
 import { Icon } from "astro-icon/components";
 import { getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
+import MangaArt from "../components/MangaArt.astro";
 
 const posts = (await getPublishedPosts())
   .map((post) => {
@@ -33,10 +34,19 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
 ---
 
 <BaseLayout title="Blog | Yuimi Lab" description="技术笔记、二次元随笔与个人记录。">
+  <div class="manga-archive" data-manga-archive>
   <section class="page-title blog-hero-card">
-    <p class="section-kicker">Notebook / {String(posts.length).padStart(2, "0")} entries</p>
-    <h1>笔记存档<span class="page-title-en">Blog</span></h1>
-    <p>一些认真折腾的记录，一些舍不得忘掉的瞬间。</p>
+    <div class="blog-title-copy">
+      <p class="section-kicker">01 / The notebook</p>
+      <h1>笔记存档<span class="page-title-en">Blog</span></h1>
+      <p>一些认真折腾的记录，<br />一些舍不得忘掉的瞬间。</p>
+      <span class="manga-handwritten">Dear ordinary days.</span>
+    </div>
+    <div class="blog-title-art" aria-hidden="true">
+      <MangaArt image="reading-strip" class="blog-opening-panel" eager />
+      <MangaArt image="kagari-tea" class="blog-opening-character" eager />
+      <span class="manga-page-stamp">NOTE<br />BOOK</span>
+    </div>
   </section>
 
   <section class="blog-search-card" data-pagefind-ignore data-theme-route-prefix={themeRoutePrefix}>
@@ -54,10 +64,21 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
     <div class="blog-search-results" data-blog-search-results aria-live="polite"></div>
   </section>
 
+  <div class="archive-shelf">
+    <aside class="archive-spine">
+      <nav class="archive-tabs" aria-label="笔记分类">
+        <button type="button" data-archive-category="all" aria-pressed="true"><Icon name="tabler:book-2" aria-hidden="true" />全部</button>
+        {Object.entries(categoryLabel).map(([key, label]) => (
+          <button type="button" data-archive-category={key} aria-pressed="false">{label}</button>
+        ))}
+      </nav>
+      <p data-archive-count aria-live="polite">{posts.length} 篇笔记</p>
+      <MangaArt image="kagari-thinking" class="archive-companion" />
+    </aside>
   <section class="blog-timeline" aria-label="Blog timeline">
     {
       posts.map((post) => (
-        <article class="blog-timeline-item">
+        <article class="blog-timeline-item" data-entry-category={post.data.category}>
           <div class="timeline-date">
             <time datetime={post.updatedAt.toISOString()}>{formatter.format(post.updatedAt)}</time>
             <span>updated</span>
@@ -84,27 +105,9 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
       ))
     }
   </section>
+  </div>
 
-  <section class="post-list">
-    {
-      posts.map((post) => (
-        <a class="post-row compact-post-row" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
-          <div>
-            <div class="meta-row">
-              <span>{categoryLabel[post.data.category]}</span>
-              <time datetime={post.data.pubDate.toISOString()}>{formatter.format(post.data.pubDate)}</time>
-              <span>{post.wordCount.toLocaleString("zh-CN")} 字</span>
-            </div>
-            <h2>{post.data.title}</h2>
-            <p>{post.data.description}</p>
-          </div>
-          <div class="tag-row">
-            {post.data.tags.map((tag) => <span>#{tag}</span>)}
-          </div>
-        </a>
-      ))
-    }
-  </section>
+  </div>
 
   <script is:inline data-astro-rerun>
     (() => {
