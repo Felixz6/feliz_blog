@@ -82,8 +82,8 @@ for (const [label, prefix, limit] of bundleBudgets) {
 
 try {
   const homeHtml = await readFile(new URL("index.html", distDir), "utf8");
-  if (/kisara-title-gloss|transformation-silhouette/.test(homeHtml)) {
-    failures.push("Kisara Home restored the retired blade stage or its image");
+  if (/kisara-title-gloss|memory-attack|memory-clash/.test(homeHtml)) {
+    failures.push("Kisara Home restored a retired blade stage or superseded memory shot");
   }
   if (/kisara-title-cross|kisara-screen-impact|kisara-burst-canvas/.test(homeHtml)) {
     failures.push("Kisara Home restored a retired black-hole or warning pass");
@@ -91,10 +91,16 @@ try {
   if (!homeHtml.includes("kisara-gate-background-fight-wash")) {
     failures.push("Kisara Home lost its original clear reconstruction wash");
   }
-  const gateAssets = await readdir(new URL("themes/kisara/assets/", distDir));
-  if (gateAssets.includes("transformation-silhouette.webp")) {
-    failures.push("Kisara Home still publishes the retired blade image");
+  const manifestText = homeHtml.match(/<script\b[^>]*data-kisara-scene-manifest[^>]*>([^]*?)<\/script>/)?.[1];
+  const scenes = JSON.parse(manifestText ?? "[]");
+  if (scenes.filter(scene => scene.kind === "memory").length !== 9
+    || scenes.filter(scene => scene.kind === "transformation").length !== 3) {
+    failures.push("Kisara Gate lost its nine memory and three smoke shots");
   }
+  const storySizes = await Promise.all(scenes.map(scene => stat(new URL(scene.image.replace(/^\//, ""), distDir))));
+  const finalShot = await stat(new URL("themes/kisara/assets/fight.webp", distDir));
+  recordBudget("Kisara complete story images", storySizes.reduce((sum, file) => sum + file.size, finalShot.size), 850_000);
+  recordBudget("Kisara first two story images", storySizes.slice(0, 2).reduce((sum, file) => sum + file.size, 0), 140_000);
   if (!/<link\s+rel="preload"\s+as="image"\s+href="\/themes\/kisara\/assets\/gate-background\.webp"\s+fetchpriority="high"\s*\/?>/i.test(homeHtml)) {
     failures.push("Kisara Home lost its high-priority Gate background preload");
   }

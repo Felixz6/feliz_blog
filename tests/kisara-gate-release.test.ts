@@ -7,6 +7,7 @@ import {
   mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
   getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, transformationTimeline
 } from "../src/themes/kisara/lib/gateRelease.ts";
+import { memoryScenes, transformationScenes, memoryFillDuration, getMemoryFrame, getMemoryBlackout } from "../src/themes/kisara/lib/gateStory.ts";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const home = read("src/themes/kisara/pages/HomePage.astro");
@@ -18,7 +19,7 @@ const sourceBetween = (name: string, next: string) => {
 };
 
 test("the release is reconstruction only, with no empty lead-in or accelerated shot clock", () => {
-  assert.equal(gateRelease.introDuration, 2150);
+  assert.equal(gateRelease.introDuration, 1280);
   assert.equal(gateRelease.duration, 610);
   assert.equal(gateRelease.introHandoff, 0.66);
   for (const p of [0, 0.01, 0.1, 0.5, 0.99, 1]) {
@@ -53,7 +54,7 @@ test("seeking an intro recovers the original shot clock without re-easing its re
   assert.equal(getChargeIntroClock(-1), 0);
   assert.equal(getChargeIntroClock(2), 1);
   const handoffMs = getChargeIntroClock(gateRelease.introHandoff) * gateRelease.introDuration;
-  assert.ok(handoffMs > 1262 && handoffMs < 1263);
+  assert.ok(handoffMs > 751 && handoffMs < 752);
 });
 
 function fixture(overrides: Record<string, unknown> = {}) {
@@ -72,23 +73,24 @@ function fixture(overrides: Record<string, unknown> = {}) {
     progress: 1, targetProgress: 1, velocity: 0, springStrength: 0.06, damping: 0.76, settleDistance: 0.00035,
     chargeIntroProgress: 0, chargeIntroActive: false, chargeIntroComplete: false, chargeIntroReversing: false,
     chargeIntroLastTimestamp: 0, chargeIntroClock: 0, chargeIntroTargetClock: 1, chargeIntroTarget: 1,
-    chargeIntroDuration: 2150, energyProgress: 1, fillDistance: 2100,
+    chargeIntroDuration: gateRelease.introDuration, energyProgress: 1, fillDistance: 2100,
     releaseMode: "manual", releaseTimeline: 0, releaseDuration: gateRelease.duration,
     releaseAutoplayDuration: gateRelease.duration, releaseLastTimestamp: 0,
     releasePlaybackRate: 1, releaseBoost: 0, releaseVisualPressure: 0,
     releaseRewindVeil: 0, releaseRewindDuration: 0, releaseRewindFromTimeline: 0, releaseRewindElapsed: 0,
-    spaceLensRenderer: null, releaseUsesReconstruction: false, title: null,
+    spaceLensRenderer: null, releaseUsesReconstruction: false, releaseUsesSmokeCarrier: true, title: null,
+    sceneImageWarmers: new Map([["transformation-2", { status: "ready" }]]),
     releaseWarmupState: { spaceLens: true }, releaseWarmupPending: { spaceLens: false },
     burstProgress: 0, targetBurstProgress: 0, burstVelocity: 0,
-    heroAutoplayActive: false, heroAutoplayLastTimestamp: 0, heroAutoplayFillDuration: 4600,
+    heroAutoplayActive: false, heroAutoplayLastTimestamp: 0, heroAutoplayFillDuration: memoryFillDuration,
     clamp, mapChargeIntroProgress, getChargeIntroClock,
     mapReleaseAutoplayProgress, gateRelease, getTransformationFrame, getGateSceneHandoff,
-    getReconstructionProgress,
-    memorySceneRecords: Array.from({ length: 5 }, (_, index) => ({
-      id: index === 4 ? "memory-kiss" : `memory-${index}`, kind: "memory", order: index, image: `memory-${index}.webp`
+    getReconstructionProgress, getMemoryFrame, getMemoryBlackout, isStoryFrameReady: () => true, areIntroImagesReady: () => true,
+    memorySceneRecords: memoryScenes.map((scene, index) => ({
+      ...scene, id: `memory-${scene.id}`, kind: "memory", order: index
     })),
-    transformationSceneRecords: transformationTimeline.map((_, index) => ({
-      id: `transformation-${index}`, kind: "transformation", order: index + 5, image: `transformation-${index}.webp`
+    transformationSceneRecords: transformationScenes.map((_, index) => ({
+      id: `transformation-${index}`, kind: "transformation", order: index + memoryScenes.length, image: `transformation-${index}.webp`
     })),
     smoothstep: (value: number) => value * value * (3 - 2 * value),
     smootherstep: (value: number) => {
@@ -103,7 +105,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   state.phaseProgress = (value: number, start: number, end: number) =>
     state.smoothstep(clamp((value - start) / (end - start), 0, 1));
   state.setRuntimeStyle = () => {};
-  state.syncSceneSlots = (presentations: unknown) => { state.presentations = presentations; };
+  state.syncSceneSlots = (presentations: unknown) => { state.presentations = presentations; return true; };
   state.startAnimation = () => { state.requested++; };
   state.scheduleReleaseWarmup = () => {};
   state.clearReleaseTransientEffects = () => { state.cleared++; state.effects.push("clear"); };
@@ -127,7 +129,6 @@ function fixture(overrides: Record<string, unknown> = {}) {
     api.syncGateProgressRail(state.progress, state.releaseMode === "complete", "inner-bind");
   };
   const functions = [
-    ["memoryTimeline", "setSceneSlotStyle"],
     ["computeSceneHandoff", "syncMemorySequence"],
     ["syncMemorySequence", "pointOnQuinticCurve"],
     ["transitionChargeIntro", "startChargeIntro"],
@@ -191,7 +192,7 @@ function attachSceneCompositor(f: ReturnType<typeof fixture>) {
   }));
   const context = {
     HTMLElement: SceneElement, sceneSlotRecords: slots, sceneSlotOverflowWarned: false,
-    mobilePerformance: false, litePerformance: false,
+    mobilePerformance: false, litePerformance: false, sceneImageWarmers: new Map(),
     isSceneImageReady: () => true, quantizeRuntimeValue: (value: number) => value,
     console: { warn() { assert.fail("Shot sequence exceeded the two-slot compositor capacity"); } }
   };
@@ -204,7 +205,7 @@ function attachSceneCompositor(f: ReturnType<typeof fixture>) {
   );
   f.state.syncSceneSlots = (presentations: unknown) => {
     f.state.presentations = presentations;
-    sync(presentations);
+    return sync(presentations);
   };
   return {
     opacity(id: string) {
@@ -289,7 +290,7 @@ test("paused release resumes, and late reverse input now rewinds rather than fas
   assert.equal(f.state.releaseRewindFromTimeline, .8);
 });
 
-test("one upward gesture rewinds the final stage through both close-ups and settles on kiss", () => {
+test("one upward gesture retraces the reconstruction carrier, both close-ups and settles on kiss", () => {
   for (const fps of [30, 60, 120]) {
     const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
       releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, postReleaseActive: true });
@@ -304,16 +305,16 @@ test("one upward gesture rewinds the final stage through both close-ups and sett
     assert.deepEqual(f.state.effects, ["post:false:true", "clear", "render", "present"]);
     let previous = 1;
     const visibleShots: number[] = [];
-    for (let i = 0; i < fps * 2; i++) {
+    for (let i = 0; i < fps * 3; i++) {
       f.step(f.state.now + 1000 / fps);
       assert.ok(f.state.burstProgress <= previous);
       previous = f.state.burstProgress;
       assert.notEqual(f.state.releaseMode, "paused");
-      f.state.presentations.slice(5).forEach((scene: { opacity: number }, index: number) => {
+      f.state.presentations.slice(9).forEach((scene: { opacity: number }, index: number) => {
         if (scene.opacity > .7 && !visibleShots.includes(index)) visibleShots.push(index);
       });
     }
-    assert.deepEqual(visibleShots, [1, 0], "Both close-ups play in reverse order");
+    assert.deepEqual(visibleShots, [2, 1, 0], "The carrier belongs to reverse reconstruction, followed by both original shots");
     assert.equal(f.state.burstProgress, 0);
     assert.equal(f.state.releaseReturnPose, null);
     assert.equal(f.state.classes.has("is-release-return"), false);
@@ -322,13 +323,13 @@ test("one upward gesture rewinds the final stage through both close-ups and sett
     assert.equal(f.state.chargeIntroComplete, false);
     assert.equal(f.state.progress, .988);
     assert.equal(f.state.targetProgress, .988, "Kiss stays below the automatic replay threshold");
-    assert.equal(f.state.presentations[4].opacity, .985);
-    assert.ok(f.state.presentations.every((scene: { opacity: number }, index: number) => index === 4 || scene.opacity === 0));
+    assert.equal(f.state.presentations[8].opacity, 1);
+    assert.ok(f.state.presentations.every((scene: { opacity: number }, index: number) => index === 8 || scene.opacity === 0));
     assert.equal(f.state.releaseMode, "manual");
     assert.equal(f.state.nextPageEntries, 0);
     f.step(f.state.now + 3000);
     assert.equal(f.state.chargeIntroActive, false, "Waiting on kiss must not restart the intro");
-    assert.equal(f.state.presentations[4].opacity, .985);
+    assert.equal(f.state.presentations[8].opacity, 1);
     f.input(120);
     f.until("complete");
     assert.equal(f.input(120), 1);
@@ -359,7 +360,7 @@ test("reversing direction during the close-up rewind resumes from that shot", ()
   assert.equal(f.state.burstProgress, 1);
 });
 
-test("the actual two-slot compositor gives both reversed close-ups their original visible durations", () => {
+test("the actual two-slot compositor preserves both rapid shot durations without giving the carrier an intro hold", () => {
   for (const fps of [30, 60, 120]) {
     const interval = 1000 / fps;
     const forward = fixture();
@@ -372,21 +373,21 @@ test("the actual two-slot compositor gives both reversed close-ups their origina
     reverse.until("manual", interval);
     const handoffClock = getChargeIntroClock(gateRelease.introHandoff);
     const trace = (f: ReturnType<typeof fixture>, slots: ReturnType<typeof attachSceneCompositor>, backward: boolean) => {
-      const visible = [0, 0];
-      const alphaIntegral = [0, 0];
+      const visible = [0, 0, 0];
+      const alphaIntegral = [0, 0, 0];
       const startedAt = f.state.now;
-      while (f.state.chargeIntroActive && f.state.now - startedAt < 1800) {
+      while (f.state.chargeIntroActive && f.state.now - startedAt < 2600) {
         f.step(f.state.now + interval);
         const elapsed = f.state.now - startedAt;
         if (backward) {
           const mirrored = mapChargeIntroProgress(handoffClock - elapsed / gateRelease.introDuration);
           assert.ok(Math.abs(f.state.chargeIntroProgress - mirrored) < 1e-9);
         }
-        for (let index = 0; index < 2; index++) {
+        for (let index = 0; index < 3; index++) {
           const opacity = slots.opacity(`transformation-${index}`);
           if (opacity > .7) visible[index] += interval;
           alphaIntegral[index] += opacity * interval;
-          const expected = f.state.presentations[index + 5].opacity;
+          const expected = f.state.presentations[index + 9].opacity;
           assert.ok(Math.abs(opacity - expected) < .0001, "The bound slot must follow each shot, not retain a stale frame");
         }
       }
@@ -395,19 +396,21 @@ test("the actual two-slot compositor gives both reversed close-ups their origina
     };
     const original = trace(forward, forwardSlots, false);
     const reversed = trace(reverse, reverseSlots, true);
-    for (let index = 0; index < 2; index++) {
+    for (let index = 0; index < 3; index++) {
       assert.ok(Math.abs(original.visible[index] - reversed.visible[index]) <= interval * 2 + .001,
         `Shot ${index} must retain its original dwell at ${fps}Hz`);
       assert.ok(Math.abs(original.alphaIntegral[index] - reversed.alphaIntegral[index]) <= interval * 2,
         `Shot ${index} must retain its fade envelope at ${fps}Hz`);
     }
-    assert.ok(reversed.visible[0] > 330, "The first close-up cannot flash past in 136ms");
-    assert.ok(reversed.visible[1] > 190, "The detail close-up retains its original readable interval");
-    assert.deepEqual(reverseSlots.snapshot(), [{ id: "memory-kiss", opacity: .985 }]);
+    assert.ok(reversed.visible[0] > 200 && reversed.visible[0] < 300, "Shot 10 is a quick, readable insert");
+    assert.ok(reversed.visible[1] > 100 && reversed.visible[1] < 200, "Shot 11 follows promptly");
+    assert.equal(reversed.visible[2], 0, "The silhouette must not add a third intro shot");
+    assert.equal(original.visible[2], 0);
+    assert.deepEqual(reverseSlots.snapshot(), [{ id: "memory-kiss", opacity: 1 }]);
   }
 });
 
-test("delayed intro frames cannot skip either shot in forward or reverse playback", () => {
+test("delayed intro frames cannot skip smoke shots in forward or reverse playback", () => {
   const f = fixture();
   f.api.startChargeIntro(f.state.now);
   f.step(f.state.now + 4000);
@@ -419,8 +422,8 @@ test("delayed intro frames cannot skip either shot in forward or reverse playbac
   f.step(f.state.now + 60000);
   assert.ok(Math.abs(f.state.chargeIntroClock - (before - 50 / gateRelease.introDuration)) < 1e-10);
   assert.equal(f.state.chargeIntroReversing, true);
-  assert.ok(f.state.chargeIntroProgress > .6, "A delayed frame must not jump from detail straight to kiss");
-  f.advance(1600);
+  assert.ok(f.state.chargeIntroProgress > .5, "A delayed frame must not jump from detail straight to kiss");
+  f.advance(2200);
   assert.equal(f.state.chargeIntroProgress, 0);
 });
 
@@ -464,12 +467,50 @@ test("small wheel input, normalized touch/keyboard, reduced motion and long reve
     f.advance(180);
     assert.equal(f.state.chargeIntroProgress, 0);
     assert.equal(f.state.chargeIntroActive, false);
-    assert.equal(f.state.presentations[4].opacity, .985);
+    assert.equal(f.state.presentations[8].opacity, 1);
   }
   const blocked = fixture({ chargeIntroComplete: true, chargeIntroProgress: 1, releaseMode: "complete",
     releaseTimeline: 1, burstProgress: 1, targetBurstProgress: 1, comicTransition: { active: true } });
   assert.equal(blocked.input(-120), 1);
   assert.equal(blocked.state.releaseMode, "complete", "Comic transition keeps input ownership");
+});
+
+test("AUTO waits for media but the prepared 10 to 11 pair never pauses its running clock", () => {
+  const f = fixture({ progress: .33, targetProgress: .33, heroAutoplayActive: true, isStoryFrameReady: () => false });
+  f.api.advanceHeroAutoplay(1100);
+  f.api.advanceHeroAutoplay(2100);
+  assert.equal(f.state.targetProgress, .33);
+  f.state.isStoryFrameReady = () => true;
+  f.api.advanceHeroAutoplay(2116);
+  assert.ok(Math.abs(f.state.targetProgress - (.33 + 16 / memoryFillDuration)) < 1e-10);
+  const intro = fixture({ areIntroImagesReady: () => false, isStoryFrameReady: () => false });
+  intro.api.startChargeIntro(intro.state.now);
+  assert.equal(intro.state.chargeIntroActive, false);
+  intro.advance(900);
+  assert.equal(intro.state.chargeIntroClock, 0);
+  intro.state.areIntroImagesReady = () => true;
+  intro.step(intro.state.now + 16);
+  assert.equal(intro.state.chargeIntroActive, true);
+  assert.equal(intro.state.chargeIntroClock, 0);
+  intro.state.areIntroImagesReady = () => false;
+  intro.step(intro.state.now + 16);
+  assert.ok(Math.abs(intro.state.chargeIntroClock - 16 / gateRelease.introDuration) < 1e-10);
+});
+
+test("a late carrier never replaces the reconstruction source mid-flight, but is used on the next run", () => {
+  const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: .66 });
+  const media = f.state.sceneImageWarmers.get("transformation-2");
+  media.status = "timed-out";
+  f.api.startReleaseAutoplay(f.state.now);
+  assert.equal(f.state.releaseUsesSmokeCarrier, false);
+  media.status = "ready";
+  f.state.burstProgress = mapReleaseAutoplayProgress(.2);
+  f.state.render();
+  assert.equal(f.state.presentations[11].opacity, 0);
+  assert.ok(f.state.presentations[10].opacity > 0);
+  f.state.releaseMode = "manual";
+  f.api.startReleaseAutoplay(f.state.now);
+  assert.equal(f.state.releaseUsesSmokeCarrier, true);
 });
 
 test("AUTO no longer inserts a timed blade stage or bypasses an active heart", () => {
@@ -523,12 +564,12 @@ test("long frame gaps are bounded and disposed scenes cannot advance", () => {
   assert.equal(f.state.releaseTimeline, before);
 });
 
-test("retired blade resources are absent while final-stage and pre-release sources remain valid", () => {
+test("restoring the smoke silhouette does not restore the retired blade state machine", () => {
   assert.doesNotMatch(home, /glossFadeEnd|kisara-title-gloss|bladeWheelGain|heroAutoplayBladeDuration|burstSpringStrength|silhouette/);
   assert.doesNotMatch(read("src/themes/kisara/styles/home.css"), /kisara-title-gloss|kisara-gloss-/);
   assert.doesNotMatch(read("src/themes/kisara/lib/layoutRuntime.js"), /刀光蓄势|blade:/);
   assert.doesNotMatch(read("src/themes/kisara/styles/theme.css"), /data-stage="blade"/);
-  assert.equal(existsSync(new URL("../public/themes/kisara/assets/transformation-silhouette.webp", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../public/themes/kisara/assets/transformation-silhouette.webp", import.meta.url)), true);
   assert.doesNotMatch(home, /data-pre-release-src|data-base-src|activeTransformationUrl/);
   for (const name of ["transformation-detail.webp", "transformation-smoke-wide.webp", "fight.webp", "fight-distortion-protect.svg"]) {
     assert.ok(existsSync(new URL(`../public/themes/kisara/assets/${name}`, import.meta.url)));
@@ -541,7 +582,7 @@ test("retired blade resources are absent while final-stage and pre-release sourc
   assert.match(reset, /releaseUsesReconstruction = false/);
 });
 
-test("both close-ups retain c4fd2f4 shot cues and focus instead of extending the detail shot", () => {
+test("both original smoke cues stay fast and the silhouette only appears inside reconstruction", () => {
   assert.deepEqual(transformationTimeline, [
     { start: 0.025, enterEnd: 0.18, leaveStart: 0.34, end: 0.52, drift: -15, lift: -3 },
     { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 }
@@ -549,10 +590,15 @@ test("both close-ups retain c4fd2f4 shot cues and focus instead of extending the
   assert.equal(getTransformationFrame(1, 0.35)!.opacity, 0);
   assert.equal(getTransformationFrame(1, 0.51)!.opacity, 0.995);
   assert.equal(getTransformationFrame(0, 0.52)!.opacity, 0);
-  assert.deepEqual(getTransformationFrame(1, 0.66), getTransformationFrame(1, 0.99));
-  const middle = getTransformationFrame(1, (0.35 + 0.79) / 2, 0, 0, true)!;
-  assert.ok(Math.abs(middle.blur - 0.35) < 1e-10);
-  assert.ok(Math.abs(middle.scale - (1.072 - 0.034 + 0.5 * 0.005)) < 1e-10);
+  assert.deepEqual(getTransformationFrame(2, 0.66), getTransformationFrame(2, 0.99));
+  assert.equal(getTransformationFrame(2, 0.66)!.opacity, 0);
+  assert.equal(getTransformationFrame(2, 0.66, 0, 0, false, 0.12)!.opacity, 1);
+  assert.equal(getTransformationFrame(1, 0.66, 0, 0, false, 0.12)!.opacity, 0);
+  const middle = getTransformationFrame(1, 0.4, 0, 0, true)!;
+  assert.equal(middle.blur, 0);
+  assert.equal(middle.scale, 1.02);
+  assert.equal(middle.shiftX, 0);
+  assert.equal(middle.shiftY, 0);
   assert.match(sourceBetween("animate", "startAnimation"), /chargeIntroProgress = mapChargeIntroProgress\(chargeIntroClock\)/);
   assert.doesNotMatch(sourceBetween("transitionChargeIntro", "startChargeIntro"), /820|smootherstep/);
 });
@@ -582,17 +628,17 @@ test("the original diffusion wash reaches every corner and retains full source b
   assert.doesNotMatch(shader, /luminance|mix\(0\.58, 0\.34/);
 });
 
-test("the release takes over at the original third-shot cue, not after a stretched intro tail", () => {
+test("shots 10 and 11 run together in about 750ms and hand directly to reconstruction", () => {
   const f = fixture();
   f.api.startChargeIntro(1000);
-  for (const elapsed of [300, 600, 900, 1100]) {
+  for (const elapsed of [200, 400, 600, 700]) {
     f.advance(1000 + elapsed - f.state.now);
-    assert.ok(Math.abs(f.state.chargeIntroProgress - f.state.smootherstep(elapsed / 2150)) < 1e-10);
+    assert.ok(Math.abs(f.state.chargeIntroProgress - f.state.smootherstep(elapsed / gateRelease.introDuration)) < 1e-10);
     assert.equal(f.state.releaseMode, "manual");
   }
-  let time = 2100;
+  let time = 1700;
   while (f.state.releaseMode === "manual") f.step(time += 1000 / 60);
-  assert.ok(time - 1000 < 1300);
+  assert.ok(time - 1000 > 750 && time - 1000 < 785);
   assert.equal(f.state.chargeIntroProgress, 0.66);
   assert.equal(f.state.chargeIntroComplete, true);
   assert.equal(f.state.releaseMode, "forward");
