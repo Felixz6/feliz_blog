@@ -17,6 +17,18 @@ const homeEventSource = readSource("src/themes/kisara/components/KisaraHomeEvent
 const homeEventStyles = readSource("src/themes/kisara/styles/home-event-video.css");
 const homeStyles = readSource("src/themes/kisara/styles/home.css");
 
+test("Gate attribution keeps its text as a quiet serif credit without cue decoration", () => {
+  assert.match(homeSource, /kisara-credit-author">Yuimi-chaya<\/span> \/ <span>GPT in Codex<\/span>/);
+  const credit = homeStyles.match(/\.kisara-scroll-cue \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(credit, /font: 400 14px\/1\.6 Georgia/);
+  assert.match(credit, /right: max\(8%, 24px\)/);
+  assert.match(credit, /max-width: calc\(100% - 48px\)/);
+  assert.doesNotMatch(credit, /text-shadow|animation|background|border:|transform/);
+  assert.doesNotMatch(homeStyles, /\.kisara-scroll-cue(?:::before|\.is-guiding|\.is-enter-ready)\s*\{/);
+  assert.match(homeStyles, /\.kisara-credit-author \{ color: #ddd9dd; \}/);
+  assert.match(homeStyles, /\.kisara-scroll-cue \{[^}]*font-size: 12px/);
+});
+
 test("Kisara keeps offscreen epilogue media out of the initial image queue", () => {
   assert.match(aboutSource, /me-epilogue\.webp[^]*loading="lazy"[^]*fetchpriority="low"/);
 });
