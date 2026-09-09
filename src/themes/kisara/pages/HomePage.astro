@@ -13,6 +13,7 @@ import homeTransitionsStylesheet from "../styles/home-transitions.css?url";
 import { Icon } from "astro-icon/components";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { memoryScenes, transformationScenes } from "../lib/gateStory";
 
 const backgroundExtensions = ["webp", "png", "jpg", "jpeg"];
 const findThemeAsset = (baseName: string) => {
@@ -23,59 +24,6 @@ const findThemeAsset = (baseName: string) => {
 };
 const activeBackgroundUrl = findThemeAsset("gate-background");
 const activeFightUrl = findThemeAsset("fight");
-const memoryScenes = [
-  {
-    id: "rescue",
-    image: "/themes/kisara/assets/memory-rescue.webp",
-    position: "center 50%",
-    saturation: 0.88,
-    brightness: 1.03
-  },
-  {
-    id: "attack",
-    image: "/themes/kisara/assets/memory-attack.webp",
-    position: "center 42%",
-    saturation: 0.96,
-    brightness: 1.04
-  },
-  {
-    id: "clash",
-    image: "/themes/kisara/assets/memory-clash.webp",
-    position: "center 50%",
-    saturation: 1.08,
-    brightness: 1.08
-  },
-  {
-    id: "embrace",
-    image: "/themes/kisara/assets/memory-embrace.webp",
-    position: "center 50%",
-    saturation: 0.9,
-    brightness: 1.03
-  },
-  {
-    id: "kiss",
-    image: "/themes/kisara/assets/memory-kiss.webp",
-    position: "center 50%",
-    saturation: 0.88,
-    brightness: 1.06
-  }
-] as const;
-const transformationScenes = [
-  {
-    id: "smoke-wide",
-    image: "/themes/kisara/assets/transformation-smoke-wide.webp",
-    position: "center 50%",
-    saturation: 0.96,
-    brightness: 1.02
-  },
-  {
-    id: "detail",
-    image: "/themes/kisara/assets/transformation-detail.webp",
-    position: "center 48%",
-    saturation: 1.02,
-    brightness: 0.98
-  }
-] as const;
 const gateSceneManifest = [
   ...memoryScenes.map((scene, index) => ({
     ...scene,
@@ -93,20 +41,16 @@ const gateSceneManifest = [
   }))
 ] as const;
 const ambientParticles = [
-  { x: 7, y: 21, driftX: 88, driftY: -54, size: 3.2, duration: 18.4, delay: -4.8, opacity: 0.46, hue: 338 },
-  { x: 15, y: 73, driftX: 64, driftY: -92, size: 2.1, duration: 21.7, delay: -13.2, opacity: 0.34, hue: 346 },
-  { x: 24, y: 39, driftX: -42, driftY: -68, size: 4.1, duration: 24.2, delay: -8.7, opacity: 0.38, hue: 329 },
-  { x: 32, y: 84, driftX: 76, driftY: -74, size: 2.7, duration: 19.6, delay: -16.4, opacity: 0.42, hue: 341 },
-  { x: 41, y: 16, driftX: 45, driftY: 62, size: 2.4, duration: 22.8, delay: -10.1, opacity: 0.31, hue: 350 },
-  { x: 49, y: 66, driftX: -58, driftY: -86, size: 3.6, duration: 25.1, delay: -2.6, opacity: 0.4, hue: 334 },
-  { x: 57, y: 28, driftX: 73, driftY: -48, size: 2.2, duration: 20.3, delay: -15.5, opacity: 0.36, hue: 344 },
-  { x: 64, y: 79, driftX: -66, driftY: -96, size: 3.1, duration: 23.7, delay: -7.4, opacity: 0.44, hue: 327 },
-  { x: 72, y: 46, driftX: 51, driftY: 58, size: 2.5, duration: 17.9, delay: -11.6, opacity: 0.33, hue: 348 },
-  { x: 79, y: 17, driftX: -84, driftY: 72, size: 3.8, duration: 26.2, delay: -19.3, opacity: 0.39, hue: 336 },
-  { x: 86, y: 69, driftX: -52, driftY: -82, size: 2.2, duration: 19.1, delay: -5.9, opacity: 0.37, hue: 343 },
-  { x: 93, y: 35, driftX: -77, driftY: -61, size: 3.4, duration: 22.4, delay: -14.1, opacity: 0.43, hue: 331 },
-  { x: 37, y: 53, driftX: 95, driftY: -42, size: 1.9, duration: 16.8, delay: -9.2, opacity: 0.3, hue: 352 },
-  { x: 68, y: 91, driftX: -91, driftY: -70, size: 2.8, duration: 24.9, delay: -17.8, opacity: 0.35, hue: 339 }
+  { x: 9, y: 26, driftX: 24, driftY: -92, size: 1.5, duration: 23, delay: -4, opacity: 0.5, hue: 338 },
+  { x: 23, y: 76, driftX: -18, driftY: -120, size: 2, duration: 29, delay: -17, opacity: 0.38, hue: 200 },
+  { x: 66, y: 34, driftX: 32, driftY: -108, size: 1.5, duration: 26, delay: -9, opacity: 0.46, hue: 345 },
+  { x: 87, y: 71, driftX: -26, driftY: -98, size: 2, duration: 31, delay: -22, opacity: 0.36, hue: 200 },
+  { x: 36, y: 19, driftX: 15, driftY: -76, size: 1, duration: 21, delay: -11, opacity: 0.4, hue: 340 },
+  { x: 48, y: 84, driftX: -28, driftY: -116, size: 1.5, duration: 28, delay: -6, opacity: 0.32, hue: 40 },
+  { x: 72, y: 90, driftX: 20, driftY: -128, size: 1, duration: 32, delay: -25, opacity: 0.48, hue: 338 },
+  { x: 94, y: 28, driftX: -16, driftY: -84, size: 1.5, duration: 25, delay: -14, opacity: 0.38, hue: 210 },
+  { x: 17, y: 51, driftX: 28, driftY: -100, size: 1, duration: 30, delay: -21, opacity: 0.34, hue: 205 },
+  { x: 79, y: 53, driftX: -20, driftY: -94, size: 1.5, duration: 24, delay: -3, opacity: 0.4, hue: 345 }
 ] as const;
 const gateStyle = [
   "--kisara-fill: 0%",
@@ -228,7 +172,7 @@ const gateStyle = [
             <div class="kisara-gate-background kisara-gate-scene-slot" data-kisara-scene-slot="0"></div>
             <div class="kisara-gate-background kisara-gate-scene-slot" data-kisara-scene-slot="1"></div>
             <div class="kisara-gate-background kisara-gate-background-fight"></div>
-            <div class="kisara-memory-flare"></div>
+            <div class="kisara-memory-blackout"></div>
             <div class="kisara-gate-background kisara-gate-background-fight-wash"></div>
             <div class="kisara-gate-atmosphere"></div>
           </div>
@@ -366,6 +310,7 @@ const gateStyle = [
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, getContractReleaseFrame
     } from "../lib/gateRelease";
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
+    import { memoryFillDuration, getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices } from "../lib/gateStory";
     const releaseStaleKisaraHomeRuntime = (candidate) => {
       if (!(candidate instanceof HTMLElement) || candidate.dataset.bound !== "true") return false;
       const candidateAutoControl = candidate.querySelector("[data-kisara-auto]");
@@ -479,7 +424,6 @@ const gateStyle = [
       const baseBackground = gate.querySelector(".kisara-gate-background-base");
       const fightBackground = gate.querySelector(".kisara-gate-background-fight");
       const fightWashBackground = gate.querySelector(".kisara-gate-background-fight-wash");
-      const memoryFlare = gate.querySelector(".kisara-memory-flare");
       const sceneManifestElement = gate.querySelector("[data-kisara-scene-manifest]");
       let sceneManifest = [];
       try {
@@ -509,55 +453,90 @@ const gateStyle = [
           image,
           source: scene.image,
           status: "idle",
-          promise: null
+          promise: null,
+          cancel: null
         }];
       }));
       const warmSceneImage = (scene) => {
         const record = scene?.id ? sceneImageWarmers.get(scene.id) : null;
-        if (!record || record.status === "ready" || record.status === "failed") {
+        if (!record || ["ready", "failed", "timed-out"].includes(record.status)) {
           return record?.promise ?? Promise.resolve();
         }
         if (record.status === "decoding") return record.promise;
 
         const generation = sceneDecodeGeneration;
         record.status = "decoding";
-        if (!record.image.src) record.image.src = record.source;
-        record.promise = Promise.resolve(
-          typeof record.image.decode === "function" ? record.image.decode() : undefined
-        ).then(() => {
-          if (disposed || generation !== sceneDecodeGeneration) return;
-          record.status = "ready";
-          gate.dispatchEvent(new CustomEvent("kisara:scene-ready"));
-        }).catch(() => {
-          if (disposed || generation !== sceneDecodeGeneration) return;
-          record.status = record.image.complete && record.image.naturalWidth > 0
-            ? "ready"
-            : "failed";
-          gate.dispatchEvent(new CustomEvent("kisara:scene-ready"));
+        record.promise = new Promise(resolve => {
+          let finished = false;
+          let released = false;
+          const finish = (ready, notify = true, timedOut = false) => {
+            if (finished) return;
+            finished = !timedOut;
+            window.clearTimeout(timer);
+            if (finished) {
+              record.image.removeEventListener("load", loaded);
+              record.image.removeEventListener("error", failed);
+              record.cancel = null;
+            }
+            if (!disposed && generation === sceneDecodeGeneration) {
+              record.status = ready ? "ready" : timedOut ? "timed-out" : "failed";
+              if (notify) gate.dispatchEvent(new CustomEvent("kisara:scene-ready"));
+            }
+            if (!released) { released = true; resolve(undefined); }
+          };
+          const loaded = () => finish(record.image.naturalWidth > 0);
+          const failed = () => finish(false);
+          const timer = window.setTimeout(() => finish(false, true, true), 3500);
+          record.cancel = () => finish(false, false);
+          record.image.addEventListener("error", failed, { once: true });
+          if (typeof record.image.decode !== "function") {
+            record.image.addEventListener("load", loaded, { once: true });
+          }
+          if (!record.image.src) record.image.src = record.source;
+          if (typeof record.image.decode === "function") {
+            record.image.decode().then(loaded, failed);
+          } else if (record.image.complete) {
+            loaded();
+          }
         });
         return record.promise;
       };
       const isSceneImageReady = (scene) => {
         const record = scene?.id ? sceneImageWarmers.get(scene.id) : null;
-        if (!record || record.status === "failed") return true;
-        if (
-          record.status === "ready"
-          || (record.image.complete && record.image.naturalWidth > 0)
-        ) {
-          record.status = "ready";
-          return true;
-        }
+        if (!record || record.status === "failed" || record.status === "timed-out") return true;
+        if (record.status === "ready") return true;
         warmSceneImage(scene);
         return false;
       };
       const warmSceneImagesForProgress = (fill, intro) => {
-        if (fill >= 0.08) warmSceneImage(memorySceneRecords[2]);
-        if (fill >= 0.25) warmSceneImage(memorySceneRecords[3]);
-        if (fill >= 0.42) warmSceneImage(memorySceneRecords[4]);
-        if (fill >= 0.55 || intro > 0.001) warmSceneImage(transformationSceneRecords[0]);
-        if (fill >= 0.7 || intro >= 0.18) warmSceneImage(transformationSceneRecords[1]);
+        getMemoryWarmIndices(fill).forEach(index => warmSceneImage(memorySceneRecords[index]));
+        if (fill >= 0.65 || intro > 0.001) warmSceneImage(transformationSceneRecords[0]);
+        if (fill >= 0.78 || intro >= 0.08) warmSceneImage(transformationSceneRecords[1]);
+        if (fill >= 0.88 || intro >= 0.25) warmSceneImage(transformationSceneRecords[2]);
       };
       if (!foundSelfEntryRequested) memorySceneRecords.slice(0, 2).forEach(warmSceneImage);
+      const isStoryFrameReady = (fill, intro) => {
+        let ready = true;
+        memorySceneRecords.forEach((record, index) => {
+          if (getMemoryFrame(index, fill, intro, reducedMotion)?.opacity > 0.00005) {
+            ready = isSceneImageReady(record) && ready;
+          }
+        });
+        transformationSceneRecords.forEach((record, index) => {
+          if (getTransformationFrame(index, intro)?.opacity > 0.00005) {
+            ready = isSceneImageReady(record) && ready;
+          }
+        });
+        return ready;
+      };
+      const areIntroImagesReady = () => {
+        let ready = true;
+        // Prepare the complete burst before playing it; never wait between shots 10 and 11.
+        [memorySceneRecords.at(-1), ...transformationSceneRecords].forEach(record => {
+          ready = isSceneImageReady(record) && ready;
+        });
+        return ready;
+      };
       let sceneSlotOverflowWarned = false;
       const meterShell = gate.querySelector(".kisara-contract-meter");
       const title = gate.querySelector(".kisara-title");
@@ -767,8 +746,9 @@ const gateStyle = [
       const chargeHandoffEnd = 0.18;
       const releaseStart = gateRelease.phases.start;
       const releaseAutoplayDuration = gateRelease.duration;
-      const heroAutoplayFillDuration = 4600;
+      const heroAutoplayFillDuration = memoryFillDuration;
       let releaseUsesReconstruction = false;
+      let releaseUsesSmokeCarrier = false;
       let releaseReturnPose = null;
       let reconstructionCenter = { x: 0.5, y: 0.48 };
       const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
@@ -1138,14 +1118,6 @@ const gateStyle = [
         const progressCubed = progressSquared * progress;
         return progressCubed * (progress * (progress * 6 - 15) + 10);
       };
-      const memoryTimeline = [
-        { start: 0.035, enterEnd: 0.105, leaveStart: 0.185, end: 0.275, drift: 22, lift: -4 },
-        { start: 0.19, enterEnd: 0.265, leaveStart: 0.35, end: 0.445, drift: -26, lift: 3 },
-        { start: 0.36, enterEnd: 0.435, leaveStart: 0.525, end: 0.615, drift: 18, lift: -2 },
-        { start: 0.53, enterEnd: 0.605, leaveStart: 0.695, end: 0.785, drift: -18, lift: 2 },
-        { start: 0.7, enterEnd: 0.775, leaveStart: 1, end: 1, drift: 16, lift: -1, persistent: true }
-      ];
-      const memoryTransitionCenters = [0.205, 0.375, 0.545, 0.715, 0.885];
       const setSceneSlotStyle = (slot, property, value) => {
         if (!(slot?.element instanceof HTMLElement) || slot.rendered[property] === value) return;
         slot.element.style.setProperty(property, value);
@@ -1166,12 +1138,18 @@ const gateStyle = [
         setSceneSlotStyle(slot, "--kisara-scene-position", presentation.position || "center 50%");
       };
       const syncSceneSlots = (presentations) => {
-        let activePresentations = presentations.filter((presentation) => presentation.opacity > 0.00005);
+        let activePresentations = presentations.filter((presentation) =>
+          presentation.opacity > 0.00005
+            && !["failed", "timed-out"].includes(sceneImageWarmers.get(presentation.id)?.status)
+        );
         const pendingPresentations = activePresentations.filter(
           (presentation) => !isSceneImageReady(presentation)
         );
         if (pendingPresentations.length > 0) {
-          return;
+          return false;
+        }
+        if (activePresentations.length === 0 && presentations.some(presentation => presentation.opacity > 0.00005)) {
+          return false;
         }
         if (activePresentations.length > sceneSlotRecords.length) {
           if (!sceneSlotOverflowWarned) {
@@ -1211,174 +1189,45 @@ const gateStyle = [
             setSceneSlotStyle(slot, "opacity", "0");
             return;
           }
-          const renderedBlur = presentation.kind === "memory" && mobilePerformance
-            ? (litePerformance ? 0.8 : 1.25)
-            : quantizeRuntimeValue(
-                presentation.blur,
-                0.5,
-                0.75
-              );
           const renderedShiftX = quantizeRuntimeValue(presentation.shiftX, 0.35, 0.5);
           const renderedShiftY = quantizeRuntimeValue(presentation.shiftY, 0.35, 0.5);
           const renderedScale = quantizeRuntimeValue(presentation.scale, 0.0015, 0.002);
-          const renderedOpacity = quantizeRuntimeValue(presentation.opacity, 0.008, 0.012);
-          const filter = presentation.kind === "memory"
-            ? `blur(calc(${renderedBlur.toFixed(3)}px + var(--kisara-performance-blur))) saturate(${presentation.saturation}) brightness(${presentation.brightness}) contrast(1.035)`
-            : `blur(calc(${renderedBlur.toFixed(3)}px + var(--kisara-performance-blur))) saturate(${presentation.saturation}) brightness(${presentation.brightness}) contrast(1.025)`;
+          const renderedOpacity = presentation.opacity >= 0.9999
+            ? 1 : quantizeRuntimeValue(presentation.opacity, 0.008, 0.012);
           const transform = presentation.kind === "memory"
             ? `translate3d(${renderedShiftX.toFixed(3)}px, ${renderedShiftY.toFixed(3)}px, 0) scale(${renderedScale.toFixed(5)}) scale(var(--kisara-gravity-scale))`
             : `translate3d(calc(${renderedShiftX.toFixed(3)}px + var(--kisara-base-shift-x)), calc(${renderedShiftY.toFixed(3)}px + var(--kisara-base-shift-y)), 0) scale(${renderedScale.toFixed(5)}) scale(var(--kisara-gravity-scale))`;
           setSceneSlotStyle(slot, "z-index", String(presentation.order + 1));
           setSceneSlotStyle(slot, "opacity", renderedOpacity.toFixed(4));
-          setSceneSlotStyle(slot, "filter", filter);
+          setSceneSlotStyle(slot, "transform-origin", presentation.origin || "center");
           setSceneSlotStyle(slot, "transform", transform);
         });
+        return true;
       };
       const computeSceneHandoff = () => getGateSceneHandoff(
         getReconstructionProgress(burstProgress)
       );
       const syncMemorySequence = (fill) => {
-        const motionBlur = clamp(Math.abs(velocity) * 96, 0, 4.4);
-        const transformationEntrance = smootherstep((chargeIntroProgress - 0.025) / 0.205);
-        const memoryClock = reducedMotion ? 0 : performance.now() / 1000;
-        const kissHold = smootherstep(clamp((fill - 0.76) / 0.16, 0, 1));
-        const kissPrelude = phaseProgress(chargeIntroProgress, 0.12, 0.5);
-        const kissMotionX = (
-          Math.sin(memoryClock * 0.72) * 3.8
-          + Math.sin(memoryClock * 0.31 + 1.4) * 1.7
-          - kissPrelude * 9.5
-        ) * kissHold;
-        const kissMotionY = (
-          Math.cos(memoryClock * 0.53) * 2.1
-          + Math.sin(memoryClock * 0.27 + 0.8) * 1.1
-          - kissPrelude * 4.8
-        ) * kissHold;
-        const kissBreath = (
-          0.0032 + Math.sin(memoryClock * 0.88) * 0.0018 + kissPrelude * 0.013
-        ) * kissHold;
-        let strongestScene = 0;
-        const memoryOpacities = new Array(memorySceneRecords.length).fill(0);
-        const memoryFilters = new Array(memorySceneRecords.length).fill("none");
         const scenePresentations = [];
-
         memorySceneRecords.forEach((record, index) => {
-          const scene = memoryTimeline[index];
-          if (!record || !scene) return;
-          const enter = smootherstep((fill - scene.start) / Math.max(0.0001, scene.enterEnd - scene.start));
-          const leave = scene.persistent
-            ? 1 - transformationEntrance
-            : 1 - smootherstep((fill - scene.leaveStart) / Math.max(0.0001, scene.end - scene.leaveStart));
-          const opacity = clamp(enter * leave, 0, 1);
-          const local = scene.persistent
-            ? clamp((fill - scene.start) / Math.max(0.0001, scene.enterEnd - scene.start), 0, 1)
-            : clamp((fill - scene.start) / Math.max(0.0001, scene.end - scene.start), 0, 1);
-          const focus = scene.persistent ? smootherstep(local) : Math.sin(local * Math.PI);
-          const persistentMotion = scene.persistent ? 1 - transformationEntrance * 0.28 : 0;
-          const edgeSoftness = Math.pow(1 - Math.max(0, focus), 1.35)
-            + (scene.persistent ? Math.pow(transformationEntrance, 1.35) * 0.9 : 0);
-          const directionalTravel = (local - 0.5) * scene.drift
-            + kissMotionX * persistentMotion;
-          const verticalTravel = scene.lift * focus
-            + kissMotionY * persistentMotion;
-          const scale = 1.065 - focus * 0.032 + local * 0.006
-            + (scene.persistent ? kissBreath : 0);
-          const memoryBlur = 0.45 + edgeSoftness * 8.6 + motionBlur;
-          const memorySaturation = Number.isFinite(Number(record.saturation))
-            ? Number(record.saturation)
-            : 0.92;
-          const memoryBrightness = Number.isFinite(Number(record.brightness))
-            ? Number(record.brightness)
-            : 1;
-
-          strongestScene = Math.max(strongestScene, opacity);
-          memoryOpacities[index] = opacity * 0.985;
-          memoryFilters[index] = `blur(${memoryBlur.toFixed(3)}px) saturate(${memorySaturation}) brightness(${memoryBrightness}) contrast(1.035)`;
-          scenePresentations.push({
-            ...record,
-            opacity: opacity * 0.985,
-            blur: memoryBlur,
-            saturation: memorySaturation,
-            brightness: memoryBrightness,
-            scale,
-            shiftX: directionalTravel,
-            shiftY: verticalTravel
-          });
+          const frame = getMemoryFrame(index, fill, chargeIntroProgress, reducedMotion);
+          if (frame) scenePresentations.push({ ...record, ...frame });
         });
-
-        let transformationReveal = 0;
-        const transformationOpacities = new Array(transformationSceneRecords.length).fill(0);
-        const transformationFilters = new Array(transformationSceneRecords.length).fill(null);
-        transformationSceneRecords.forEach((record, index) => {
-          const scene = getTransformationFrame(index, chargeIntroProgress, memoryClock, motionBlur, reducedMotion);
-          if (!record || !scene) return;
-          const { opacity, scale, shiftX: directionalTravel, shiftY: verticalTravel } = scene;
-          const transformationBlur = scene.blur;
-          const transformationSaturation = Number.isFinite(Number(record.saturation))
-            ? Number(record.saturation)
-            : 1;
-          const transformationBrightness = Number.isFinite(Number(record.brightness))
-            ? Number(record.brightness)
-            : 1;
-
-          transformationReveal = Math.max(transformationReveal, opacity);
-          strongestScene = Math.max(strongestScene, opacity);
-          transformationOpacities[index] = opacity;
-          transformationFilters[index] = {
-            blur: transformationBlur,
-            saturation: transformationSaturation,
-            brightness: transformationBrightness
-          };
-          scenePresentations.push({
-            ...record,
-            opacity,
-            blur: transformationBlur,
-            saturation: transformationSaturation,
-            brightness: transformationBrightness,
-            scale,
-            shiftX: directionalTravel,
-            shiftY: verticalTravel
-          });
-        });
-
-        const transitionProximity = memoryTransitionCenters.reduce((strongest, center) => {
-          const proximity = clamp(1 - Math.abs(fill - center) / 0.034, 0, 1);
-          return Math.max(strongest, smootherstep(proximity));
-        }, 0);
-        const transitionEnergy = clamp(Math.abs(velocity) * 34, 0, 1);
-        const memoryEnvelope = phaseProgress(fill, 0.018, 0.09) * (1 - transformationEntrance);
-        const baseExit = smootherstep((fill - 0.035) / 0.115);
-
-        const memoryFlash = transitionProximity * transitionEnergy * 0.34;
-        const memoryHaze = memoryEnvelope * (0.045 + strongestScene * 0.045);
-        const memoryFlareShift = clamp(velocity * 155, -1, 1) * 10;
-        setRuntimeStyle(gate, "--kisara-memory-flash", memoryFlash.toFixed(4));
-        setRuntimeStyle(gate, "--kisara-memory-haze", memoryHaze.toFixed(4));
-        setRuntimeStyle(gate, "--kisara-memory-flare-shift", `${memoryFlareShift.toFixed(3)}px`);
-
         const handoff = computeSceneHandoff();
-        const finalScenePresentations = scenePresentations.map((presentation) => {
-          if (presentation.kind !== "transformation") return presentation;
-          return {
-            ...presentation,
-            opacity: presentation.opacity * handoff.transformationReleaseOpacity
-          };
+        transformationSceneRecords.forEach((record, index) => {
+          const frame = getTransformationFrame(index, chargeIntroProgress, 0, 0, reducedMotion,
+            releaseUsesSmokeCarrier ? getReconstructionProgress(burstProgress) : 0);
+          if (frame) scenePresentations.push({
+            ...record, ...frame, opacity: frame.opacity * handoff.transformationReleaseOpacity
+          });
         });
-        syncSceneSlots(finalScenePresentations);
-
-        return {
-          baseExit,
-          transformationReveal,
-          handoff,
-          memoryOpacities,
-          memoryFilters,
-          transformationOpacities,
-          transformationFilters,
-          flare: {
-            opacity: clamp(memoryFlash + memoryHaze, 0, 0.44),
-            filter: "blur(8px)",
-            shift: memoryFlareShift
-          }
-        };
+        const composed = syncSceneSlots(scenePresentations);
+        const blackout = getMemoryBlackout(fill, chargeIntroProgress, reducedMotion);
+        if (composed || blackout === 0) {
+          setRuntimeStyle(gate, "--kisara-memory-blackout", blackout.toFixed(4));
+        }
+        if (composed) setRuntimeStyle(gate, "--kisara-bg-opacity", fill < 0.065 ? "1" : "0");
+        return { handoff };
       };
       const pointOnQuinticCurve = (start, controlA, controlB, controlC, controlD, end, progress) => {
         const inverse = 1 - progress;
@@ -7465,10 +7314,9 @@ const gateStyle = [
           fightSaturation,
           fightBrightness
         } = memoryState.handoff;
-        const baseSceneOpacity = 0.98 - memoryState.baseExit * 0.78;
-        const baseSceneBlur = memoryState.baseExit * 10;
-        const baseSceneSaturation = 1 - memoryState.baseExit * 0.2;
-        const baseSceneBrightness = 1 - memoryState.baseExit * 0.12;
+        const baseSceneBlur = 0;
+        const baseSceneSaturation = 1;
+        const baseSceneBrightness = 1;
         const boundaryOpacity = fill <= 0.002 || fill >= 0.998
           ? 0
           : Math.min(0.74, 0.38 + Math.sin(fill * Math.PI) * 0.1 + Math.abs(velocity) * 24);
@@ -7480,7 +7328,6 @@ const gateStyle = [
         setRuntimeStyle(gate, "--kisara-boundary-opacity", quantizeRuntimeValue(boundaryOpacity, 0.01, 0.015).toFixed(3));
         setRuntimeStyle(gate, "--kisara-boundary-offset", `${quantizeRuntimeValue(boundaryOffset, 0.05, 0.08).toFixed(3)}%`);
         setRuntimeStyle(gate, "--kisara-bg-blur", `${quantizeRuntimeValue(baseSceneBlur, 0.5, 0.75).toFixed(3)}px`);
-        setRuntimeStyle(gate, "--kisara-bg-opacity", quantizeRuntimeValue(baseSceneOpacity, 0.01, 0.015).toFixed(3));
         setRuntimeStyle(gate, "--kisara-bg-saturation", quantizeRuntimeValue(baseSceneSaturation, 0.01, 0.015).toFixed(3));
         setRuntimeStyle(gate, "--kisara-bg-brightness", quantizeRuntimeValue(baseSceneBrightness, 0.01, 0.015).toFixed(3));
         setRuntimeStyle(gate, "--kisara-fight-opacity", quantizeRuntimeValue(fightVisible * 0.985, 0.01, 0.015).toFixed(3));
@@ -7583,6 +7430,7 @@ const gateStyle = [
       const startChargeIntro = (timestamp) => {
         if (chargeIntroComplete || pageMode !== "gate") return;
         scheduleReleaseWarmup(true);
+        if (!areIntroImagesReady()) return;
         progress = 1;
         targetProgress = 1;
         velocity = 0;
@@ -7620,6 +7468,7 @@ const gateStyle = [
         releaseRewindDuration = 0;
         releaseRewindElapsed = 0;
         if (!resume) {
+          releaseUsesSmokeCarrier = sceneImageWarmers.get(transformationSceneRecords[2]?.id)?.status === "ready";
           releaseUsesReconstruction = Boolean(spaceLensRenderer) && releaseWarmupState.spaceLens
             && !releaseWarmupPending.spaceLens;
           if (title) {
@@ -7770,11 +7619,12 @@ const gateStyle = [
         }
         if (chargeIntroActive) return;
         if (!chargeIntroComplete) {
-          targetProgress = clamp(
+          const next = clamp(
             targetProgress + deltaTime / heroAutoplayFillDuration,
             0,
             1
           );
+          if (isStoryFrameReady(next, chargeIntroProgress)) targetProgress = next;
           return;
         }
         startReleaseAutoplay(timestamp);
@@ -7871,7 +7721,7 @@ const gateStyle = [
             targetBurstProgress = burstProgress;
             burstVelocity = 0;
             clearReleaseTransientEffects(timestamp);
-            // Continue through both shots to kiss, below the automatic intro trigger.
+            // Retrace the smoke shots to kiss, below the automatic intro trigger.
             targetProgress = Math.min(targetProgress, 0.988);
             transitionChargeIntro(0, timestamp);
           }
@@ -8221,6 +8071,7 @@ const gateStyle = [
         energyContext?.clearRect(0, 0, energyCanvasWidth, energyCanvasHeight);
         clearTitleChains();
         releaseUsesReconstruction = false;
+        releaseUsesSmokeCarrier = false;
         spaceLensRenderer?.clear();
         titleLensRenderer?.clear();
         gate.style.setProperty("--kisara-title-source-opacity", "1");
@@ -9107,6 +8958,7 @@ const gateStyle = [
       gate.addEventListener("kisara:scene-ready", () => {
         if (foundSelfActive || lovebrainActive) return;
         render();
+        if (pageMode === "gate" && targetProgress >= 0.995 && !chargeIntroComplete) startAnimation();
         startEnergyAnimation();
       }, { signal });
 
@@ -9185,6 +9037,7 @@ const gateStyle = [
         }
       }
       document.addEventListener("visibilitychange", () => {
+        gate.classList.toggle("is-story-suspended", document.visibilityState === "hidden");
         if (document.visibilityState === "hidden") {
           openingBridgeResumeLive = openingBridgePortalActive
             || (pageMode === "next" && isOpeningStopCurrent());
@@ -9254,6 +9107,7 @@ const gateStyle = [
         deactivateOpeningBridgePortal();
         lifecycle.abort();
         sceneDecodeGeneration += 1;
+        sceneImageWarmers.forEach(record => record.cancel?.());
         sceneImageWarmers.clear();
         spaceLensInitGeneration += 1;
         spaceLensInitController?.abort();

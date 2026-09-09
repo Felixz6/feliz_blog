@@ -37,9 +37,7 @@
   --kisara-bg-opacity: 1;
   --kisara-bg-saturation: 1;
   --kisara-bg-brightness: 1;
-  --kisara-memory-flash: 0;
-  --kisara-memory-haze: 0;
-  --kisara-memory-flare-shift: 0px;
+  --kisara-memory-blackout: 0;
   --kisara-fight-opacity: 0;
   --kisara-fight-blur: 16px;
   --kisara-fight-scale: 1.06;
@@ -376,11 +374,11 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
 .kisara-ambient-particles {
   position: absolute;
   z-index: -1;
-  inset: -7%;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
   contain: strict;
-  mix-blend-mode: screen;
+  opacity: calc(1 - var(--kisara-memory-blackout));
 }
 
 .kisara-ambient-particles i {
@@ -389,33 +387,12 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
   left: var(--kisara-particle-x);
   width: var(--kisara-particle-size);
   height: var(--kisara-particle-size);
-  border-radius: 50%;
+  border-radius: 1px;
   opacity: 0;
-  background: radial-gradient(
-    circle at 36% 32%,
-    rgba(255, 255, 255, 0.98) 0 11%,
-    hsla(var(--kisara-particle-hue), 100%, 84%, 0.92) 24%,
-    hsla(var(--kisara-particle-hue), 100%, 68%, 0.66) 48%,
-    hsla(var(--kisara-particle-hue), 100%, 58%, 0.08) 72%,
-    transparent 78%
-  );
-  box-shadow:
-    0 0 calc(var(--kisara-particle-size) * 2.6) hsla(var(--kisara-particle-hue), 100%, 72%, 0.72),
-    0 0 calc(var(--kisara-particle-size) * 5.2) hsla(var(--kisara-particle-hue), 100%, 62%, 0.2);
-  animation: kisara-ambient-particle-drift var(--kisara-particle-duration) cubic-bezier(0.38, 0.08, 0.24, 0.98) infinite;
+  background: hsl(var(--kisara-particle-hue) 35% 88%);
+  animation: kisara-ambient-particle-drift var(--kisara-particle-duration) linear infinite;
   animation-delay: var(--kisara-particle-delay);
   will-change: transform, opacity;
-}
-
-.kisara-ambient-particles i::after {
-  content: "";
-  position: absolute;
-  inset: -160%;
-  border: 1px solid hsla(var(--kisara-particle-hue), 100%, 82%, 0.18);
-  border-radius: 50%;
-  transform: scale(0.42);
-  animation: kisara-ambient-particle-halo 3.6s ease-in-out infinite;
-  animation-delay: var(--kisara-particle-delay);
 }
 
 @keyframes kisara-ambient-particle-drift {
@@ -425,7 +402,7 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
       calc(var(--kisara-particle-drift-x) * -0.3),
       calc(var(--kisara-particle-drift-y) * -0.18),
       0
-    ) scale(0.58);
+    ) rotate(18deg);
   }
   16% {
     opacity: calc(var(--kisara-particle-opacity) * 0.72);
@@ -436,7 +413,7 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
       calc(var(--kisara-particle-drift-x) * 0.28),
       calc(var(--kisara-particle-drift-y) * 0.42),
       0
-    ) scale(1.12);
+    ) rotate(70deg);
   }
   72% {
     opacity: calc(var(--kisara-particle-opacity) * 0.82);
@@ -444,7 +421,7 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
       calc(var(--kisara-particle-drift-x) * 0.68),
       calc(var(--kisara-particle-drift-y) * 0.74),
       0
-    ) scale(0.9);
+    ) rotate(115deg);
   }
   100% {
     opacity: 0;
@@ -452,13 +429,8 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
       var(--kisara-particle-drift-x),
       var(--kisara-particle-drift-y),
       0
-    ) scale(0.64);
+    ) rotate(160deg);
   }
-}
-
-@keyframes kisara-ambient-particle-halo {
-  0%, 100% { opacity: 0.18; transform: scale(0.38); }
-  50% { opacity: 0.54; transform: scale(0.92); }
 }
 
 
@@ -490,7 +462,7 @@ html[data-kisara-found-self-entry] .kisara-found-self.is-leaving,
 .kisara-gate-bridge-current,
 .kisara-gate-visual,
 .kisara-gate-background,
-.kisara-memory-flare,
+.kisara-memory-blackout,
 .kisara-space-lens-canvas,
 .kisara-post-release-canvas,
 .kisara-gate-atmosphere {
@@ -614,7 +586,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   z-index: 0;
   background-image: var(--kisara-gate-background-image);
   opacity: var(--kisara-bg-opacity);
-  filter: blur(calc(var(--kisara-bg-blur) + var(--kisara-performance-blur))) saturate(var(--kisara-bg-saturation)) brightness(var(--kisara-bg-brightness));
+  filter: blur(calc(var(--kisara-bg-blur) + var(--kisara-performance-blur))) saturate(var(--kisara-bg-saturation)) brightness(var(--kisara-bg-brightness)) saturate(0.94) contrast(1.04);
   transform: translate3d(var(--kisara-base-shift-x), var(--kisara-base-shift-y), 0)
     scale(1.045)
     scale(var(--kisara-gravity-scale));
@@ -628,23 +600,10 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   opacity: 0;
   transform-origin: center;
   backface-visibility: hidden;
-  will-change: opacity, filter, transform;
-}
-
-.kisara-gate-scene-slot[data-scene-kind="memory"] {
-  background-image:
-    linear-gradient(112deg, rgba(20, 25, 55, 0.16), transparent 42%, rgba(255, 190, 210, 0.12)),
-    radial-gradient(ellipse at 50% 48%, transparent 48%, rgba(8, 10, 31, 0.3) 100%),
-    var(--kisara-scene-image);
-  background-position: center, center, var(--kisara-scene-position);
-  background-size: cover;
-  background-blend-mode: soft-light, multiply, normal;
-}
-
-.kisara-gate-scene-slot[data-scene-kind="transformation"] {
   background-image: var(--kisara-scene-image);
   background-position: var(--kisara-scene-position);
-  background-blend-mode: normal;
+  filter: saturate(0.94) contrast(1.04);
+  will-change: opacity, transform;
 }
 
 .kisara-gate-background-fight {
@@ -662,33 +621,11 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   will-change: opacity, filter, transform;
 }
 
-.kisara-memory-flare {
-  z-index: 30;
-  inset: -12%;
-  opacity: clamp(0, calc(var(--kisara-memory-haze) + var(--kisara-memory-flash)), 0.44);
-  background:
-    radial-gradient(ellipse at 52% 47%, rgba(255, 252, 250, 0.88) 0 4%, rgba(255, 214, 229, 0.42) 18%, transparent 54%),
-    linear-gradient(112deg, transparent 24%, rgba(255, 255, 255, 0.46) 49%, rgba(255, 173, 203, 0.18) 56%, transparent 76%);
-  filter: blur(calc(8px + var(--kisara-performance-blur)));
-  mix-blend-mode: screen;
-  transform: translate3d(var(--kisara-memory-flare-shift), 0, 0) scale(1.08);
-  transform-origin: center;
-  will-change: opacity, filter, transform;
-}
-
-.kisara-memory-flare::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.2;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.08) 0,
-    rgba(255, 255, 255, 0.08) 1px,
-    transparent 1px,
-    transparent 4px
-  );
-  mix-blend-mode: soft-light;
+.kisara-memory-blackout {
+  z-index: 35;
+  background: #08090d;
+  opacity: var(--kisara-memory-blackout);
+  will-change: opacity;
 }
 
 
@@ -747,8 +684,12 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 .kisara-gate-atmosphere {
   z-index: 30;
-  background: linear-gradient(180deg, rgba(7, 10, 31, 0.34), rgba(7, 10, 31, 0.58));
-  filter: blur(var(--kisara-performance-blur));
+  opacity: calc(1 - var(--kisara-memory-blackout));
+  background:
+    linear-gradient(112deg, rgba(20, 25, 55, 0.22), rgba(20, 25, 55, 0.04) 42%, rgba(255, 190, 210, 0.1)),
+    radial-gradient(ellipse at 50% 46%, transparent 38%, rgba(8, 10, 31, 0.1) 68%, rgba(8, 10, 31, 0.32) 100%),
+    linear-gradient(180deg, rgba(7, 10, 31, 0.28), rgba(7, 10, 31, 0.17) 44%, rgba(7, 10, 31, 0.42));
+  will-change: opacity;
 }
 
 .kisara-gate-atmosphere::after {
@@ -1201,6 +1142,10 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
     drop-shadow(0 8px 20px rgba(0, 0, 10, 0.46));
   transition: transform 260ms cubic-bezier(0.77, 0, 0.175, 1);
   will-change: opacity;
+}
+
+.kisara-gate:is(.is-bursting, .is-burst-complete, .is-post-release) .kisara-gate-atmosphere {
+  visibility: hidden;
 }
 
 .kisara-gate.is-title-abyss-ready .kisara-title-abyss-canvas {
@@ -3021,8 +2966,18 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 }
 
-.kisara-gate.is-released .kisara-ambient-particles i {
+.kisara-gate:is(.is-released, .is-story-suspended, .is-found-self-active, .is-lovebrain-active, .is-burst-complete) .kisara-ambient-particles i {
   animation-play-state: paused;
+}
+
+.kisara-gate:is(.is-released, .is-burst-complete) .kisara-ambient-particles {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kisara-ambient-particles {
+    display: none;
+  }
 }
 
 html[data-yuimi-performance="mobile"] .kisara-ambient-particles i:nth-child(n + 5),
@@ -3032,6 +2987,10 @@ html[data-yuimi-performance="lite"] .kisara-ambient-particles i:nth-child(n + 4)
 
 html[data-yuimi-performance="lite"] .kisara-ambient-particles {
   display: none;
+}
+
+html[data-yuimi-performance="lite"] :is(.kisara-gate-background-base, .kisara-gate-scene-slot) {
+  filter: none;
 }
 
 html[data-yuimi-performance="lite"] .kisara-event-photo::before,
@@ -3062,14 +3021,6 @@ html[data-yuimi-performance="lite"] .kisara-event-reward-burst::before {
 
   .kisara-gate-scene-slot {
     will-change: opacity, transform;
-  }
-
-  .kisara-ambient-particles i {
-    box-shadow: 0 0 calc(var(--kisara-particle-size) * 2.8) hsla(var(--kisara-particle-hue), 100%, 72%, 0.52);
-  }
-
-  .kisara-ambient-particles i::after {
-    display: none;
   }
 
   .kisara-gate-skip::after {

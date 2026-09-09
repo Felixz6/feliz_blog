@@ -10,7 +10,7 @@ const smoother = (value: number) => {
 const between = (value: number, start: number, end: number) => unit((value - start) / (end - start));
 
 export const gateRelease = {
-  introDuration: 2150,
+  introDuration: 1280,
   introHandoff: 0.66,
   duration: 610,
   phases: { start: 0.01 }
@@ -83,22 +83,30 @@ export const transformationTimeline = [
   { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 }
 ] as const;
 
-export function getTransformationFrame(index: number, intro: number, clock = 0, motionBlur = 0, reducedMotion = false) {
+export function getTransformationFrame(index: number, intro: number, _clock = 0, _motionBlur = 0, reducedMotion = false, reconstruction = 0) {
+  const carrier = smoother(between(reconstruction, 0, 0.12));
+  if (index === 2) {
+    return {
+      opacity: intro >= gateRelease.introHandoff ? carrier : 0,
+      scale: reducedMotion ? 1.02 : 1.035 + unit(reconstruction) * 0.035,
+      shiftX: 0,
+      shiftY: 0,
+      blur: 0
+    };
+  }
   const scene = transformationTimeline[index];
   if (!scene) return null;
-  // Preserve the two original shots; the former third-shot cue now starts reconstruction.
+  // Keep the original rapid two-shot clock; the silhouette belongs to reconstruction only.
   const position = Math.min(intro, gateRelease.introHandoff);
   const enter = smoother(between(position, scene.start, scene.enterEnd));
   const leave = 1 - smoother(between(position, scene.leaveStart, scene.end));
   const local = between(position, scene.start, scene.end);
-  const focus = Math.sin(local * Math.PI);
-  const breath = reducedMotion ? 0 : Math.sin(clock * (0.34 + index * 0.08) + index * 1.7);
   return {
-    opacity: enter * leave * 0.995,
-    scale: 1.072 - focus * 0.034 + local * 0.005 + breath * 0.0015,
-    shiftX: (local - 0.5) * scene.drift + breath * 1.2,
-    shiftY: scene.lift * focus + breath * 0.45,
-    blur: 0.35 + Math.pow(1 - Math.max(0, focus), 1.28) * 7.4 + motionBlur * 0.38
+    opacity: enter * leave * 0.995 * (1 - carrier),
+    scale: reducedMotion ? 1.02 : 1.035 + local * 0.022,
+    shiftX: reducedMotion ? 0 : (local - 0.5) * scene.drift,
+    shiftY: reducedMotion ? 0 : scene.lift * local,
+    blur: 0
   };
 }
 
