@@ -26,6 +26,8 @@ const stylesheetBudgets = [
 const bundleBudgets = [
   ["Kisara shared layout runtime", "KisaraLayout.astro_astro_type_script_index_1_lang.", 9_000],
   ["Kisara Home primary module", "HomePage.astro_astro_type_script_index_", 225_000],
+  ["Kisara stage loader", "KisaraChibiStage.astro_astro_type_script_index_", 3_500],
+  ["Kisara deferred stage runtime", "chibiStage.", 20_000],
   ["Kisara Blog page runtime", "blogPage.", 20_000],
   ["Kisara Works page runtime", "worksPage.", 72_000]
 ];

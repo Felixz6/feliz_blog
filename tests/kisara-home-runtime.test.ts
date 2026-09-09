@@ -39,6 +39,8 @@ function fixture(reduced = false, withPortrait = false) {
     duration: 1.292958,
     paused: true,
     ended: false,
+    readyState: 4,
+    seeking: false,
     preload: "none",
     loads: 0,
     plays: 0,
@@ -80,11 +82,14 @@ function fixture(reduced = false, withPortrait = false) {
     emit(intersecting = true) { this.callback([{ isIntersecting: intersecting }]); }
   }
   const document = Object.assign(new EventTarget(), { hidden: false });
+  const paints = new Map<number, FrameRequestCallback>();
   const window = Object.assign(new EventTarget(), {
     innerHeight: 900,
     matchMedia: () => motion,
     setTimeout(callback: Function) { const next = ++id; timers.set(next, callback); return next; },
     clearTimeout(id: number) { timers.delete(id); },
+    requestAnimationFrame(callback: FrameRequestCallback) { const next = ++id; paints.set(next, callback); return next; },
+    cancelAnimationFrame(id: number) { paints.delete(id); },
   });
   const globals = { window, document, IntersectionObserver: FakeObserver };
   const originals = new Map(Object.keys(globals).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
@@ -95,6 +100,7 @@ function fixture(reduced = false, withPortrait = false) {
   return {
     video, root, timers, observers, motion, document, window, playPromises,
     runtime, show, hide,
+    paint() { const callbacks = [...paints.values()]; paints.clear(); callbacks.forEach(callback => callback(0)); },
     destroy() {
       runtime.destroy();
       originals.forEach((descriptor, key) => {
@@ -251,6 +257,24 @@ test("003 starts the portrait on scene entry and suspends its timer with page vi
   } finally { f.destroy(); }
 });
 
+test("003 holds its first image until decoding is ready and clears that state on replay reset", async () => {
+  const f = fixture();
+  try {
+    f.show(); await flush();
+    assert.equal(f.root.hasAttribute("data-frame-ready"), false);
+    assert.equal(f.root.dataset.state, "loading");
+    const ready = f.runtime.prepareCoveredEntry();
+    f.video.dispatchEvent(new Event("playing"));
+    f.paint(); f.paint();
+    await ready;
+    assert.equal(f.root.hasAttribute("data-frame-ready"), true);
+    assert.equal(f.root.dataset.state, "playing");
+    f.runtime.reset();
+    assert.equal(f.root.hasAttribute("data-frame-ready"), false);
+    assert.equal(f.root.dataset.state, "idle");
+  } finally { f.destroy(); }
+});
+
 test("003 autoplay failure reveals a usable still scene and ignores a late playing event", async () => {
   const f = fixture(false, true);
   try {
@@ -323,7 +347,8 @@ test("002 defers its video, preserves drop timing and stops physics before backg
 });
 
 test("Chibi preserves group secrets while bounding background and drag work", () => {
-  const source = read("src/themes/kisara/components/KisaraChibiStage.astro");
+  const source = read("src/themes/kisara/components/KisaraChibiStage.astro")
+    + read("src/themes/kisara/lib/chibiStage.ts");
   assert.match(source, /else dragFrame\.flush\(\)/);
   assert.match(source, /lostpointercapture/);
   assert.match(source, /const suspendStage =[^]*dragFrame\.cancel\(\);[^]*cancelScene\(\)/);

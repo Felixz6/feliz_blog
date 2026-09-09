@@ -29,7 +29,7 @@ test("all themes pause CSS animation work while the document is hidden", () => {
 });
 
 test("lite mode removes only persistent decorative motion", () => {
-  assert.match(kisaraThemeSource, /data-yuimi-performance="lite"[^]*\.kisara-footer-wave i[^]*animation: none !important/);
+  assert.doesNotMatch(kisaraThemeSource, /kisara-footer-wave/);
   assert.match(homeSource, /data-yuimi-performance="lite"\] \.kisara-ambient-particles[^]*display: none/);
   assert.match(homeSource, /data-yuimi-performance="lite"\] \.kisara-event-reward-burst::before[^]*animation: none !important/);
   assert.match(gamesSource, /data-yuimi-performance="lite"\] \.kisara-arcade-hex-core i[^]*animation: none !important/);
@@ -43,6 +43,8 @@ test("production build enforces route, CSS, bundle, and deferred-media budgets",
   assert.match(budgetSource, /Kisara Home HTML/);
   assert.match(budgetSource, /Kisara Home CSS/);
   assert.match(budgetSource, /Kisara shared layout runtime/);
+  assert.match(budgetSource, /Kisara stage loader/);
+  assert.match(budgetSource, /Kisara deferred stage runtime/);
   assert.match(budgetSource, /data-src=/);
   assert.match(budgetSource, /regressed to an eager source request/);
   assert.match(budgetSource, /Kisara Home 002 video lost its deferred loading contract/);
