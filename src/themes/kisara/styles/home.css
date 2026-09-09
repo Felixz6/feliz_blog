@@ -769,8 +769,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 .kisara-gate-index,
 .kisara-section-index,
-.kisara-contract-state,
-.kisara-scroll-cue {
+.kisara-contract-state {
   margin: 0;
   letter-spacing: 0;
   font-size: 0.7rem;
@@ -1358,7 +1357,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   filter: none !important;
 }
 
-.kisara-gate > :not(.kisara-contract-meter):not(.kisara-gate-visual-shell):not(.kisara-gate-visual):not(.kisara-title-stage):not(.kisara-title):not(.kisara-motion-toggle) {
+.kisara-gate > :not(.kisara-contract-meter):not(.kisara-gate-visual-shell):not(.kisara-gate-visual):not(.kisara-title-stage):not(.kisara-title):not(.kisara-motion-toggle):not(.kisara-scroll-cue) {
   filter: blur(var(--kisara-performance-blur));
 }
 
@@ -1390,13 +1389,22 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 .kisara-scroll-cue {
   position: absolute;
-  bottom: 30px;
-  color: #aabef2;
+  right: max(8%, 24px);
+  bottom: max(84px, calc(64px + env(safe-area-inset-bottom)));
+  max-width: calc(100% - 48px);
+  margin: 0;
+  color: #b0adb4;
+  font: 400 14px/1.6 Georgia, "Times New Roman", serif;
+  letter-spacing: 0;
+  text-align: right;
+  white-space: nowrap;
+  pointer-events: none;
 }
+
+.kisara-credit-author { color: #ddd9dd; }
 
 .kisara-gate-index,
 .kisara-contract-state,
-.kisara-scroll-cue,
 .kisara-gate-auto,
 .kisara-gate-skip {
   transform: translate3d(var(--kisara-screen-shake-x), var(--kisara-screen-shake-y), 0);
@@ -1582,24 +1590,6 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
     transform: scale(1.08);
     box-shadow: 0 0 9px rgba(255, 120, 145, 0.56);
   }
-}
-
-.kisara-scroll-cue::before {
-  content: "";
-  display: inline-block;
-  width: 28px;
-  height: 1px;
-  margin: 0 10px 3px 0;
-  background: currentColor;
-}
-
-.kisara-scroll-cue.is-guiding {
-  color: #c5d5fb;
-}
-
-.kisara-scroll-cue.is-enter-ready {
-  color: #fff2f7;
-  text-shadow: 0 0 12px rgba(255, 73, 105, 0.58);
 }
 
 .kisara-motion-toggle {
@@ -3986,6 +3976,8 @@ html[data-yuimi-performance="lite"] .kisara-event-reward-burst::before {
   }
 
   .kisara-scroll-cue {
+    right: 24px;
+    font-size: 12px;
     bottom: max(112px, calc(92px + env(safe-area-inset-bottom)));
   }
 
