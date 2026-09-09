@@ -36,7 +36,21 @@
   object-fit: cover;
 }
 
-.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) video {
+.kisara-home-board-still,
+.kisara-home-video-media > video {
+  visibility: hidden;
+}
+
+.kisara-home-video-stage[data-frame-ready] video {
+  visibility: visible;
+}
+
+.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) .kisara-home-board-still {
+  visibility: visible;
+}
+
+.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) video,
+.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) .kisara-home-board-first {
   visibility: hidden;
 }
 

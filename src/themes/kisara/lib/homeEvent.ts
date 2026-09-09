@@ -1,4 +1,5 @@
 import { bindHomeEventPortrait } from "./homeEventPortrait.ts";
+import { waitForVideoFrame } from "./videoFrame.ts";
 
 export function visibleSceneRatio(rect: Pick<DOMRect, "top" | "bottom" | "height">, viewport: number) {
   const height = Math.max(1, viewport);
@@ -20,6 +21,8 @@ export function bindHomeEvent(root: HTMLElement) {
   let pending = false;
   let generation = 0;
   let watchdog = 0;
+  let frameController: AbortController | null = null;
+  let framePending: Promise<unknown> | null = null;
   const state = (value: string) => { root.dataset.state = value; };
   const hydrate = () => {
     if (source.hasAttribute("src") || signal.aborted) return;
@@ -33,6 +36,8 @@ export function bindHomeEvent(root: HTMLElement) {
   };
   const pause = () => {
     generation += 1;
+    frameController?.abort();
+    frameController = null;
     pending = false;
     clearWatchdog();
     video.pause();
@@ -52,6 +57,7 @@ export function bindHomeEvent(root: HTMLElement) {
       completed = false;
       if (video.error) video.load();
       try { video.currentTime = 0; } catch {}
+      root.removeAttribute("data-frame-ready");
     }
     state("loading");
     clearWatchdog();
@@ -59,6 +65,16 @@ export function bindHomeEvent(root: HTMLElement) {
       if (signal.aborted || attempt !== generation || completed) return;
       showStill("ready");
     }, 6000);
+    frameController?.abort();
+    frameController = new AbortController();
+    framePending = waitForVideoFrame(video, frameController.signal).then(ready => {
+      if (signal.aborted || attempt !== generation || completed) return;
+      if (ready) {
+        root.setAttribute("data-frame-ready", "");
+        state("playing");
+        clearWatchdog();
+      } else showStill("ready");
+    });
     try {
       await video.play();
       // An older play promise must never pause a newer replay.
@@ -94,6 +110,7 @@ export function bindHomeEvent(root: HTMLElement) {
     started = false;
     visible = false;
     root.removeAttribute("data-scene-visible");
+    root.removeAttribute("data-frame-ready");
     portrait.setActive(false);
     portrait.reset();
     try { video.currentTime = 0; } catch {}
@@ -113,14 +130,13 @@ export function bindHomeEvent(root: HTMLElement) {
 
   video.addEventListener("playing", () => {
     if (suspended || !visible || completed) { pause(); return; }
-    state("playing");
-    clearWatchdog();
   }, { signal });
   video.addEventListener("pause", () => {
     if (!completed && started) state("paused");
   }, { signal });
   video.addEventListener("ended", () => {
     completed = true;
+    frameController?.abort();
     pending = false;
     clearWatchdog();
     state("complete");
@@ -157,6 +173,10 @@ export function bindHomeEvent(root: HTMLElement) {
   return {
     reset,
     refresh,
+    prepareCoveredEntry() {
+      refresh();
+      return framePending ?? Promise.resolve();
+    },
     destroy() {
       pause();
       portrait.destroy();

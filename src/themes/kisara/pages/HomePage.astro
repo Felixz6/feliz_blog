@@ -9,6 +9,7 @@ import KisaraOpeningMemoryScene from "../components/KisaraOpeningMemoryScene.ast
 import homeStylesheet from "../styles/home.css?url";
 import homeEventVideoStylesheet from "../styles/home-event-video.css?url";
 import homeComicStylesheet from "../styles/home-comic.css?url";
+import homeTransitionsStylesheet from "../styles/home-transitions.css?url";
 import { Icon } from "astro-icon/components";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -118,7 +119,7 @@ const gateStyle = [
 <KisaraLayout
   title="Kisara | Yuimi Lab"
   description="Yuimi Lab 的 Kisara 视觉交互主题。"
-  stylesheets={[homeStylesheet, homeEventVideoStylesheet, homeComicStylesheet]}
+  stylesheets={[homeStylesheet, homeEventVideoStylesheet, homeComicStylesheet, homeTransitionsStylesheet]}
   priorityImages={activeBackgroundUrl ? [activeBackgroundUrl] : []}
 >
   <script is:inline data-astro-rerun define:vars={{ criticalGateImage: activeBackgroundUrl ?? "" }}>
@@ -343,18 +344,19 @@ const gateStyle = [
 
   <KisaraFridgeScene />
 
-  <div class="kisara-home-transition is-fridge-to-event" aria-hidden="true"><span></span><i></i><i></i></div>
+  <div class="kisara-home-transition is-fridge-to-event" aria-hidden="true"></div>
 
   <KisaraHomeEventVideo />
 
-  <div class="kisara-home-transition is-event-to-latest" aria-hidden="true"><span></span><i></i><i></i></div>
+  <div class="kisara-home-transition is-event-to-latest" aria-hidden="true"></div>
 
   <KisaraLatestNotes />
 
-  <div class="kisara-home-transition is-latest-to-footer" aria-hidden="true"><span></span><i></i><i></i></div>
+  <div class="kisara-home-transition is-latest-to-footer" aria-hidden="true"></div>
 
   <script>
     import { createComicTransition } from "../lib/comicTransition";
+    import { createChapterTransition } from "../lib/chapterTransition";
     import { chainLinkPitch, createTitleChainMaterial } from "../lib/titleChainMaterial";
     import { buildTitleChainRig, fitTitleChainConnector, orientTitleChainRing, partitionTitleChainRing, sampleTitleChainCurve, titleChainDefinitions } from "../lib/titleChainRig";
     import { measureTitleChainCounter } from "../lib/titleChainCounter";
@@ -575,6 +577,7 @@ const gateStyle = [
       const eventScene = document.querySelector("kisara-home-event-video");
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const comicTransition = createComicTransition(signal, reducedMotion);
+      const chapterTransition = createChapterTransition(signal, reducedMotion);
       const openingMemoryScene = document.querySelector("kisara-opening-memory-scene");
       const resetOpeningMemoryPresentation = () => {
         const resettableScene = openingMemoryScene as (
@@ -8007,11 +8010,6 @@ const gateStyle = [
         return false;
       };
 
-      const restoreOpeningBridgePresentation = () => {
-        openingBridgeRecoveryPending = false;
-        return false;
-      };
-
       const scheduleOpeningBridgeRecovery = () => {
         openingBridgeRecoveryPending = false;
       };
@@ -8066,8 +8064,7 @@ const gateStyle = [
         target,
         onComplete,
         onProgress,
-        direction = "idle",
-        motionProfile = "gate"
+        direction = "idle"
       ) => {
         if (scrollFrame || scrollTransitionDirection !== "idle") return false;
         const destination = Math.max(0, target);
@@ -8089,13 +8086,12 @@ const gateStyle = [
         let velocity = 0;
         let lastTimestamp = performance.now();
         const initialDistance = Math.max(1, Math.abs(destination - current));
-        const sectionMotion = motionProfile === "section";
-        const stiffness = sectionMotion ? 31 : 38;
-        const dampingForce = sectionMotion ? 11 : 11.8;
+        const stiffness = 38;
+        const dampingForce = 11.8;
         const maxVelocity = clamp(
-          Math.abs(destination - current) * (sectionMotion ? 2.8 : 2.4),
-          sectionMotion ? 760 : 620,
-          sectionMotion ? 2400 : 1900
+          Math.abs(destination - current) * 2.4,
+          620,
+          1900
         );
 
         const finish = () => {
@@ -8619,7 +8615,7 @@ const gateStyle = [
         window.dispatchEvent(new CustomEvent("yuimi:kisara-lovebrain-return-start"));
         const started = smoothScrollTo(0, () => {
           completeGateReturn();
-        }, undefined, "return", "lovebrain");
+        }, undefined, "return");
         if (!started) completeGateReturn();
       };
 
@@ -8717,6 +8713,7 @@ const gateStyle = [
       };
 
       const smoothScrollToHomeSection = (stop) => {
+        if (chapterTransition.active || comicTransition.active) return true;
         clearHomeGateReturnArm();
         homeSectionWheelAccumulator = 0;
         if (stop.element === opening && isOpeningStopCurrent()) return true;
@@ -8729,32 +8726,36 @@ const gateStyle = [
             if (gateVisualResetPending) finalizeGateResetForNextPage();
           });
         }
-        const destination = getHomeSectionTop(stop.element);
-        const direction = destination >= window.scrollY ? "section-forward" : "section-return";
-        const restoresOpeningBridge = stop.element === opening
-          && direction === "section-return";
-        if (restoresOpeningBridge) {
-          if (openingBridgeRecoveryPending) restoreOpeningBridgePresentation();
-          activateFreshOpeningBridge();
-        }
-        const started = smoothScrollTo(destination, () => {
+        const records = getHomeSectionStopRecords();
+        const current = records.reduce((nearest, record) =>
+          Math.abs(record.top - window.scrollY) < Math.abs(nearest.top - window.scrollY) ? record : nearest
+        );
+        if (current.index === stop.index) {
           settleHomeSectionStop(stop);
-          if (stop.element === opening && openingBridgeRecoveryPending) {
-            activateFreshOpeningBridge();
-          }
-          if (stop.element !== opening && openingBridgePortalActive) {
+          return true;
+        }
+        const reverse = stop.index < current.index;
+        scrollTransitionDirection = reverse ? "section-return" : "section-forward";
+        void chapterTransition.run(current.element, stop.element, reverse, () => {
+          settleHomeSectionStop(stop);
+          if (openingBridgePortalActive) {
             if (gateVisualResetPending) finalizeGateResetForNextPage();
             else deactivateOpeningBridgePortal();
           }
+          const mediaScene = stop.element.querySelector("kisara-fridge-scene, kisara-home-event-video") as
+            (HTMLElement & { prepareCoveredEntry?: () => Promise<unknown> }) | null;
+          return mediaScene?.prepareCoveredEntry?.();
+        }).catch(error => {
+          if (!disposed) console.warn("Kisara chapter handoff failed", error);
+        }).finally(() => {
+          if (disposed) return;
+          scrollTransitionDirection = "idle";
+          lastObservedScrollY = window.scrollY;
           homeSectionInputGuardUntil = Math.max(
-            performance.now() + 90,
+            performance.now() + 120,
             homeSectionWheelLastTimestamp + 180
           );
-        }, undefined, direction, "section");
-        if (!started) {
-          if (restoresOpeningBridge) deactivateOpeningBridgePortal();
-          return false;
-        }
+        });
         return true;
       };
 
@@ -8948,7 +8949,7 @@ const gateStyle = [
 
       const handleDirectionalInput = (delta, event, inputType = "wheel") => {
         if (delta === 0) return;
-        if (comicTransition.active) { event.preventDefault(); return; }
+        if (comicTransition.active || chapterTransition.active) { event.preventDefault(); return; }
         if (lovebrainActive && pageMode === "lovebrain") {
           event.preventDefault();
           return;

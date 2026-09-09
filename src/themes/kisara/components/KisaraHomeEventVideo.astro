@@ -8,11 +8,12 @@ const reactions = ["😋", "🤤", "😍", "😚"];
 <section class="kisara-home-video-event" data-kisara-home-stop="003" aria-label="木更与我的兴趣白板">
   <kisara-home-event-video class="kisara-home-video-stage" data-state="idle">
     <div class="kisara-home-video-media">
+      <img class="kisara-home-board-first" src="/themes/kisara/assets/home-event-003-new-first.webp"
+        width="1920" height="1080" alt="" loading="lazy" decoding="async" />
       <img class="kisara-home-board-still" src="/themes/kisara/assets/home-event-003-new-last.webp"
         width="1920" height="1080" alt="" loading="lazy" decoding="async" />
       <video
         data-home-event-video
-        poster="/themes/kisara/assets/home-event-003-new-last.webp"
         width="1920"
         height="1080"
         preload="none"
@@ -79,6 +80,7 @@ const reactions = ["😋", "🤤", "😍", "😚"];
     class KisaraHomeEventVideo extends HTMLElement {
       runtime: ReturnType<typeof bindHomeEvent> | null = null;
       resetPresentation() { this.runtime?.reset(); }
+      prepareCoveredEntry() { return this.runtime?.prepareCoveredEntry(); }
       refreshPresentationAfterVisibility() { this.runtime?.refresh(); }
       connectedCallback() {
         this.runtime?.destroy();

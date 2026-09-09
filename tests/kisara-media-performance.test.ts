@@ -145,7 +145,8 @@ test("Kisara Home contains opposing weave tails and keeps their sources unbounde
 test("Kisara Home 003 keeps its full-screen fragment deferred and subtitle-free", () => {
   assert.match(homeEventSource, /data-kisara-home-stop="003"/);
   assert.match(homeEventSource, /data-home-event-video/);
-  assert.match(homeEventSource, /poster="\/themes\/kisara\/assets\/home-event-003-new-last\.webp"/);
+  assert.match(homeEventSource, /class="kisara-home-board-first" src="\/themes\/kisara\/assets\/home-event-003-new-first\.webp"/);
+  assert.doesNotMatch(homeEventSource, /\sposter=/);
   assert.match(homeEventSource, /preload="none"/);
   assert.match(homeEventSource, /muted/);
   assert.match(homeEventSource, /playsinline/);
@@ -179,13 +180,14 @@ test("Kisara Home 003 reveals the foreground composition when it enters view", (
   assert.ok(refresh.indexOf("portrait.reveal()") < refresh.indexOf("else if (!completed) void play"));
 });
 
-test("Kisara Home masks chapter seams with motion-paper transitions", () => {
+test("Kisara Home retains overlapping color joins alongside live-scene chapter handoffs", () => {
+  const transitions = readSource("src/themes/kisara/styles/home-transitions.css");
   assert.match(homeSource, /is-fridge-to-event[^]*is-event-to-latest/);
   assert.doesNotMatch(homeSource, /class="kisara-home-transition is-memory-to-fridge"/);
-  assert.match(homeStyles, /\.kisara-home-transition \{[^]*--transition-paper:[^]*radial-gradient\(circle, var\(--transition-dot\)/);
-  assert.match(homeStyles, /\.kisara-home-transition:not\(\.is-latest-to-footer\)::before,[^]*border: 2px dashed var\(--transition-pink\)/);
-  assert.match(homeStyles, /\.kisara-home-transition\.is-event-to-latest \{[^]*--transition-from: #f5f6f4;[^]*--transition-to: #dbe2ec;/);
-  assert.match(homeStyles, /animation-timeline: view\(block\)/);
-  assert.match(homeStyles, /prefers-reduced-motion: reduce[^]*\.kisara-home-transition::before[^]*animation: none !important/);
-  assert.match(homeStyles, /data-yuimi-performance="lite"[^]*\.kisara-home-transition::before[^]*animation: none !important/);
+  assert.match(transitions, /height: 96px/);
+  assert.match(transitions, /margin-block: -48px/);
+  assert.match(transitions, /z-index: 6/);
+  assert.match(homeSource, /chapterTransition\.run\(current\.element, stop\.element, reverse/);
+  assert.doesNotMatch(transitions, /is-doors|skewX/);
+  assert.doesNotMatch(homeStyles, /--transition-paper|kisara-home-transition-arc/);
 });

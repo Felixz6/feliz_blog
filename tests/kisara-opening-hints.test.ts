@@ -30,7 +30,8 @@ test("Comic 001 preserves the five hidden-route definitions and versioned ledger
 });
 
 test("Each opening hint is still granted only by its accepted scene", () => {
-  const chibi = readSource("src/themes/kisara/components/KisaraChibiStage.astro");
+  const chibi = readSource("src/themes/kisara/components/KisaraChibiStage.astro")
+    + readSource("src/themes/kisara/lib/chibiStage.ts");
   const clue = readSource("src/themes/kisara/components/KisaraGameClueScene.astro");
   const audio = readSource("src/themes/kisara/components/KisaraAudioControl.astro");
   assert.match(chibi, /mark\("chibi-jealousy"\)/);
@@ -95,7 +96,7 @@ test("Comic entrance and return retain paper spread without a standalone portrai
   assert.match(back, /runComicHandoff\("gate"/);
   assert.match(back, /setScrollPosition\(0, true\);\s*requestHomeSectionReplayReset\(\);\s*completeGateReturn\(\)/);
   assert.doesNotMatch(entry + back, /smoothScrollTo\(/);
-  assert.match(home, /if \(comicTransition\.active\) \{ event\.preventDefault\(\); return; \}/);
+  assert.match(home, /if \(comicTransition\.active \|\| chapterTransition\.active\) \{ event\.preventDefault\(\); return; \}/);
   assert.match(home, /a\[data-comic-next\]/);
   assert.match(runtime, /await motion\.play\(scene\)/);
   assert.match(motion, /comicSpreadPoints/);
@@ -137,12 +138,15 @@ test("The persistent Home header stays above the comic flight without a visibili
 });
 
 test("Fridge handoff checks a fresh decoded frame and has bounded failure cleanup", () => {
+  const frame = readSource("src/themes/kisara/lib/videoFrame.ts");
   assert.match(fridge, /playCoveredEntry\(\)/);
   assert.match(fridge, /armOpening\(false\)/);
-  assert.match(fridge, /!video\.seeking && metadata\.mediaTime < \.3/);
-  assert.match(fridge, /cancelVideoFrameCallback/);
-  assert.match(fridge, /signal\.removeEventListener\("abort", finish\)/);
+  assert.match(fridge, /finishCoveredEntry\?\.\(\)/);
   assert.match(fridge, /1800/);
+  assert.match(frame, /!video\.seeking && metadata\.mediaTime <= video\.currentTime \+ \.1/);
+  assert.match(frame, /cancelVideoFrameCallback/);
+  assert.match(frame, /signal\.removeEventListener\("abort", abort\)/);
+  assert.match(frame, /timeout = 1500/);
 });
 
 test("All five supplied images have hybrid derivatives and real vector masters", () => {

@@ -62,7 +62,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   const state: Record<string, any> = {
     disposed: false, lovebrainActive: false, pageMode: "gate",
     gate: { isConnected: true, classList: { add: (name: string) => classes.add(name), remove: (name: string) => classes.delete(name) } },
-    classes, comicTransition: { active: false }, foundSelfActive: false,
+    classes, comicTransition: { active: false }, chapterTransition: { active: false }, foundSelfActive: false,
     scrollFrame: 0, scrollTransitionDirection: "idle", gateReturnGuardUntil: 0, reducedMotion: false,
     postReleaseActive: false, postReleaseDataPhase: 2.3, postReleaseDataPressure: .4, postReleaseFlowWhip: .2,
     postReleaseDirection: -1, postReleaseDataPosition: 68, postReleaseMaxX: 14,

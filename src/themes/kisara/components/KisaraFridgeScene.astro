@@ -6,11 +6,13 @@ import { getThemePath } from "@/core/themes/registry";
 <section class="kisara-fridge-deck" data-kisara-home-stop="002" aria-labelledby="kisara-fridge-title">
   <kisara-fridge-scene class="kisara-fridge-scene" data-fridge-bound="true">
     <div class="kisara-fridge-media">
+      <img class="kisara-fridge-first-frame"
+        src="/themes/kisara/assets/fridge-opening-002-first.webp?v=7d47ede4"
+        width="1920" height="1080" alt="" loading="lazy" decoding="async" aria-hidden="true" />
       <video
         class="kisara-fridge-video"
         data-fridge-video
         data-src="/themes/kisara/assets/fridge-opening-002.mp4?v=ad1cc7d0"
-        poster="/themes/kisara/assets/fridge-opening-002-first.webp?v=7d47ede4"
         width="1920"
         height="1080"
         preload="none"
@@ -166,6 +168,7 @@ import { getThemePath } from "@/core/themes/registry";
 </section>
 
 <script>
+  import { waitForVideoFrame } from "../lib/videoFrame";
   type FridgeBody = {
     element: HTMLButtonElement;
     kind: string;
@@ -200,6 +203,10 @@ import { getThemePath } from "@/core/themes/registry";
 
       playCoveredEntry() {
         return this.coveredEntry?.() ?? Promise.resolve();
+      }
+
+      prepareCoveredEntry() {
+        return this.classList.contains("is-fridge-open") ? Promise.resolve() : this.playCoveredEntry();
       }
 
       resetPresentation() {
@@ -237,6 +244,8 @@ import { getThemePath } from "@/core/themes/registry";
         let playbackGeneration = 0;
         let playbackWatchdog = 0;
         let playbackRetryTimer = 0;
+        let readyFrameController: AbortController | null = null;
+        let finishCoveredEntry: (() => void) | null = null;
         let stallRecoveries = 0;
         let reloadPipelineOnResume = false;
         let playbackEndedHandler: (() => void) | null = null;
@@ -502,6 +511,7 @@ import { getThemePath } from "@/core/themes/registry";
         const finishOpening = () => {
           if (opened) return;
           playbackGeneration += 1;
+          readyFrameController?.abort();
           if (playbackWatchdog) window.clearTimeout(playbackWatchdog);
           if (playbackRetryTimer) window.clearTimeout(playbackRetryTimer);
           if (playbackEndedHandler) video.removeEventListener("ended", playbackEndedHandler);
@@ -521,9 +531,12 @@ import { getThemePath } from "@/core/themes/registry";
           if (status) status.textContent = "OPEN / 04°C";
           if (reducedMotion) placeBodiesForReducedMotion();
           else launchBodies();
+          finishCoveredEntry?.();
         };
 
         const clearPlaybackTimers = () => {
+          readyFrameController?.abort();
+          readyFrameController = null;
           if (playbackWatchdog) window.clearTimeout(playbackWatchdog);
           if (playbackRetryTimer) window.clearTimeout(playbackRetryTimer);
           if (playbackEndedHandler) video.removeEventListener("ended", playbackEndedHandler);
@@ -535,6 +548,7 @@ import { getThemePath } from "@/core/themes/registry";
 
         const setSealedPresentation = () => {
           openingStarted = false;
+          this.removeAttribute("data-frame-ready");
           video.pause();
           try {
             video.currentTime = 0;
@@ -639,6 +653,7 @@ import { getThemePath } from "@/core/themes/registry";
 
           video.pause();
           video.playbackRate = 1.25;
+          this.removeAttribute("data-frame-ready");
           try {
             video.currentTime = 0;
           } catch {
@@ -662,6 +677,16 @@ import { getThemePath } from "@/core/themes/registry";
           };
           video.addEventListener("timeupdate", bodyReleaseHandler);
           schedulePlaybackWatchdog(playGeneration, 0);
+          readyFrameController?.abort();
+          readyFrameController = new AbortController();
+          void waitForVideoFrame(video, readyFrameController.signal).then(ready => {
+            if (signal.aborted || playGeneration !== playbackGeneration || opened) return;
+            if (ready) {
+              this.setAttribute("data-frame-ready", "");
+              finishCoveredEntry?.();
+            }
+            else if (!document.hidden && sceneVisible) finishOpening();
+          });
           void video.play().catch(() => recoverStalledOpening(playGeneration));
         };
 
@@ -920,44 +945,28 @@ import { getThemePath } from "@/core/themes/registry";
 
         this.resetScene = () => armOpening(true);
         this.refreshScene = scheduleVisibilitySync;
-        this.coveredEntry = () => new Promise<void>((resolve) => {
-          let frame = 0;
+        this.coveredEntry = () => new Promise<void>(resolve => {
+          finishCoveredEntry?.();
           let timer = 0;
-          let settled = false;
           const finish = () => {
-            if (settled) return;
-            settled = true;
             window.clearTimeout(timer);
-            if (frame) video.cancelVideoFrameCallback?.(frame);
-            video.removeEventListener("playing", fallbackReady);
             signal.removeEventListener("abort", finish);
+            document.removeEventListener("visibilitychange", visibility);
+            if (finishCoveredEntry === finish) finishCoveredEntry = null;
             resolve();
           };
-          const fallbackReady = () => {
-            if (!video.seeking && video.currentTime < .3) finish();
-          };
-          sceneVisible = measureSceneVisibility();
-          armOpening(false);
-          if (reducedMotion || !sceneVisible || signal.aborted) {
-            startOpening();
-            finish();
-            return;
-          }
-          if (video.requestVideoFrameCallback) {
-            const inspect: VideoFrameRequestCallback = (_, metadata) => {
-              frame = 0;
-              if (settled || signal.aborted) return;
-              if (!video.seeking && metadata.mediaTime < .3) finish();
-              else frame = video.requestVideoFrameCallback(inspect);
-            };
-            frame = video.requestVideoFrameCallback(inspect);
-          } else video.addEventListener("playing", fallbackReady);
+          const visibility = () => { if (document.hidden) finish(); };
+          finishCoveredEntry = finish;
           signal.addEventListener("abort", finish, { once: true });
+          document.addEventListener("visibilitychange", visibility);
           timer = window.setTimeout(() => {
-            if (!signal.aborted && sceneVisible) finishOpening();
+            if (!signal.aborted && !document.hidden && sceneVisible) finishOpening();
             finish();
           }, 1800);
+          sceneVisible = measureSceneVisibility();
+          armOpening(false);
           startOpening();
+          if (reducedMotion || !sceneVisible || signal.aborted || opened) finish();
         });
         signal.addEventListener("abort", () => {
           playbackGeneration += 1;

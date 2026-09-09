@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { stripTypeScriptTypes } from "node:module";
 
 const fridgeSource = readFileSync(
   fileURLToPath(new URL("../src/themes/kisara/components/KisaraFridgeScene.astro", import.meta.url)),
@@ -21,4 +22,47 @@ test("Fridge inventory begins dropping just before the door reaches its open fra
   const bodyReleaseIndex = startOpening.indexOf("bodyReleaseHandler =");
   const endedIndex = startOpening.indexOf("const handleEnded");
   assert.ok(bodyReleaseIndex >= 0 && endedIndex >= 0 && bodyReleaseIndex > endedIndex);
+});
+
+test("Fridge coverage survives playback retries until a ready frame, final fallback, or cancellation", async () => {
+  const start = fridgeSource.indexOf("this.coveredEntry = () =>");
+  const end = fridgeSource.indexOf('signal.addEventListener("abort", () => {', start);
+  assert.ok(start >= 0 && end > start);
+  const code = stripTypeScriptTypes(fridgeSource.slice(start, end));
+  for (const outcome of ["ready", "timeout", "hidden", "abort"]) {
+    const controller = new AbortController();
+    const timers = new Map<number, Function>();
+    const doc = Object.assign(new EventTarget(), { hidden: false });
+    let starts = 0, resolved = false, serial = 0;
+    const scope = {
+      signal: controller.signal, document: doc, sceneVisible: false, opened: false, reducedMotion: false,
+      finishCoveredEntry: null as (() => void) | null,
+      measureSceneVisibility: () => true,
+      armOpening() {},
+      startOpening() { starts++; },
+      finishOpening() { scope.opened = true; scope.finishCoveredEntry?.(); },
+      window: {
+        setTimeout(callback: Function) { timers.set(++serial, callback); return serial; },
+        clearTimeout(id: number) { timers.delete(id); },
+      },
+    };
+    const root = { coveredEntry: null as (() => Promise<void>) | null };
+    new Function("scope", `with (scope) { ${code} }`).call(root, scope);
+    const pending = root.coveredEntry!().then(() => { resolved = true; });
+    const barrier = scope.finishCoveredEntry;
+    scope.startOpening();
+    await Promise.resolve();
+    assert.equal(starts, 2);
+    assert.equal(resolved, false);
+    assert.equal(scope.finishCoveredEntry, barrier);
+    if (outcome === "ready") scope.finishCoveredEntry?.();
+    if (outcome === "timeout") [...timers.values()][0]();
+    if (outcome === "hidden") { doc.hidden = true; doc.dispatchEvent(new Event("visibilitychange")); }
+    if (outcome === "abort") controller.abort();
+    await pending;
+    assert.equal(timers.size, 0);
+    assert.equal(scope.finishCoveredEntry, null);
+    assert.equal(scope.opened, outcome === "timeout");
+    controller.abort();
+  }
 });
