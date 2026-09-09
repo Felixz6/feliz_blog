@@ -1,5 +1,6 @@
 ---
 import "../styles/theme.css";
+import "../styles/context-menu.css";
 import { Icon } from "astro-icon/components";
 import type { BlogPost } from "@/core/content/blog";
 import { ClientRouter } from "astro:transitions";
@@ -583,12 +584,12 @@ const themedNotFoundRedirectScript = `(() => {
       <span class="kisara-scrollbar-thumb" data-kisara-scrollbar-thumb aria-hidden="true"><i></i></span>
     </div>
 
-    <nav class="kisara-context-menu" data-kisara-context-menu hidden aria-label="Kisara 主题快捷菜单">
+    <nav class="kisara-context-menu" data-kisara-context-menu hidden tabindex="-1" aria-label="Kisara 主题快捷菜单">
       <header class="kisara-context-head">
         <span class="kisara-context-emblem" aria-hidden="true"><Icon name="tabler:heart" /></span>
         <span class="kisara-context-identity">
           <strong>KISARA</strong>
-          <small>QUICK ACCESS</small>
+          <small>{navItems.find(item => item.active)?.label ?? "YUIMI LAB"}</small>
         </span>
         <button class="kisara-context-close" type="button" data-kisara-action="close" aria-label="关闭快捷菜单" title="关闭">
           <Icon name="tabler:x" aria-hidden="true" />
@@ -597,30 +598,38 @@ const themedNotFoundRedirectScript = `(() => {
 
       <div class="kisara-context-command-strip" aria-label="浏览器操作">
         <button type="button" data-kisara-action="back" aria-label="后退" title="后退">
-          <Icon name="tabler:arrow-left" aria-hidden="true" /><span>后退</span>
+          <Icon name="tabler:arrow-left" aria-hidden="true" />
         </button>
         <button type="button" data-kisara-action="forward" aria-label="前进" title="前进">
-          <Icon name="tabler:arrow-right" aria-hidden="true" /><span>前进</span>
+          <Icon name="tabler:arrow-right" aria-hidden="true" />
         </button>
         <button type="button" data-kisara-action="refresh" aria-label="刷新" title="刷新">
-          <Icon name="tabler:refresh" aria-hidden="true" /><span>刷新</span>
+          <Icon name="tabler:refresh" aria-hidden="true" />
         </button>
         <button type="button" data-kisara-action="top" aria-label="回到顶部" title="回到顶部">
-          <Icon name="tabler:arrow-up" aria-hidden="true" /><span>顶部</span>
+          <Icon name="tabler:arrow-up" aria-hidden="true" />
         </button>
       </div>
 
+      <div class="kisara-context-pages" aria-label="站内页面">
+        {navItems.map(item => (
+          <a href={item.href} aria-current={item.active ? "page" : undefined} title={item.label} data-astro-prefetch="hover">
+            <Icon name={item.icon} aria-hidden="true" /><span>{item.label}</span>
+          </a>
+        ))}
+      </div>
+
       <div class="kisara-context-page-actions" aria-label="页面操作">
-        <button type="button" data-kisara-action="home">
-          <Icon name="tabler:home" aria-hidden="true" /><span>主题首页</span>
+        <button type="button" data-kisara-action="copy">
+          <Icon name="tabler:link" aria-hidden="true" /><span>复制页面链接</span>
         </button>
-        <button type="button" data-kisara-action="copy" data-kisara-default-label="复制链接">
-          <Icon name="tabler:link" aria-hidden="true" /><span>复制链接</span>
+        <button type="button" data-kisara-action="copy-title">
+          <Icon name="tabler:file-text" aria-hidden="true" /><span>复制页面标题</span>
         </button>
       </div>
 
       <div class="kisara-context-theme-switch">
-        <span>THEME</span>
+        <span>外观</span>
         <div aria-label="切换主题">
           {themeOptions.map((theme) => (
             <button
@@ -637,7 +646,7 @@ const themedNotFoundRedirectScript = `(() => {
         </div>
       </div>
 
-      <span class="kisara-context-live" data-kisara-context-status aria-live="polite"><span></span></span>
+      <span class="kisara-context-live" data-kisara-context-status role="status" aria-live="polite"><span></span></span>
     </nav>
 
     <ThemeLongPressMenu />

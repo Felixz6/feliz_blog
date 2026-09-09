@@ -30,6 +30,8 @@ export const initKisaraLayoutRuntime = () => {
   const menuStatus = menu?.querySelector("[data-kisara-context-status]");
   const scrollbar = document.querySelector("[data-kisara-scrollbar]");
   let returnFocus = null;
+  let menuSession = 0;
+  let feedbackTimer = 0;
   let scrollbarFrame = 0;
   let scrollbarResizeObserver = null;
   let gateRailActive = false;
@@ -198,50 +200,82 @@ export const initKisaraLayoutRuntime = () => {
       field.style.position = "fixed";
       field.style.opacity = "0";
       body.append(field);
+      const focus = document.activeElement;
       field.select();
-      const copied = document.execCommand("copy");
-      field.remove();
-      return copied;
+      try { return document.execCommand("copy"); }
+      finally { field.remove(); focus?.focus({ preventScroll: true }); }
     } catch {
       return false;
     }
   };
 
-  const showActionFeedback = (button, label, success) => {
-    if (!(button instanceof HTMLButtonElement)) return;
-    const text = button.querySelector(":scope > span");
-    const defaultLabel = button.dataset.kisaraDefaultLabel ?? text?.textContent ?? "";
-    if (text) text.textContent = label;
-    button.classList.toggle("is-success", success);
+  const showActionFeedback = (label, success) => {
+    clearFeedback();
     setMenuStatus(label, success ? "success" : "error");
-    window.setTimeout(() => {
-      if (text) text.textContent = defaultLabel;
-      button.classList.remove("is-success");
-      setMenuStatus();
-    }, 1100);
+    feedbackTimer = window.setTimeout(clearFeedback, 1600);
   };
 
-  const closeMenu = () => {
+  const clearFeedback = () => {
+    window.clearTimeout(feedbackTimer);
+    feedbackTimer = 0;
+    setMenuStatus();
+  };
+
+  const closeMenu = (restoreFocus = true) => {
     if (!menu || menu.hidden) return;
+    menuSession++;
     const restore = menu.contains(document.activeElement);
     menu.hidden = true;
-    setMenuStatus();
-    if (restore && returnFocus instanceof HTMLElement) returnFocus.focus({ preventScroll: true });
+    clearFeedback();
+    if (restoreFocus && restore && returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus({ preventScroll: true });
   };
 
   const showMenu = (x, y, focusFirst = false) => {
     if (!menu) return;
-    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : panelButton;
+    if (menu.hidden || !menu.contains(document.activeElement)) {
+      returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : panelButton;
+    }
+    menuSession++;
+    clearFeedback();
+    closePanel();
     menu.hidden = false;
     menu.style.left = "0px";
     menu.style.top = "0px";
     const menuWidth = menu.offsetWidth;
     const menuHeight = menu.offsetHeight;
-    menu.style.left = `${Math.max(12, Math.min(x, window.innerWidth - menuWidth - 12))}px`;
-    menu.style.top = `${Math.max(12, Math.min(y, window.innerHeight - menuHeight - 12))}px`;
-    setMenuStatus();
+    const left = Math.max(12, Math.min(x, window.innerWidth - menuWidth - 12));
+    const top = Math.max(12, Math.min(y, window.innerHeight - menuHeight - 12));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.setProperty("--menu-origin", `${x > left ? "right" : "left"} ${y > top ? "bottom" : "top"}`);
     if (focusFirst) menu.querySelector('[data-kisara-action="back"]')?.focus({ preventScroll: true });
   };
+
+  const keepNativeMenu = (target) => target instanceof Element
+    && Boolean(target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), audio, video'));
+  menu?.addEventListener("keydown", (event) => {
+    const items = [...menu.querySelectorAll('button:not(:disabled), a[href]')];
+    const index = items.indexOf(document.activeElement);
+    let next;
+    if (["ArrowDown", "ArrowRight"].includes(event.key)) next = (index + 1) % items.length;
+    if (["ArrowUp", "ArrowLeft"].includes(event.key)) next = (index <= 0 ? items.length : index) - 1;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = items.length - 1;
+    if (next !== undefined) {
+      event.preventDefault();
+      event.stopPropagation();
+      items[next]?.focus({ preventScroll: true });
+    }
+    if (event.key === "Tab") closeMenu();
+  }, { signal });
+  menu?.addEventListener("click", event => {
+    if (event.target instanceof Element && event.target.closest("a[href]")) closeMenu(false);
+  }, { signal });
+  window.addEventListener("scroll", event => {
+    if (!(event.target instanceof Node) || !menu?.contains(event.target)) closeMenu();
+  }, { capture: true, passive: true, signal });
+  window.addEventListener("resize", () => closeMenu(), { passive: true, signal });
+  window.addEventListener("blur", () => closeMenu(false), { signal });
 
   panelButton?.addEventListener("click", () => {
     if (!panel) return;
@@ -252,15 +286,17 @@ export const initKisaraLayoutRuntime = () => {
   panelClose?.addEventListener("click", closePanel, { signal });
 
   window.addEventListener("contextmenu", (event) => {
+    if (event.shiftKey || keepNativeMenu(event.target) || window.getSelection()?.toString().trim()) {
+      closeMenu(false);
+      return;
+    }
     event.preventDefault();
-    closePanel();
     showMenu(event.clientX, event.clientY);
   }, { signal });
   window.addEventListener("yuimi:context-menu-request", (event) => {
     if (!(event instanceof CustomEvent)) return;
     const x = Number(event.detail?.clientX);
     const y = Number(event.detail?.clientY);
-    closePanel();
     showMenu(
       Number.isFinite(x) ? x : window.innerWidth / 2,
       Number.isFinite(y) ? y : window.innerHeight / 2
@@ -273,6 +309,7 @@ export const initKisaraLayoutRuntime = () => {
       closeMenu();
     }
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+      if (keepNativeMenu(event.target) || window.getSelection()?.toString().trim()) return;
       event.preventDefault();
       const rect = document.activeElement?.getBoundingClientRect?.();
       showMenu(
@@ -297,19 +334,13 @@ export const initKisaraLayoutRuntime = () => {
     const action = actionButton?.dataset.kisaraAction;
     if (action === "top") window.scrollTo({ top: 0, behavior: "smooth" });
     if (action === "refresh") window.location.reload();
-    if (action === "home") {
-      const homeLink = document.querySelector("a.kisara-brand[href]");
-      if (homeLink instanceof HTMLAnchorElement) homeLink.click();
-    }
     if (action === "back") history.back();
     if (action === "forward") history.forward();
-    if (action === "close") {
-      closeMenu();
-      return;
-    }
-    if (action === "copy") {
-      const copied = await copyText(window.location.href);
-      showActionFeedback(actionButton, copied ? "链接已复制" : "复制失败", copied);
+    if (action === "copy" || action === "copy-title") {
+      const session = menuSession;
+      const copied = await copyText(action === "copy-title" ? document.title : window.location.href);
+      if (signal.aborted || menu?.hidden || session !== menuSession) return;
+      showActionFeedback(copied ? (action === "copy" ? "页面链接已复制" : "页面标题已复制") : "复制失败，请使用浏览器复制", copied);
       return;
     }
     if (action) closeMenu();
@@ -321,6 +352,8 @@ export const initKisaraLayoutRuntime = () => {
   }, { signal });
 
   const cleanup = () => {
+    closeMenu(false);
+    clearFeedback();
     lifecycle.abort();
     if (scrollbarFrame) cancelAnimationFrame(scrollbarFrame);
     scrollbarFrame = 0;
