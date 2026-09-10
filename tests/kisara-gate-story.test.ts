@@ -5,7 +5,8 @@ import vm from "node:vm";
 import sharp from "sharp";
 import {
   memoryScenes, transformationScenes, memoryTimeline, memoryFillDuration,
-  getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices
+  getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices, advanceMemoryProgress,
+  advanceMemoryBlackout, memoryBrightenDuration
 } from "../src/themes/kisara/lib/gateStory.ts";
 import { gateRelease, getTransformationFrame } from "../src/themes/kisara/lib/gateRelease.ts";
 
@@ -80,9 +81,47 @@ test("the close-up pushes in and closes to black before the kiss, then opens onl
   for (const fill of [0.825, 0.834, 0.85, 0.87]) assert.equal(getMemoryBlackout(fill), 1);
   assert.equal(getMemoryFrame(8, 0.87)!.opacity, 1);
   assert.equal(getMemoryFrame(7, 0.87)!.opacity, 0);
-  assert.equal(getMemoryBlackout(0.906), 0);
+  assert.ok(getMemoryBlackout(0.906) > 0.7, "The kiss emerges gradually, not immediately after the swap");
+  assert.equal(getMemoryBlackout(0.975), 0);
   assert.equal(getMemoryBlackout(0.84, 0.1), 0);
   assert.equal(getMemoryBlackout(0.84, 0, true), 0.3);
+});
+
+test("forward scroll never recoils into a retired shot and deliberate reverse remains available", () => {
+  for (const fps of [30, 60, 120]) {
+    let progress = 0;
+    let velocity = 0;
+    const ratio = 60 / fps;
+    for (const target of [.17, .32, .42, .56, .71, .9, 1, .82, .55, .15, 0]) {
+      const direction = Math.sign(target - progress);
+      velocity += direction * .004;
+      for (let step = 0; step < fps * 2; step++) {
+        const next = advanceMemoryProgress(progress, target, velocity, ratio, .06, .76);
+        assert.ok((next.progress - progress) * direction >= -1e-12);
+        assert.ok((target - next.progress) * direction >= -1e-12);
+        progress = next.progress;
+        velocity = next.velocity;
+      }
+      assert.ok(Math.abs(progress - target) < .0001);
+    }
+  }
+});
+
+test("a fast scroll cannot skip the black-to-kiss brighten and it converges at every refresh rate", () => {
+  for (const fps of [30, 60, 120]) {
+    let opacity = 1;
+    let elapsed = 0;
+    while (opacity > .00001) {
+      const next = advanceMemoryBlackout(opacity, 0, 1000 / fps);
+      assert.ok(next <= opacity && next >= 0);
+      opacity = next;
+      elapsed += 1000 / fps;
+    }
+    assert.ok(elapsed >= memoryBrightenDuration - .01);
+    assert.ok(elapsed <= memoryBrightenDuration + 1000 / fps);
+  }
+  assert.equal(advanceMemoryBlackout(.2, 1, 16), 1, "Reversing into the close-up can close the eye again");
+  assert.ok(advanceMemoryBlackout(1, 0, 4000) > .9, "A suspended tab cannot consume the whole reveal");
 });
 
 test("scrubbing a frame has no wall-clock drift and reduced motion removes camera movement", () => {
