@@ -310,7 +310,7 @@ const gateStyle = [
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, getContractReleaseFrame
     } from "../lib/gateRelease";
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
-    import { memoryFillDuration, getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices } from "../lib/gateStory";
+    import { memoryFillDuration, getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices, advanceMemoryProgress, advanceMemoryBlackout } from "../lib/gateStory";
     const releaseStaleKisaraHomeRuntime = (candidate) => {
       if (!(candidate instanceof HTMLElement) || candidate.dataset.bound !== "true") return false;
       const candidateAutoControl = candidate.querySelector("[data-kisara-auto]");
@@ -750,7 +750,9 @@ const gateStyle = [
       let releaseUsesReconstruction = false;
       let releaseUsesSmokeCarrier = false;
       let releaseReturnPose = null;
-      let reconstructionCenter = { x: 0.5, y: 0.48 };
+      let reconstructionCenter = { x: 0.5, y: 0.5 };
+      let memoryBlackoutOpacity = 0;
+      let memoryBlackoutTimestamp = 0;
       const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
       const startsComplete = reducedMotion && !restoredBelowGate && !foundSelfEntryRequested;
       let progress = startsComplete ? 1 : 0;
@@ -1161,6 +1163,15 @@ const gateStyle = [
             .slice(0, sceneSlotRecords.length);
         }
         activePresentations.sort((left, right) => left.order - right.order);
+        // Source-over needs an opaque lower plate for a true complementary dissolve.
+        if (activePresentations.length === 2) {
+          const [lower, upper] = activePresentations;
+          const total = lower.opacity + upper.opacity;
+          activePresentations = [
+            { ...lower, opacity: 1 },
+            { ...upper, opacity: upper.opacity / total }
+          ];
+        }
 
         const assignments = new Map();
         const usedSlots = new Set();
@@ -1192,8 +1203,7 @@ const gateStyle = [
           const renderedShiftX = quantizeRuntimeValue(presentation.shiftX, 0.35, 0.5);
           const renderedShiftY = quantizeRuntimeValue(presentation.shiftY, 0.35, 0.5);
           const renderedScale = quantizeRuntimeValue(presentation.scale, 0.0015, 0.002);
-          const renderedOpacity = presentation.opacity >= 0.9999
-            ? 1 : quantizeRuntimeValue(presentation.opacity, 0.008, 0.012);
+          const renderedOpacity = presentation.opacity;
           const transform = presentation.kind === "memory"
             ? `translate3d(${renderedShiftX.toFixed(3)}px, ${renderedShiftY.toFixed(3)}px, 0) scale(${renderedScale.toFixed(5)}) scale(var(--kisara-gravity-scale))`
             : `translate3d(calc(${renderedShiftX.toFixed(3)}px + var(--kisara-base-shift-x)), calc(${renderedShiftY.toFixed(3)}px + var(--kisara-base-shift-y)), 0) scale(${renderedScale.toFixed(5)}) scale(var(--kisara-gravity-scale))`;
@@ -1216,16 +1226,22 @@ const gateStyle = [
         const handoff = computeSceneHandoff();
         transformationSceneRecords.forEach((record, index) => {
           const frame = getTransformationFrame(index, chargeIntroProgress, 0, 0, reducedMotion,
-            releaseUsesSmokeCarrier ? getReconstructionProgress(burstProgress) : 0);
+            releaseUsesSmokeCarrier);
           if (frame) scenePresentations.push({
             ...record, ...frame, opacity: frame.opacity * handoff.transformationReleaseOpacity
           });
         });
         const composed = syncSceneSlots(scenePresentations);
         const blackout = getMemoryBlackout(fill, chargeIntroProgress, reducedMotion);
-        if (composed || blackout === 0) {
-          setRuntimeStyle(gate, "--kisara-memory-blackout", blackout.toFixed(4));
+        const now = performance.now();
+        if (composed) {
+          memoryBlackoutOpacity = advanceMemoryBlackout(
+            memoryBlackoutOpacity, blackout,
+            memoryBlackoutTimestamp ? now - memoryBlackoutTimestamp : 0, reducedMotion
+          );
+          setRuntimeStyle(gate, "--kisara-memory-blackout", memoryBlackoutOpacity.toFixed(4));
         }
+        memoryBlackoutTimestamp = now;
         if (composed) setRuntimeStyle(gate, "--kisara-bg-opacity", fill < 0.065 ? "1" : "0");
         return { handoff };
       };
@@ -4719,9 +4735,8 @@ const gateStyle = [
           return;
         }
         if (
-          chargeIntroProgress >= titleAbyssDomHandoffStart
-          || (burstProgress >= releaseStart
-            && getTitleReconstructionFrame(getReconstructionProgress(burstProgress)).sourceOpacity <= .001)
+          burstProgress >= releaseStart
+            && getTitleReconstructionFrame(getReconstructionProgress(burstProgress)).sourceOpacity <= .001
         ) {
           gate.classList.remove("is-title-abyss-ready");
           return;
@@ -7430,7 +7445,8 @@ const gateStyle = [
       const startChargeIntro = (timestamp) => {
         if (chargeIntroComplete || pageMode !== "gate") return;
         scheduleReleaseWarmup(true);
-        if (!areIntroImagesReady()) return;
+        if (!areIntroImagesReady() || memoryBlackoutOpacity > 0.001) return;
+        releaseUsesSmokeCarrier = sceneImageWarmers.get(transformationSceneRecords[2]?.id)?.status === "ready";
         progress = 1;
         targetProgress = 1;
         velocity = 0;
@@ -7468,17 +7484,9 @@ const gateStyle = [
         releaseRewindDuration = 0;
         releaseRewindElapsed = 0;
         if (!resume) {
-          releaseUsesSmokeCarrier = sceneImageWarmers.get(transformationSceneRecords[2]?.id)?.status === "ready";
           releaseUsesReconstruction = Boolean(spaceLensRenderer) && releaseWarmupState.spaceLens
             && !releaseWarmupPending.spaceLens;
-          if (title) {
-            const gateRect = gate.getBoundingClientRect();
-            const titleRect = title.getBoundingClientRect();
-            reconstructionCenter = {
-              x: clamp((titleRect.left + titleRect.width * 0.5 - gateRect.left) / Math.max(1, gateRect.width), 0, 1),
-              y: clamp((titleRect.top + titleRect.height * 0.5 - gateRect.top) / Math.max(1, gateRect.height), 0, 1)
-            };
-          }
+          reconstructionCenter = { x: 0.5, y: 0.5 };
           releaseTimeline = 0;
           burstProgress = mapReleaseAutoplayProgress(0);
         }
@@ -7669,9 +7677,9 @@ const gateStyle = [
           : 1;
         lastFrameTime = timestamp;
         advanceHeroAutoplay(timestamp);
-        const spring = (targetProgress - progress) * springStrength * frameRatio;
-        velocity = (velocity + spring) * Math.pow(damping, frameRatio);
-        progress = clamp(progress + velocity * frameRatio, 0, 1);
+        const memoryStep = advanceMemoryProgress(progress, targetProgress, velocity, frameRatio, springStrength, damping);
+        progress = memoryStep.progress;
+        velocity = memoryStep.velocity;
         const fillReadyForIntro = targetProgress >= 0.9995 && progress >= 0.995;
         if (fillReadyForIntro && !chargeIntroActive && !chargeIntroComplete) {
           startChargeIntro(timestamp);
@@ -7775,6 +7783,7 @@ const gateStyle = [
 
         const settled = !heroAutoplayActive
           && !chargeIntroActive
+          && memoryBlackoutOpacity <= getMemoryBlackout(progress, chargeIntroProgress, reducedMotion) + 0.00005
           && !["forward", "rewinding"].includes(releaseMode)
           && Math.abs(targetProgress - progress) < settleDistance
           && Math.abs(velocity) < settleDistance
@@ -7988,6 +7997,8 @@ const gateStyle = [
         targetProgress = 0;
         progress = 0;
         velocity = 0;
+        memoryBlackoutOpacity = 0;
+        memoryBlackoutTimestamp = 0;
         targetBurstProgress = 0;
         burstProgress = 0;
         burstVelocity = 0;

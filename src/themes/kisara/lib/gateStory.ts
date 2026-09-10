@@ -6,6 +6,19 @@ const smooth = (value: number) => {
 const between = (value: number, start: number, end: number) => unit((value - start) / (end - start));
 
 export const memoryFillDuration = 9000;
+export const memoryBrightenDuration = 650;
+
+export function advanceMemoryProgress(progress: number, target: number, velocity: number, frameRatio: number, strength: number, damping: number) {
+  const speed = (velocity + (target - progress) * strength * frameRatio) * Math.pow(damping, frameRatio);
+  const candidate = progress + speed * frameRatio;
+  // Scroll edits may reverse on input, never from spring overshoot or recoil.
+  const next = Math.max(Math.min(progress, target), Math.min(Math.max(progress, target), candidate));
+  return { progress: next, velocity: next === candidate ? speed : 0 };
+}
+
+export function advanceMemoryBlackout(current: number, target: number, elapsed: number, reducedMotion = false) {
+  return Math.max(target, current - Math.max(0, Math.min(50, elapsed)) / (reducedMotion ? 180 : memoryBrightenDuration));
+}
 
 // The scroll clock is also the edit: brief action inserts, longer reaction shots.
 export const memoryTimeline = [
@@ -62,10 +75,10 @@ export function getMemoryFrame(index: number, fill: number, intro = 0, reducedMo
 }
 
 export function getMemoryBlackout(fill: number, intro = 0, reducedMotion = false) {
-  if (intro > 0 || fill <= 0.735 || fill >= 0.906) return 0;
+  if (intro > 0 || fill <= 0.735 || fill >= 0.975) return 0;
   // One deliberate eye-close, not a dark dip at every edit.
   const close = smooth(between(fill, 0.735, 0.825));
-  const open = 1 - smooth(between(fill, 0.87, 0.906));
+  const open = 1 - smooth(between(fill, 0.87, 0.975));
   return close * open * (reducedMotion ? 0.3 : 1);
 }
 

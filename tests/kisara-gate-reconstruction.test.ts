@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createGateReconstructionRenderer } from "../src/themes/kisara/lib/gateReconstruction.ts";
+import { createGateReconstructionRenderer, reconstructionFragment } from "../src/themes/kisara/lib/gateReconstruction.ts";
+
+test("diffusion preserves the original fine data front without a gravitational sampling pass", () => {
+  assert.match(reconstructionFragment, /max\(0\.055, farthest \* 0\.085\)/);
+  assert.match(reconstructionFragment, /noise \+ 0\.04, noise \+ 0\.62/);
+  assert.match(reconstructionFragment, /0\.38 \+ edge \* 0\.62/);
+  assert.match(reconstructionFragment, /0\.72 \+ dataFront \* 0\.28/);
+  assert.doesNotMatch(reconstructionFragment, /uGravity|uCollapse|uCrush|shockPull|orbitBend/);
+});
 
 function fixture(mode = "ready") {
   const images: any[] = [];
@@ -91,7 +99,7 @@ test("reconstruction uses one target texture, bounded canvases, and no repeated 
         for (const progress of [0.1, 0.5, 0.9]) {
           renderer.draw({ reconstruction: progress, opacity: 0.92, centerX: 0.5, centerY: 0.52, time: run });
           assert.equal(f.uniforms.get("uProgress")![0], progress);
-          assert.equal(f.uniforms.get("uCellSize")![0], profile === "desktop" ? 14 : 9);
+          assert.equal(f.uniforms.get("uCellSize")![0], 9);
         }
         renderer.clear();
         assert.equal(f.canvas.style.opacity, "0");

@@ -11,7 +11,7 @@ const between = (value: number, start: number, end: number) => unit((value - sta
 
 export const gateRelease = {
   introDuration: 1280,
-  introHandoff: 0.66,
+  introHandoff: 0.86,
   duration: 610,
   phases: { start: 0.01 }
 } as const;
@@ -64,7 +64,7 @@ export function getTitleReconstructionFrame(progress: number) {
 export function getContractReleaseFrame(intro: number) {
   const p = unit(intro);
   const draw = smooth(between(p, 0.19, 0.32));
-  const exit = smooth(between(p, 0.47, gateRelease.introHandoff));
+  const exit = smooth(between(p, 0.47, 0.66));
   const pulse = Math.sin(between(p, 0.32, 0.46) * Math.PI) ** 2;
   return {
     etch: smooth(between(p, 0.065, 0.14)) * (1 - smooth(between(p, 0.3, 0.48))),
@@ -80,30 +80,22 @@ export function getContractReleaseFrame(intro: number) {
 
 export const transformationTimeline = [
   { start: 0.025, enterEnd: 0.18, leaveStart: 0.34, end: 0.52, drift: -15, lift: -3 },
-  { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 }
+  { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 },
+  { start: 0.63, enterEnd: 0.79, leaveStart: 1, end: 1, drift: 0, lift: 0 }
 ] as const;
 
-export function getTransformationFrame(index: number, intro: number, _clock = 0, _motionBlur = 0, reducedMotion = false, reconstruction = 0) {
-  const carrier = smoother(between(reconstruction, 0, 0.12));
-  if (index === 2) {
-    return {
-      opacity: intro >= gateRelease.introHandoff ? carrier : 0,
-      scale: reducedMotion ? 1.02 : 1.035 + unit(reconstruction) * 0.035,
-      shiftX: 0,
-      shiftY: 0,
-      blur: 0
-    };
-  }
+export function getTransformationFrame(index: number, intro: number, _clock = 0, _motionBlur = 0, reducedMotion = false, carrierAvailable = true) {
   const scene = transformationTimeline[index];
   if (!scene) return null;
-  // Keep the original rapid two-shot clock; the silhouette belongs to reconstruction only.
+  // The first two cues keep their clock; shot 12 receives the edit before diffusion starts.
   const position = Math.min(intro, gateRelease.introHandoff);
   const enter = smoother(between(position, scene.start, scene.enterEnd));
-  const leave = 1 - smoother(between(position, scene.leaveStart, scene.end));
+  const leave = index === 2 || (index === 1 && !carrierAvailable)
+    ? 1 : 1 - smoother(between(position, scene.leaveStart, scene.end));
   const local = between(position, scene.start, scene.end);
   return {
-    opacity: enter * leave * 0.995 * (1 - carrier),
-    scale: reducedMotion ? 1.02 : 1.035 + local * 0.022,
+    opacity: index === 2 && !carrierAvailable ? 0 : enter * leave,
+    scale: reducedMotion ? 1.02 : index === 2 ? 1.035 : 1.035 + local * 0.022,
     shiftX: reducedMotion ? 0 : (local - 0.5) * scene.drift,
     shiftY: reducedMotion ? 0 : scene.lift * local,
     blur: 0
@@ -115,8 +107,8 @@ export function getGateSceneHandoff(reconstruction: number) {
   const settle = smoother(between(p, 0.18, 1));
   return {
     reconstructionProgress: p,
-    transformationReleaseOpacity: 1 - smoother(between(p, 0.12, 0.92)),
-    fightVisible: smoother(between(p, 0.72, 1)),
+    transformationReleaseOpacity: p < 1 ? 1 : 0,
+    fightVisible: p < 1 ? 0 : 1,
     fightSettle: settle,
     fightBlur: 0.3 + 2.8 * Math.pow(1 - settle, 1.35),
     fightSaturation: 0.9 + settle * 0.28,

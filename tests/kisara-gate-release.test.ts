@@ -7,7 +7,7 @@ import {
   mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
   getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, transformationTimeline
 } from "../src/themes/kisara/lib/gateRelease.ts";
-import { memoryScenes, transformationScenes, memoryFillDuration, getMemoryFrame, getMemoryBlackout } from "../src/themes/kisara/lib/gateStory.ts";
+import { memoryScenes, transformationScenes, memoryFillDuration, getMemoryFrame, getMemoryBlackout, advanceMemoryProgress, advanceMemoryBlackout } from "../src/themes/kisara/lib/gateStory.ts";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const home = read("src/themes/kisara/pages/HomePage.astro");
@@ -21,7 +21,7 @@ const sourceBetween = (name: string, next: string) => {
 test("the release is reconstruction only, with no empty lead-in or accelerated shot clock", () => {
   assert.equal(gateRelease.introDuration, 1280);
   assert.equal(gateRelease.duration, 610);
-  assert.equal(gateRelease.introHandoff, 0.66);
+  assert.equal(gateRelease.introHandoff, 0.86);
   for (const p of [0, 0.01, 0.1, 0.5, 0.99, 1]) {
     const oldRecoveryEase = p * p * (3 - 2 * p);
     assert.ok(Math.abs(getReconstructionProgress(mapReleaseAutoplayProgress(p)) - oldRecoveryEase) < 1e-10);
@@ -54,7 +54,7 @@ test("seeking an intro recovers the original shot clock without re-easing its re
   assert.equal(getChargeIntroClock(-1), 0);
   assert.equal(getChargeIntroClock(2), 1);
   const handoffMs = getChargeIntroClock(gateRelease.introHandoff) * gateRelease.introDuration;
-  assert.ok(handoffMs > 751 && handoffMs < 752);
+  assert.ok(handoffMs > 900 && handoffMs < 950);
 });
 
 function fixture(overrides: Record<string, unknown> = {}) {
@@ -71,6 +71,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
     releaseReturnPose: null, postReleaseParticles: [],
     mobileFrameInterval: 0, lastAnimationPaintTimestamp: 0, animationFrame: 0, lastFrameTime: 0,
     progress: 1, targetProgress: 1, velocity: 0, springStrength: 0.06, damping: 0.76, settleDistance: 0.00035,
+    memoryBlackoutOpacity: 0, memoryBlackoutTimestamp: 0, advanceMemoryProgress, advanceMemoryBlackout,
     chargeIntroProgress: 0, chargeIntroActive: false, chargeIntroComplete: false, chargeIntroReversing: false,
     chargeIntroLastTimestamp: 0, chargeIntroClock: 0, chargeIntroTargetClock: 1, chargeIntroTarget: 1,
     chargeIntroDuration: gateRelease.introDuration, energyProgress: 1, fillDistance: 2100,
@@ -208,6 +209,17 @@ function attachSceneCompositor(f: ReturnType<typeof fixture>) {
     return sync(presentations);
   };
   return {
+    contribution(id: string) {
+      const ordered = slots.filter(slot => Number(slot.element.style.opacity) > .00005)
+        .sort((a, b) => Number(b.element.style["z-index"]) - Number(a.element.style["z-index"]));
+      let uncovered = 1;
+      for (const slot of ordered) {
+        const opacity = Number(slot.element.style.opacity);
+        if (slot.sceneId === id) return opacity * uncovered;
+        uncovered *= 1 - opacity;
+      }
+      return 0;
+    },
     opacity(id: string) {
       const slot = slots.find((candidate) => candidate.sceneId === id);
       return Number(slot?.element.style.opacity || 0);
@@ -297,7 +309,7 @@ test("one upward gesture retraces the reconstruction carrier, both close-ups and
     assert.equal(f.input(-120), 1);
     assert.equal(f.state.releaseMode, "rewinding");
     assert.equal(f.state.burstProgress, 1, "The first frame keeps the final composition");
-    assert.equal(f.state.chargeIntroProgress, .66, "No reverse traversal of the retired .66-1 intro tail");
+    assert.equal(f.state.chargeIntroProgress, gateRelease.introHandoff, "Reverse begins on the fully received smoke carrier");
     assert.equal(f.state.postReleaseActive, false);
     assert.equal(f.state.releaseReturnPose.liquidPhase, 2.3);
     assert.equal(f.state.releaseReturnPose.x, 9);
@@ -360,7 +372,7 @@ test("reversing direction during the close-up rewind resumes from that shot", ()
   assert.equal(f.state.burstProgress, 1);
 });
 
-test("the actual two-slot compositor preserves both rapid shot durations without giving the carrier an intro hold", () => {
+test("the actual two-slot compositor plays all three rapid shots on the same reversible clock", () => {
   for (const fps of [30, 60, 120]) {
     const interval = 1000 / fps;
     const forward = fixture();
@@ -384,11 +396,13 @@ test("the actual two-slot compositor preserves both rapid shot durations without
           assert.ok(Math.abs(f.state.chargeIntroProgress - mirrored) < 1e-9);
         }
         for (let index = 0; index < 3; index++) {
-          const opacity = slots.opacity(`transformation-${index}`);
+          const opacity = slots.contribution(`transformation-${index}`);
           if (opacity > .7) visible[index] += interval;
           alphaIntegral[index] += opacity * interval;
-          const expected = f.state.presentations[index + 9].opacity;
-          assert.ok(Math.abs(opacity - expected) < .0001, "The bound slot must follow each shot, not retain a stale frame");
+          const active = f.state.presentations.filter((scene: { opacity: number }) => scene.opacity > .00005);
+          const expected = f.state.presentations[index + 9].opacity / (active.length === 2
+            ? active.reduce((sum: number, scene: { opacity: number }) => sum + scene.opacity, 0) : 1);
+          assert.ok(Math.abs(opacity - expected) < .0002, "The visible contribution must follow the normalized dissolve");
         }
       }
       assert.equal(f.state.chargeIntroActive, false);
@@ -403,9 +417,8 @@ test("the actual two-slot compositor preserves both rapid shot durations without
         `Shot ${index} must retain its fade envelope at ${fps}Hz`);
     }
     assert.ok(reversed.visible[0] > 200 && reversed.visible[0] < 300, "Shot 10 is a quick, readable insert");
-    assert.ok(reversed.visible[1] > 100 && reversed.visible[1] < 200, "Shot 11 follows promptly");
-    assert.equal(reversed.visible[2], 0, "The silhouette must not add a third intro shot");
-    assert.equal(original.visible[2], 0);
+    assert.ok(reversed.visible[1] > 100 && reversed.visible[1] < 230, "Shot 11 follows promptly");
+    assert.ok(reversed.visible[2] >= 100 && reversed.visible[2] < 220, "Shot 12 is visible before diffusion");
     assert.deepEqual(reverseSlots.snapshot(), [{ id: "memory-kiss", opacity: 1 }]);
   }
 });
@@ -425,6 +438,26 @@ test("delayed intro frames cannot skip smoke shots in forward or reverse playbac
   assert.ok(f.state.chargeIntroProgress > .5, "A delayed frame must not jump from detail straight to kiss");
   f.advance(2200);
   assert.equal(f.state.chargeIntroProgress, 0);
+});
+
+test("fast scrolling to the end waits for the kiss to brighten before starting the smoke clock", () => {
+  for (const fps of [30, 60, 120]) {
+    const f = fixture({ memoryBlackoutOpacity: 1, memoryBlackoutTimestamp: 1000 });
+    attachSceneCompositor(f);
+    f.api.startChargeIntro(f.state.now);
+    assert.equal(f.state.chargeIntroActive, false);
+    const start = f.state.now;
+    while (!f.state.chargeIntroActive && f.state.now - start < 1000) {
+      f.step(f.state.now + 1000 / fps);
+      if (f.state.memoryBlackoutOpacity > .001) {
+        assert.equal(f.state.chargeIntroProgress, 0);
+        assert.equal(f.state.presentations[8].opacity, 1);
+      }
+    }
+    assert.equal(f.state.chargeIntroActive, true);
+    assert.ok(f.state.now - start >= 650 - .01);
+    assert.equal(f.state.chargeIntroClock, 0);
+  }
 });
 
 test("opposite input resumes exactly where the reverse stopped; repeated gestures do not restart clocks", () => {
@@ -497,19 +530,23 @@ test("AUTO waits for media but the prepared 10 to 11 pair never pauses its runni
   assert.ok(Math.abs(intro.state.chargeIntroClock - 16 / gateRelease.introDuration) < 1e-10);
 });
 
-test("a late carrier never replaces the reconstruction source mid-flight, but is used on the next run", () => {
-  const f = fixture({ chargeIntroComplete: true, chargeIntroProgress: .66 });
+test("the carrier choice is frozen before the three-shot playback and stays fixed through reconstruction", () => {
+  const f = fixture();
   const media = f.state.sceneImageWarmers.get("transformation-2");
   media.status = "timed-out";
-  f.api.startReleaseAutoplay(f.state.now);
+  f.api.startChargeIntro(f.state.now);
   assert.equal(f.state.releaseUsesSmokeCarrier, false);
   media.status = "ready";
+  f.until("forward");
   f.state.burstProgress = mapReleaseAutoplayProgress(.2);
   f.state.render();
   assert.equal(f.state.presentations[11].opacity, 0);
   assert.ok(f.state.presentations[10].opacity > 0);
   f.state.releaseMode = "manual";
-  f.api.startReleaseAutoplay(f.state.now);
+  f.state.chargeIntroComplete = false;
+  f.state.chargeIntroActive = false;
+  f.state.chargeIntroProgress = 0;
+  f.api.startChargeIntro(f.state.now);
   assert.equal(f.state.releaseUsesSmokeCarrier, true);
 });
 
@@ -582,18 +619,21 @@ test("restoring the smoke silhouette does not restore the retired blade state ma
   assert.match(reset, /releaseUsesReconstruction = false/);
 });
 
-test("both original smoke cues stay fast and the silhouette only appears inside reconstruction", () => {
+test("both original smoke cues stay fast and the silhouette receives the edit before reconstruction", () => {
   assert.deepEqual(transformationTimeline, [
     { start: 0.025, enterEnd: 0.18, leaveStart: 0.34, end: 0.52, drift: -15, lift: -3 },
-    { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 }
+    { start: 0.35, enterEnd: 0.51, leaveStart: 0.63, end: 0.79, drift: 18, lift: -2 },
+    { start: 0.63, enterEnd: 0.79, leaveStart: 1, end: 1, drift: 0, lift: 0 }
   ]);
   assert.equal(getTransformationFrame(1, 0.35)!.opacity, 0);
-  assert.equal(getTransformationFrame(1, 0.51)!.opacity, 0.995);
+  assert.equal(getTransformationFrame(1, 0.51)!.opacity, 1);
   assert.equal(getTransformationFrame(0, 0.52)!.opacity, 0);
-  assert.deepEqual(getTransformationFrame(2, 0.66), getTransformationFrame(2, 0.99));
-  assert.equal(getTransformationFrame(2, 0.66)!.opacity, 0);
-  assert.equal(getTransformationFrame(2, 0.66, 0, 0, false, 0.12)!.opacity, 1);
-  assert.equal(getTransformationFrame(1, 0.66, 0, 0, false, 0.12)!.opacity, 0);
+  assert.equal(getTransformationFrame(2, 0.63)!.opacity, 0);
+  assert.equal(getTransformationFrame(2, 0.79)!.opacity, 1);
+  assert.deepEqual(getTransformationFrame(2, 0.86), getTransformationFrame(2, 0.99));
+  assert.equal(getTransformationFrame(1, 0.79)!.opacity, 0);
+  assert.equal(getTransformationFrame(2, 0.86, 0, 0, false, false)!.opacity, 0);
+  assert.equal(getTransformationFrame(1, 0.86, 0, 0, false, false)!.opacity, 1);
   const middle = getTransformationFrame(1, 0.4, 0, 0, true)!;
   assert.equal(middle.blur, 0);
   assert.equal(middle.scale, 1.02);
@@ -628,7 +668,7 @@ test("the original diffusion wash reaches every corner and retains full source b
   assert.doesNotMatch(shader, /luminance|mix\(0\.58, 0\.34/);
 });
 
-test("shots 10 and 11 run together in about 750ms and hand directly to reconstruction", () => {
+test("shots 10 to 12 autoplay completely before center-out reconstruction", () => {
   const f = fixture();
   f.api.startChargeIntro(1000);
   for (const elapsed of [200, 400, 600, 700]) {
@@ -638,11 +678,17 @@ test("shots 10 and 11 run together in about 750ms and hand directly to reconstru
   }
   let time = 1700;
   while (f.state.releaseMode === "manual") f.step(time += 1000 / 60);
-  assert.ok(time - 1000 > 750 && time - 1000 < 785);
-  assert.equal(f.state.chargeIntroProgress, 0.66);
+  assert.ok(time - 1000 > 900 && time - 1000 < 970);
+  assert.equal(f.state.chargeIntroProgress, 0.86);
   assert.equal(f.state.chargeIntroComplete, true);
   assert.equal(f.state.releaseMode, "forward");
   assert.equal(f.state.rail.progress, 0.7);
+  assert.equal(f.state.presentations[11].opacity, 1);
+  assert.deepEqual({ ...f.state.reconstructionCenter }, { x: .5, y: .5 });
+  for (const p of [.1, .4, .8, .99]) {
+    assert.equal(getGateSceneHandoff(p).transformationReleaseOpacity, 1, "The smoke outside the diffusion front must not globally fade");
+    assert.equal(getGateSceneHandoff(p).fightVisible, 0, "The final scene must only enter through the expanding wash");
+  }
   const end = getGateSceneHandoff(1);
   assert.equal(end.transformationReleaseOpacity, 0);
   assert.equal(end.fightVisible, 1);
@@ -837,7 +883,7 @@ test("returning to a cached procedural title restores its layer even when reduce
     titleAbyssTideContext: {}, titleAbyssTideImageData: {},
     titleDataCanvasWidth: 1200, titleDataCanvasHeight: 300,
     pageMode: "gate", document: { visibilityState: "visible" },
-    chargeIntroProgress: .66, titleAbyssDomHandoffStart: .72,
+    chargeIntroProgress: gateRelease.introHandoff, titleAbyssDomHandoffStart: .72,
     burstProgress: gateRelease.phases.start, releaseStart: gateRelease.phases.start,
     getTitleReconstructionFrame, getReconstructionProgress,
     progress: 1, energyProgress: 1, velocity: 0,

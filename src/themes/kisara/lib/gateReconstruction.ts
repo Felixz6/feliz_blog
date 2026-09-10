@@ -44,21 +44,20 @@ void main() {
   float farthest = length(max(origin, uResolution - origin)) / uResolution.y;
   float radius = length(center * uResolution - origin) / uResolution.y;
   float front = (1.0 - pow(1.0 - clamp(uProgress, 0.0, 1.0), 2.35)) * farthest;
-  float band = max(0.075, farthest * 0.14);
+  float band = max(0.055, farthest * 0.085);
   float radialProgress = clamp((front - radius) / band + 0.5, 0.0, 1.0);
   float noise = mix(hash21(cell),
     0.5 + 0.5 * sin(cell.x * 0.31 - cell.y * 0.47 + uTime * 4.2), 0.42);
   float mask = smoothstep(noise - 0.16, noise + 0.16, radialProgress);
-  float settle = smoothstep(noise + 0.18, noise + 0.74, radialProgress);
+  float settle = smoothstep(noise + 0.04, noise + 0.62, radialProgress);
   float dataFront = exp(-pow((radialProgress - noise) / 0.17, 2.0));
   vec2 cellUv = fract(pixel / uCellSize);
   float edgeDistance = min(min(cellUv.x, 1.0 - cellUv.x), min(cellUv.y, 1.0 - cellUv.y));
   float edge = 1.0 - smoothstep(0.035, 0.14, edgeDistance);
   vec3 color = mix(texture(uFight, coverUv(center)).rgb, texture(uFight, coverUv(vUv)).rgb, settle);
-  color *= 1.0 - edge * dataFront * 0.48;
-  color += vec3(0.26, 0.035, 0.12) * dataFront * (0.54 + edge * 0.84);
+  color += vec3(0.26, 0.035, 0.12) * dataFront * (0.38 + edge * 0.62);
   color += vec3(0.075, 0.13, 0.28) * dataFront * edge * (0.28 + 0.22 * sin(cell.x + cell.y));
-  float alpha = mask * uOpacity * (0.82 + dataFront * 0.18);
+  float alpha = mask * uOpacity * (0.72 + dataFront * 0.28);
   outputColor = vec4(color * alpha, alpha);
 }`;
 
@@ -192,7 +191,7 @@ export async function createGateReconstructionRenderer(options: Options) {
     gl.uniform2f(uniform.Center, parameters.centerX, parameters.centerY);
     gl.uniform1f(uniform.Progress, parameters.reconstruction);
     gl.uniform1f(uniform.Opacity, parameters.opacity);
-    gl.uniform1f(uniform.CellSize, mobile ? 9 : 14);
+    gl.uniform1f(uniform.CellSize, 9);
     gl.uniform1f(uniform.Time, parameters.time);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     canvas.style.opacity = "1";
