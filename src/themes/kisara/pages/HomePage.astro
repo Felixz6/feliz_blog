@@ -824,6 +824,7 @@ const gateStyle = [
       let titleDataPixelRatio = 1;
       let titleAbyssLastPaintTimestamp = 0;
       let titleAbyssLastFill = -1;
+      let titleAbyssLastIntro = -1;
       let titleAbyssPointerX = 0;
       let titleAbyssPointerY = 0;
       let titleAbyssPointerTargetX = 0;
@@ -2338,6 +2339,7 @@ const gateStyle = [
         titleDataPixelRatio = pixelRatio;
         titleAbyssLastPaintTimestamp = 0;
         titleAbyssLastFill = -1;
+        titleAbyssLastIntro = -1;
         gate.classList.remove("is-title-abyss-ready");
         clearTitleDataCanvas();
         rebuildTitleEffectMask();
@@ -4697,6 +4699,7 @@ const gateStyle = [
         }
         titleAbyssLastPaintTimestamp = 0;
         titleAbyssLastFill = -1;
+        titleAbyssLastIntro = -1;
         titleAbyssFluidLastPaintTimestamp = 0;
         titleAbyssFluidLastPalette = -1;
         titleLiquidLastPaintTimestamp = 0;
@@ -4710,6 +4713,30 @@ const gateStyle = [
         titleAbyssPointerY = 0;
         titleAbyssPointerTargetX = 0;
         titleAbyssPointerTargetY = 0;
+      };
+
+      const paintTitleEnchant = (context, width, height, intro) => {
+        const impact = phaseProgress(intro, titleAbyssDomHandoffStart, 0.88);
+        const pulse = Math.sin(impact * Math.PI);
+        const hold = phaseProgress(intro, 0.75, 1) * (1 - phaseProgress(intro, 0.86, 1));
+        const opacity = pulse * 0.32 + hold * 0.2;
+        if (opacity <= 0.001) return;
+
+        // Tint the existing glyph alpha, never rasterize a second outline.
+        const center = (intro * 1.7 - 0.35) * width;
+        const band = Math.max(1, width * 0.24);
+        const gloss = context.createLinearGradient(center - band, height, center + band, 0);
+        gloss.addColorStop(0, "rgba(255,129,175,0)");
+        gloss.addColorStop(0.42, "rgba(255,179,211,0.35)");
+        gloss.addColorStop(0.5, "rgba(255,242,248,0.9)");
+        gloss.addColorStop(0.58, "rgba(255,179,211,0.35)");
+        gloss.addColorStop(1, "rgba(255,129,175,0)");
+        context.save();
+        context.globalCompositeOperation = "source-atop";
+        context.globalAlpha = opacity;
+        context.fillStyle = gloss;
+        context.fillRect(0, 0, width, height);
+        context.restore();
       };
 
       const drawTitleAbyss = (timestamp, force = false) => {
@@ -4761,6 +4788,7 @@ const gateStyle = [
           !force
           && gap < frameInterval
           && Math.abs(fill - titleAbyssLastFill) < 0.0025
+          && Math.abs(chargeIntroProgress - titleAbyssLastIntro) < 0.0025
         ) {
           gate.classList.add("is-title-abyss-ready");
           return;
@@ -4774,6 +4802,7 @@ const gateStyle = [
         titleAbyssPointerY += (titleAbyssPointerTargetY - titleAbyssPointerY) * pointerEase;
         titleAbyssLastPaintTimestamp = timestamp;
         titleAbyssLastFill = fill;
+        titleAbyssLastIntro = chargeIntroProgress;
 
         const context = titleAbyssContext;
         const width = titleDataCanvasWidth;
@@ -4981,6 +5010,7 @@ const gateStyle = [
         context.globalAlpha = 1;
         context.drawImage(titleDataMaskCanvas, 0, 0);
         context.globalCompositeOperation = "source-over";
+        paintTitleEnchant(context, titleDataMaskCanvas.width, titleDataMaskCanvas.height, chargeIntroProgress);
         context.drawImage(titleAbyssRimCanvas, 0, 0);
         gate.classList.add("is-title-abyss-ready");
       };

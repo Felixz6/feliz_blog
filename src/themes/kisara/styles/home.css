@@ -1153,7 +1153,8 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 }
 
 .kisara-gate.is-title-abyss-ready .kisara-title > .kisara-title-base,
-.kisara-gate.is-title-abyss-ready .kisara-title > .kisara-title-tide {
+.kisara-gate.is-title-abyss-ready .kisara-title > .kisara-title-tide,
+.kisara-gate.is-title-abyss-ready .kisara-title > .kisara-title-enchant {
   opacity: 0;
 }
 
