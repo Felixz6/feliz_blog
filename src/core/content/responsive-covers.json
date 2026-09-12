@@ -1,0 +1,404 @@
+{
+  "/blog-covers/cover-01.webp": {
+    "width": 1400,
+    "height": 1980,
+    "hash": "c815abc0",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-01-320-c815abc0.webp",
+        "bytes": 54196
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-01-640-c815abc0.webp",
+        "bytes": 159564
+      }
+    ]
+  },
+  "/blog-covers/cover-02.webp": {
+    "width": 1145,
+    "height": 1800,
+    "hash": "f38ec5a8",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-02-320-f38ec5a8.webp",
+        "bytes": 60718
+      }
+    ]
+  },
+  "/blog-covers/cover-03.webp": {
+    "width": 1400,
+    "height": 1980,
+    "hash": "01d0dd10",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-03-320-01d0dd10.webp",
+        "bytes": 62644
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-03-640-01d0dd10.webp",
+        "bytes": 181150
+      }
+    ]
+  },
+  "/blog-covers/cover-04.webp": {
+    "width": 1400,
+    "height": 1393,
+    "hash": "15586acb",
+    "opaque": false,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-04-320-15586acb.webp",
+        "bytes": 39938
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-04-640-15586acb.webp",
+        "bytes": 113306
+      }
+    ]
+  },
+  "/blog-covers/cover-05.webp": {
+    "width": 1400,
+    "height": 2207,
+    "hash": "a382fe8c",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-05-320-a382fe8c.webp",
+        "bytes": 65442
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-05-640-a382fe8c.webp",
+        "bytes": 193976
+      }
+    ]
+  },
+  "/blog-covers/cover-06.webp": {
+    "width": 1319,
+    "height": 2000,
+    "hash": "9afe6236",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-06-320-9afe6236.webp",
+        "bytes": 72630
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-06-640-9afe6236.webp",
+        "bytes": 235882
+      }
+    ]
+  },
+  "/blog-covers/cover-07.webp": {
+    "width": 1400,
+    "height": 1867,
+    "hash": "957d669a",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-07-320-957d669a.webp",
+        "bytes": 33650
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-07-640-957d669a.webp",
+        "bytes": 92050
+      }
+    ]
+  },
+  "/blog-covers/cover-08.webp": {
+    "width": 1400,
+    "height": 1472,
+    "hash": "f353c6b2",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-08-320-f353c6b2.webp",
+        "bytes": 42566
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-08-640-f353c6b2.webp",
+        "bytes": 128326
+      }
+    ]
+  },
+  "/blog-covers/cover-09.webp": {
+    "width": 1400,
+    "height": 1977,
+    "hash": "64af346c",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-09-320-64af346c.webp",
+        "bytes": 43734
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-09-640-64af346c.webp",
+        "bytes": 122720
+      }
+    ]
+  },
+  "/blog-covers/cover-10.webp": {
+    "width": 1400,
+    "height": 1892,
+    "hash": "1e78f9d5",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-10-320-1e78f9d5.webp",
+        "bytes": 36230
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-10-640-1e78f9d5.webp",
+        "bytes": 106842
+      }
+    ]
+  },
+  "/blog-covers/cover-11.webp": {
+    "width": 1003,
+    "height": 1416,
+    "hash": "03e60f8c",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-11-320-03e60f8c.webp",
+        "bytes": 56966
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-11-640-03e60f8c.webp",
+        "bytes": 160216
+      }
+    ]
+  },
+  "/blog-covers/cover-12.webp": {
+    "width": 650,
+    "height": 970,
+    "hash": "367c0018",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-12-320-367c0018.webp",
+        "bytes": 63172
+      }
+    ]
+  },
+  "/blog-covers/cover-13.webp": {
+    "width": 1080,
+    "height": 1392,
+    "hash": "038bad2b",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-13-320-038bad2b.webp",
+        "bytes": 51236
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-13-640-038bad2b.webp",
+        "bytes": 145410
+      }
+    ]
+  },
+  "/blog-covers/cover-14.webp": {
+    "width": 850,
+    "height": 1126,
+    "hash": "2a4005f2",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-14-320-2a4005f2.webp",
+        "bytes": 38446
+      }
+    ]
+  },
+  "/blog-covers/cover-15.webp": {
+    "width": 1400,
+    "height": 1782,
+    "hash": "a3e074f2",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-15-320-a3e074f2.webp",
+        "bytes": 33614
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-15-640-a3e074f2.webp",
+        "bytes": 90604
+      }
+    ]
+  },
+  "/blog-covers/cover-16.webp": {
+    "width": 1268,
+    "height": 1920,
+    "hash": "e27a9e9c",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-16-320-e27a9e9c.webp",
+        "bytes": 53330
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-16-640-e27a9e9c.webp",
+        "bytes": 144632
+      }
+    ]
+  },
+  "/blog-covers/cover-17.webp": {
+    "width": 800,
+    "height": 1130,
+    "hash": "a2b6ad73",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-17-320-a2b6ad73.webp",
+        "bytes": 41512
+      }
+    ]
+  },
+  "/blog-covers/cover-18.webp": {
+    "width": 1400,
+    "height": 1707,
+    "hash": "47669780",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-18-320-47669780.webp",
+        "bytes": 44026
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-18-640-47669780.webp",
+        "bytes": 120170
+      }
+    ]
+  },
+  "/blog-covers/cover-19.webp": {
+    "width": 1400,
+    "height": 1905,
+    "hash": "d2481886",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-19-320-d2481886.webp",
+        "bytes": 41088
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-19-640-d2481886.webp",
+        "bytes": 123744
+      }
+    ]
+  },
+  "/blog-covers/cover-20.webp": {
+    "width": 839,
+    "height": 1200,
+    "hash": "2e4f35dc",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-20-320-2e4f35dc.webp",
+        "bytes": 51436
+      }
+    ]
+  },
+  "/blog-covers/cover-21.webp": {
+    "width": 1145,
+    "height": 1920,
+    "hash": "be63817d",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-21-320-be63817d.webp",
+        "bytes": 57842
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-21-640-be63817d.webp",
+        "bytes": 159154
+      }
+    ]
+  },
+  "/blog-covers/cover-22.webp": {
+    "width": 1190,
+    "height": 1920,
+    "hash": "c423fe7e",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-22-320-c423fe7e.webp",
+        "bytes": 53614
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-22-640-c423fe7e.webp",
+        "bytes": 148186
+      }
+    ]
+  },
+  "/blog-covers/cover-23.webp": {
+    "width": 1374,
+    "height": 1704,
+    "hash": "4fa36d5a",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-23-320-4fa36d5a.webp",
+        "bytes": 49930
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-23-640-4fa36d5a.webp",
+        "bytes": 132098
+      }
+    ]
+  },
+  "/blog-covers/cover-24.webp": {
+    "width": 600,
+    "height": 848,
+    "hash": "756d4d70",
+    "opaque": true,
+    "variants": [
+      {
+        "width": 320,
+        "src": "/blog-covers/responsive/cover-24-320-756d4d70.webp",
+        "bytes": 74906
+      }
+    ]
+  }
+}

@@ -38,7 +38,7 @@ test("lite mode removes only persistent decorative motion", () => {
 
 test("production build enforces route, CSS, bundle, and deferred-media budgets", () => {
   const scripts = JSON.parse(packageSource).scripts;
-  assert.equal(scripts.build, "npm run generate:assets && astro build && npm run check:performance");
+  assert.equal(scripts.build, "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:performance");
   assert.equal(scripts["check:performance"], "node scripts/check-performance-budgets.mjs");
   assert.match(budgetSource, /Kisara Home HTML/);
   assert.match(budgetSource, /Kisara Home CSS/);
