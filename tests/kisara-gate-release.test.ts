@@ -20,7 +20,7 @@ const sourceBetween = (name: string, next: string) => {
 
 test("the release is reconstruction only, with no empty lead-in or accelerated shot clock", () => {
   assert.equal(gateRelease.introDuration, 1280);
-  assert.equal(gateRelease.duration, 610);
+  assert.equal(gateRelease.duration, 1600);
   assert.equal(gateRelease.introHandoff, 0.86);
   for (const p of [0, 0.01, 0.1, 0.5, 0.99, 1]) {
     const oldRecoveryEase = p * p * (3 - 2 * p);
@@ -753,7 +753,7 @@ test("the production presentation resets diffusion, settles the final frame, and
   const { context, styles, draws, update } = presentationFixture();
   for (const progress of [0, 0.01, 0.2, 0.5, 0.9, 1]) {
     context.burstProgress = mapReleaseAutoplayProgress(progress);
-    update(1000 + progress * 610, false);
+    update(1000 + progress * gateRelease.duration, false);
     const titleFrame = getTitleReconstructionFrame(getReconstructionProgress(context.burstProgress));
     for (const key of Object.keys(titleFrame) as (keyof typeof titleFrame)[]) {
       assert.equal(draws.at(-1)![key], titleFrame[key], `Production title handoff must use ${key}`);
@@ -775,7 +775,7 @@ test("the production presentation resets diffusion, settles the final frame, and
   context.releaseUsesReconstruction = false;
   update(3300, false);
   const fallbackRadius = Number.parseFloat(styles.get("--kisara-reconstruction-outer-radius")!);
-  assert.ok(gpuRadius < fallbackRadius, "The clean wash trails visible packets only when the GPU layer is available");
+  assert.equal(gpuRadius, fallbackRadius, "The clean wash follows the historical radial clock without the later packet delay");
   const expected = getReconstructionRadii(.3, 1600, 900, 800, 900 * .48);
   assert.ok(Math.abs(fallbackRadius - expected.outer) < .001, "No GPU keeps the original bright diffusion fallback");
 });
@@ -793,7 +793,7 @@ test("reverse rendering takes over the exact liquid pose, eases parallax and nev
     assert.equal(first[key], context.releaseReturnPose[key], `Incoming liquid must preserve ${key}`);
   }
   assert.equal(first.sourceOpacity, 0);
-  assert.equal(first.blockMix, 0);
+  assert.equal(first.dissolve, 0);
   assert.equal(styles.get("--kisara-post-parallax-x"), "-8.400px");
   assert.equal(styles.get("--kisara-post-release-opacity"), "0.800");
   let previousX = 8.4;
