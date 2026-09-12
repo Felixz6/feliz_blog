@@ -888,6 +888,7 @@ test("returning to a cached procedural title restores its layer even when reduce
     getTitleReconstructionFrame, getReconstructionProgress,
     progress: 1, energyProgress: 1, velocity: 0,
     titleAbyssLastPaintTimestamp: 950, titleAbyssLastFill: 1,
+    titleAbyssLastIntro: gateRelease.introHandoff,
     titleAbyssPointerTargetX: 0, titleAbyssPointerX: 0,
     titleAbyssPointerTargetY: 0, titleAbyssPointerY: 0,
     reducedMotion: true, litePerformance: false, mobilePerformance: false,
