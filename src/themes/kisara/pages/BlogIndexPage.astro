@@ -5,6 +5,7 @@ import blogPageUrl from "../lib/blogPage.js?url";
 import blogStylesheet from "../styles/blog.css?url";
 import { Icon } from "astro-icon/components";
 import { getPublishedPosts } from "@/core/content/blog";
+import { getCoverSources, hasTransparentCover } from "@/core/content/coverSources";
 import { getThemePath } from "@/core/themes/registry";
 import { categoryLabel } from "@/lib/site";
 import { getKisaraCoverPresentation } from "../lib/coverPresentation";
@@ -28,6 +29,7 @@ const timelineYears = posts.reduce((groups, post) => {
 }, [] as Array<{ year: number; posts: typeof posts }>);
 
 const coverPresentation = await getKisaraCoverPresentation(posts);
+const archiveCoverSizes = "(max-width: 760px) 112px, (max-width: 1100px) 45vw, 380px";
 ---
 
 <KisaraLayout title="Blog | Kisara" description="Yuimi Lab 的文章记录。" stylesheets={[blogStylesheet]}>
@@ -144,12 +146,18 @@ const coverPresentation = await getKisaraCoverPresentation(posts);
           data-post-id={post.id}
           data-category={post.data.category}
           data-search={[post.data.title, post.data.description, ...post.data.tags].join(" ").toLowerCase()}
-          style={`--archive-order: ${index}; --archive-cover: ${post.data.cover ? `url("${post.data.cover}")` : "none"}; --archive-cover-position: ${cover?.position ?? "50% 32%"};`}
+          style={`--archive-order: ${index}; --archive-cover-position: ${cover?.position ?? "50% 32%"};`}
         >
           <figure data-cover-fit={cover?.fit ?? "portrait"}>
+            {hasTransparentCover(post.data.cover) && (
+              <img class="kisara-blog-cover-ambient" src={post.data.cover}
+                {...getCoverSources(post.data.cover, archiveCoverSizes)}
+                alt="" loading="lazy" decoding="async" fetchpriority="low" />
+            )}
             {post.data.cover ? (
               <img
                 src={post.data.cover}
+                {...getCoverSources(post.data.cover, archiveCoverSizes)}
                 alt=""
                 width={cover?.width ?? 700}
                 height={cover?.height ?? 990}
@@ -215,7 +223,7 @@ const coverPresentation = await getKisaraCoverPresentation(posts);
                       </div>
                       {post.data.cover && (
                         <figure>
-                          <img src={post.data.cover} alt="" width={cover?.width ?? 700} height={cover?.height ?? 990} loading="lazy" fetchpriority="low" decoding="async" />
+                          <img src={post.data.cover} {...getCoverSources(post.data.cover, "74px")} alt="" width={cover?.width ?? 700} height={cover?.height ?? 990} loading="lazy" fetchpriority="low" decoding="async" />
                         </figure>
                       )}
                     </div>

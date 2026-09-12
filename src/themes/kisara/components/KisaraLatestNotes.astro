@@ -1,5 +1,6 @@
 ---
 import { getPublishedPosts } from "@/core/content/blog";
+import { getCoverSources } from "@/core/content/coverSources";
 import { getThemePath } from "@/core/themes/registry";
 import { categoryLabel } from "@/lib/site";
 import { getKisaraCoverPresentation } from "../lib/coverPresentation";
@@ -26,7 +27,7 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month:
           style={`--transmission-order: ${index}; --transmission-cover-position: ${cover?.position ?? "50% 32%"};`}>
           <figure data-cover-fit={cover?.fit ?? "portrait"}>
             {post.data.cover
-              ? <img src={post.data.cover} alt="" width={cover?.width ?? 700} height={cover?.height ?? 990} loading="lazy" decoding="async" fetchpriority="low" />
+              ? <img src={post.data.cover} {...getCoverSources(post.data.cover, "(max-width: 600px) 104px, (max-width: 980px) 126px, 380px")} alt="" width={cover?.width ?? 700} height={cover?.height ?? 990} loading="lazy" decoding="async" fetchpriority="low" />
               : <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>}
           </figure>
           <div class="kisara-transmission-copy">

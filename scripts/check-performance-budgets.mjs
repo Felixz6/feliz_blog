@@ -1,4 +1,5 @@
 import { readFile, readdir, stat } from "node:fs/promises";
+import { excludedPublicMedia } from "./lib/media-publish-policy.mjs";
 
 const distDir = new URL("../dist/", import.meta.url);
 const astroDir = new URL("_astro/", distDir);
@@ -118,6 +119,34 @@ try {
   }
 } catch {
   failures.push("Kisara Home HTML is missing for critical-image validation");
+}
+
+try {
+  const covers = JSON.parse(await readFile(new URL("../src/core/content/responsive-covers.json", import.meta.url), "utf8"));
+  let bytes = 0;
+  let smallBytes = 0;
+  let originalBytes = 0;
+  for (const [source, cover] of Object.entries(covers)) {
+    originalBytes += (await stat(new URL(source.slice(1), distDir))).size;
+    smallBytes += cover.variants[0]?.bytes ?? 0;
+    for (const variant of cover.variants) {
+      const published = await stat(new URL(variant.src.slice(1), distDir));
+      if (published.size !== variant.bytes) failures.push(`Responsive cover size mismatch: ${variant.src}`);
+      bytes += published.size;
+    }
+  }
+  recordBudget("Responsive cover derivatives", bytes, 5_000_000);
+  recordBudget("Small covers versus originals", smallBytes, Math.floor(originalBytes * 0.4));
+  for (const relative of excludedPublicMedia) {
+    try {
+      await stat(new URL(relative, distDir));
+      failures.push(`Reviewed source media leaked into the build: ${relative}`);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+} catch (error) {
+  failures.push(`Published media validation failed: ${error.message}`);
 }
 
 if (failures.length > 0) {
