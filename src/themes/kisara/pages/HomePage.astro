@@ -310,6 +310,7 @@ const gateStyle = [
       getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, getContractReleaseFrame
     } from "../lib/gateRelease";
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
+    import { titleDataStreamFragment } from "../lib/titleDataStream";
     import { memoryFillDuration, getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices, advanceMemoryProgress, advanceMemoryBlackout } from "../lib/gateStory";
     const releaseStaleKisaraHomeRuntime = (candidate) => {
       if (!(candidate instanceof HTMLElement) || candidate.dataset.bound !== "true") return false;
@@ -3789,7 +3790,6 @@ const gateStyle = [
           uniform float uLensRadius;
           uniform float uRelease;
           uniform float uDissolve;
-          uniform float uBlockMix;
           uniform float uTime;
           uniform float uFinalFlow;
           uniform float uLiquidPhase;
@@ -3797,6 +3797,8 @@ const gateStyle = [
           uniform float uFlowDirection;
           uniform float uFlowFront;
           uniform float uParallax;
+
+          ${titleDataStreamFragment}
 
           float hash21(vec2 point) {
             point = fract(point * vec2(123.34, 456.21));
@@ -3947,11 +3949,10 @@ const gateStyle = [
               0.5 + 0.5 * sin(pixel.x * 0.045 - pixel.y * 0.072 + uTime * 4.2),
               0.42
             );
-            float dissolveMask = 1.0 - smoothstep(
-              dissolveNoise - 0.16,
-              dissolveNoise + 0.16,
-              mix(-0.16, 1.16, clamp(uDissolve, 0.0, 1.0))
+            float dissolveMask = titleCellMask(
+              dissolveNoise, mix(-0.16, 1.16, clamp(uDissolve, 0.0, 1.0))
             );
+            float materialMask = titleAmbientCellMask(dissolveNoise, finalFlow);
             float liquidCaustic = pow(
               max(
                 0.0,
@@ -3996,6 +3997,9 @@ const gateStyle = [
               + titleColor.a
               * vec3(0.04, 0.12, 0.34)
               * blueTrace;
+            titleColor.rgb = mix(
+              titleColor.rgb, vec3(1.0, 0.82, 0.94) * titleColor.a, 1.0 - materialMask
+            );
 
             vec2 trailAxis = normalize(vec2(flowDirection, -0.34));
             float trailDistance = (8.0 + liquidPressure * 26.0)
@@ -4048,37 +4052,6 @@ const gateStyle = [
               titleColor.rgb * edge * dissolveMask * uOpacity + trailColor * trailOutputAlpha,
               clamp(alpha + trailOutputAlpha, 0.0, 1.0)
             );
-            // A temporary packet field keeps the scatter legible outside the glyph.
-            // Uniformly disabled after handoff: the final liquid pass is unchanged.
-            float blockMix = clamp(uBlockMix, 0.0, 1.0);
-            if (blockMix > 0.001) {
-              float cellSize = clamp(uResolution.y * 0.048, 8.0, 17.0);
-              vec2 cell = floor(pixel / cellSize);
-              vec2 cellCenter = (cell + 0.5) * cellSize;
-              float seed = hash21(cell);
-              vec2 spreadSource = uCenter + (cellCenter - uCenter) / (1.0 + uRelease * 0.24);
-              vec2 offset = vec2(
-                (hash21(vec2(cell.y, 37.0)) - 0.5) * 6.0,
-                (hash21(cell + 19.0) - 0.5) * 3.0
-              ) * cellSize * uRelease;
-              vec2 packetUv = (spreadSource + offset) / uResolution;
-              vec4 packet = texture(uTitleTexture, clamp(packetUv, vec2(0.001), vec2(0.999)));
-              float inBounds = step(0.0, packetUv.x) * step(packetUv.x, 1.0)
-                * step(0.0, packetUv.y) * step(packetUv.y, 1.0);
-              vec2 local = fract(pixel / cellSize);
-              float edgeDistance = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
-              float inset = smoothstep(0.045, 0.095, edgeDistance);
-              float rim = 1.0 - smoothstep(0.09, 0.18, edgeDistance);
-              float packetMask = 1.0 - smoothstep(seed - 0.08, seed + 0.08, uDissolve * 0.78);
-              float packetAlpha = smoothstep(0.12, 0.7, packet.a)
-                * inBounds * inset * packetMask * blockMix * uOpacity;
-              vec3 packetColor = packet.rgb / max(packet.a, 0.001);
-              packetColor = mix(packetColor, vec3(1.0, 0.36, 0.54), uRelease * 0.34);
-              packetColor += rim * vec3(0.36, 0.19, 0.25);
-              surface *= 1.0 - blockMix * 0.88;
-              surface = vec4(packetColor * packetAlpha + surface.rgb * (1.0 - packetAlpha),
-                packetAlpha + surface.a * (1.0 - packetAlpha));
-            }
             outputColor = surface;
           }
         `;
@@ -4133,14 +4106,13 @@ const gateStyle = [
           lensRadius: gl.getUniformLocation(program, "uLensRadius"),
           release: gl.getUniformLocation(program, "uRelease"),
           dissolve: gl.getUniformLocation(program, "uDissolve"),
-          blockMix: gl.getUniformLocation(program, "uBlockMix"),
           time: gl.getUniformLocation(program, "uTime"),
           finalFlow: gl.getUniformLocation(program, "uFinalFlow"),
           liquidPhase: gl.getUniformLocation(program, "uLiquidPhase"),
           liquidPressure: gl.getUniformLocation(program, "uLiquidPressure"),
           flowDirection: gl.getUniformLocation(program, "uFlowDirection"),
           flowFront: gl.getUniformLocation(program, "uFlowFront"),
-          parallax: gl.getUniformLocation(program, "uParallax")
+          parallax: gl.getUniformLocation(program, "uParallax"),
         };
         let cssWidth = 0;
         let cssHeight = 0;
@@ -4272,7 +4244,6 @@ const gateStyle = [
           gl.uniform1f(uniforms.lensRadius, parameters.lensRadius * renderScale);
           gl.uniform1f(uniforms.release, parameters.release);
           gl.uniform1f(uniforms.dissolve, parameters.dissolve);
-          gl.uniform1f(uniforms.blockMix, parameters.blockMix ?? 0);
           gl.uniform1f(uniforms.time, parameters.time);
           gl.uniform1f(uniforms.finalFlow, parameters.finalFlow ?? 0);
           gl.uniform1f(uniforms.liquidPhase, parameters.liquidPhase ?? 0);
@@ -4303,7 +4274,6 @@ const gateStyle = [
             lensRadius: Math.max(1, cssHeight * 0.62),
             release: 0.28,
             dissolve: 0.16,
-            blockMix: 0.8,
             time: performance.now() / 1000,
             finalFlow: 0.24,
             liquidPhase: 0.36,
@@ -5063,9 +5033,7 @@ const gateStyle = [
         const height = Math.max(1, gate.clientHeight);
         const originX = reconstructionCenter.x * width;
         const originY = reconstructionCenter.y * height;
-        const washProgress = releaseUsesReconstruction
-          ? clamp((reconstruction - 0.09) / 0.91, 0, 1) : reconstruction;
-        const wash = getReconstructionRadii(washProgress, width, height, originX, originY);
+        const wash = getReconstructionRadii(reconstruction, width, height, originX, originY);
         setRuntimeStyle(gate, "--kisara-reconstruction-center-x", `${(originX + 24).toFixed(3)}px`);
         setRuntimeStyle(gate, "--kisara-reconstruction-center-y", `${(originY + 24).toFixed(3)}px`);
         setRuntimeStyle(gate, "--kisara-reconstruction-inner-radius", `${wash.inner.toFixed(3)}px`);

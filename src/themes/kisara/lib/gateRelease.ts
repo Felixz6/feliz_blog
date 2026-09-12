@@ -12,7 +12,7 @@ const between = (value: number, start: number, end: number) => unit((value - sta
 export const gateRelease = {
   introDuration: 1280,
   introHandoff: 0.86,
-  duration: 610,
+  duration: 1600,
   phases: { start: 0.01 }
 } as const;
 
@@ -46,18 +46,16 @@ export function getReconstructionProgress(burst: number) {
 export function getTitleReconstructionFrame(progress: number) {
   const p = unit(progress);
   const takeover = smooth(between(p, 0, 0.12));
-  const scatter = smooth(between(p, 0.08, 0.42));
-  const regroup = smooth(between(p, 0.44, 0.96));
-  // Keep packets visible through the gap; only the solid letter dissolves completely.
-  const dissolve = scatter * (1 - regroup);
+  // Finish erasing every cell before rebuilding; reset the displacement while invisible.
+  const finalFlow = smooth(between(p, 0.62, 1));
+  const dissolve = smooth(between(p, 0.08, 0.46)) * (1 - finalFlow);
   return {
     opacity: takeover,
     sourceOpacity: 1 - takeover,
     fallbackOpacity: 1 - dissolve,
-    release: smooth(between(p, 0.02, 0.34)) * (1 - regroup),
+    release: smooth(between(p, 0.04, 0.4)) * (1 - smooth(between(p, 0.46, 0.62))),
     dissolve,
-    blockMix: smooth(between(p, 0.04, 0.24)) * (1 - smooth(between(p, 0.72, 1))),
-    finalFlow: smooth(between(p, 0.64, 1))
+    finalFlow
   };
 }
 

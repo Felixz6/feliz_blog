@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
-import { getTitleReconstructionFrame, getContractReleaseFrame, gateRelease } from "../src/themes/kisara/lib/gateRelease.ts";
+import { getTitleReconstructionFrame, getContractReleaseFrame, gateRelease, getReconstructionProgress, mapReleaseAutoplayProgress } from "../src/themes/kisara/lib/gateRelease.ts";
 
 const home = readFileSync(new URL("../src/themes/kisara/pages/HomePage.astro", import.meta.url), "utf8");
 const between = (name: string, next: string) =>
@@ -12,20 +12,12 @@ const smooth = (value: number) => { const p = clamp(value, 0, 1); return p * p *
 const easeOutCubic = (value: number) => 1 - (1 - value) ** 3;
 const smootherstep = (value: number) => value ** 3 * (value * (value * 6 - 15) + 10);
 
-test("title reconstruction has distinct scatter and regroup phases without lengthening the release", () => {
-  assert.equal(gateRelease.duration, 610);
+test("title dissolution has enough time to erase, hold and rebuild", () => {
+  assert.equal(gateRelease.duration, 1600);
   const start = getTitleReconstructionFrame(0);
-  assert.deepEqual(start, { opacity: 0, sourceOpacity: 1, fallbackOpacity: 1, release: 0, dissolve: 0, blockMix: 0, finalFlow: 0 });
-  for (const p of [.42, .43, .44]) {
-    const gap = getTitleReconstructionFrame(p);
-    assert.equal(gap.sourceOpacity, 0, "DOM lettering cannot fill the holes in the dissolving shader");
-    assert.equal(gap.dissolve, 1);
-    assert.equal(gap.fallbackOpacity, 0);
-    assert.equal(gap.finalFlow, 0, "The liquid surface waits until regrouping starts");
-    assert.equal(gap.blockMix, 1, "Packets remain visible while the solid lettering is absent");
-  }
+  assert.deepEqual(start, { opacity: 0, sourceOpacity: 1, fallbackOpacity: 1, release: 0, dissolve: 0, finalFlow: 0 });
   assert.deepEqual(getTitleReconstructionFrame(1), {
-    opacity: 1, sourceOpacity: 0, fallbackOpacity: 1, release: 0, dissolve: 0, blockMix: 0, finalFlow: 1
+    opacity: 1, sourceOpacity: 0, fallbackOpacity: 1, release: 0, dissolve: 0, finalFlow: 1
   });
   let last = start;
   for (let i = 1; i <= 1000; i++) {
@@ -41,26 +33,34 @@ test("title reconstruction has distinct scatter and regroup phases without lengt
   assert.deepEqual(getTitleReconstructionFrame(2), getTitleReconstructionFrame(1));
 });
 
-test("the title uses a distinct bounded packet field and disables it completely in the final liquid pass", () => {
+test("the title uses the historical dissolve mask rather than later floating packets", () => {
   const shader = between("createTitleLensRenderer", "drawSpaceLens");
-  assert.match(shader, /if \(blockMix > 0\.001\)/);
-  assert.match(shader, /vec2 cell = floor\(pixel \/ cellSize\)/);
-  assert.match(shader, /spreadSource \+ offset/);
-  assert.match(shader, /smoothstep\(0\.045, 0\.095, edgeDistance\)/);
-  assert.match(shader, /packetAlpha \+ surface\.a \* \(1\.0 - packetAlpha\)/);
-  assert.match(shader, /uniforms\.blockMix, parameters\.blockMix \?\? 0/);
-  assert.doesNotMatch(shader.slice(shader.indexOf("float blockMix ="), shader.indexOf("outputColor = surface;")),
-    /uTime|sin\(/, "Packets have stable cell identities when the transition is paused or reversed");
-  const middle = getTitleReconstructionFrame(.43);
-  let surviving = 0;
-  for (let i = 0; i <= 1000; i++) {
-    const seed = i / 1000;
-    const mask = 1 - smooth((middle.dissolve * .78 - (seed - .08)) / .16);
-    if (mask > .5) surviving++;
+  assert.doesNotMatch(shader, /uBlockMix|spreadSource|packetUv|packetMask/);
+  assert.match(shader, /hash21\(floor\(pixel \/ 9\.0\)\)/);
+  assert.match(shader, /sin\(pixel\.x \* 0\.045 - pixel\.y \* 0\.072 \+ uTime \* 4\.2\)/);
+  assert.match(shader, /titleCellMask\(\s*dissolveNoise, mix\(-0\.16, 1\.16, clamp\(uDissolve, 0\.0, 1\.0\)\)/);
+  assert.match(shader, /titleColor\.rgb \* edge \* dissolveMask \* uOpacity/);
+  assert.match(shader, /trailOutputAlpha = trailAlpha \* edge \* dissolveMask/);
+
+});
+
+test("autoplay fully dissolves before reconstruction and preserves that gap in reverse", () => {
+  const frames = Array.from({ length: gateRelease.duration + 1 }, (_, ms) =>
+    getTitleReconstructionFrame(getReconstructionProgress(mapReleaseAutoplayProgress(ms / gateRelease.duration))));
+  const invisible = frames.filter(frame => frame.dissolve === 1 && frame.finalFlow === 0);
+  assert.ok(invisible.length >= 170, "The actual eased clock must hold a completely erased title");
+  const erasedAt = frames.findIndex(frame => frame.dissolve === 1);
+  const rebuildingAt = frames.findIndex(frame => frame.finalFlow > 0);
+  assert.ok(erasedAt > 600, "Dissolve must not be compressed into a short flash");
+  assert.ok(rebuildingAt > erasedAt + 170);
+  assert.ok(gateRelease.duration - rebuildingAt > 600, "Reconstruction needs its own readable interval");
+  for (const frame of frames.slice(rebuildingAt)) {
+    assert.equal(frame.release, 0, "Old rupture displacement must be gone before new glyphs return");
+    assert.ok(Math.abs(frame.dissolve + frame.finalFlow - 1) < 1e-12);
   }
-  assert.ok(surviving > 200 && surviving < 240, "The scatter gap retains a sparse, readable packet field");
-  assert.ok(getTitleReconstructionFrame(.62).blockMix > .95);
-  assert.equal(getTitleReconstructionFrame(.62).finalFlow, 0);
+  const reverse = frames.toReversed();
+  const reverseErased = reverse.findIndex(frame => frame.dissolve === 1);
+  assert.ok(reverse.slice(reverseErased, reverseErased + 170).every(frame => frame.dissolve === 1));
 });
 
 test("the heart is drawn, pulses once and disperses before the reachable shot handoff", () => {
@@ -169,12 +169,15 @@ test("legacy cell dissolve masks both premultiplied color and liquid trails, wit
   assert.match(shader, /pixel\.x \* 0\.045 - pixel\.y \* 0\.072 \+ uTime \* 4\.2/);
   assert.match(shader, /titleColor\.rgb \* edge \* dissolveMask \* uOpacity/);
   assert.match(shader, /trailAlpha \* edge \* dissolveMask \* clamp\(uOpacity/);
-  assert.match(shader, /mix\(-0\.16, 1\.16, clamp\(uDissolve/);
+  assert.match(shader, /mix\(-0\.16, 1\.16, clamp\(uDissolve, 0\.0, 1\.0\)\)/);
   for (let i = 0; i <= 1000; i++) {
     const noise = i / 1000;
-    const mask = (dissolve: number) => 1 - smooth((-.16 + 1.32 * dissolve - (noise - .16)) / .32);
+    const mask = (dissolve: number) => 1 - smooth(((-.16 + dissolve * 1.32) - (noise - .16)) / .32);
     assert.equal(mask(0), 1);
     assert.equal(mask(1), 0);
+    for (const dissolve of [.1, .4, .8, .95]) {
+      assert.ok(mask(dissolve) >= 0 && mask(dissolve) <= 1);
+    }
   }
 });
 
