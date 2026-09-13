@@ -1200,7 +1200,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 }
 
 .kisara-title-chain-canvas-front {
-  z-index: 5;
+  z-index: 7;
 }
 
 .kisara-title-data-canvas {

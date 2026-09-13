@@ -43,3 +43,17 @@ test("Canvas owns both title and enchantment while DOM remains a fallback", () =
   assert.match(home, /Math\.abs\(chargeIntroProgress - titleAbyssLastIntro\) < 0\.0025/);
   assert.equal((home.match(/titleAbyssLastIntro = -1;/g) ?? []).length, 3);
 });
+
+test("the heart and front chains stay above the liquid glyph while rear chains stay behind", () => {
+  const layer = (name: string) => {
+    const rule = css.match(new RegExp(`\\.${name} \\{([^}]+)\\}`));
+    assert.ok(rule, name);
+    const value = rule[1].match(/z-index:\s*(\d+)/);
+    assert.ok(value, name);
+    return Number(value[1]);
+  };
+  assert.ok(layer("kisara-title-chain-canvas-back") < layer("kisara-title-lens-canvas"));
+  assert.ok(layer("kisara-title-chain-canvas-front") > layer("kisara-title-lens-canvas"));
+  const heart = home.slice(home.indexOf("const drawContractHeartImprint ="), home.indexOf("const drawChainRupture ="));
+  assert.match(heart, /const context = chainFrontContext;/);
+});
