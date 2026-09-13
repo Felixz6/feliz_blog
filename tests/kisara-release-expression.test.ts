@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
-import { getTitleReconstructionFrame, getContractReleaseFrame, gateRelease, getReconstructionProgress, mapReleaseAutoplayProgress } from "../src/themes/kisara/lib/gateRelease.ts";
+import { getTitleReconstructionFrame, getTitleContractFrame, getContractReleaseFrame, gateRelease, getReconstructionProgress, mapReleaseAutoplayProgress, mapChargeIntroProgress } from "../src/themes/kisara/lib/gateRelease.ts";
 
 const home = readFileSync(new URL("../src/themes/kisara/pages/HomePage.astro", import.meta.url), "utf8");
 const between = (name: string, next: string) =>
@@ -12,12 +12,14 @@ const smooth = (value: number) => { const p = clamp(value, 0, 1); return p * p *
 const easeOutCubic = (value: number) => 1 - (1 - value) ** 3;
 const smootherstep = (value: number) => value ** 3 * (value * (value * 6 - 15) + 10);
 
-test("title dissolution has enough time to erase, hold and rebuild", () => {
-  assert.equal(gateRelease.duration, 1600);
+test("reconstruction starts from the erased contract and only rebuilds the title", () => {
+  assert.equal(gateRelease.duration, 800);
   const start = getTitleReconstructionFrame(0);
-  assert.deepEqual(start, { opacity: 0, sourceOpacity: 1, fallbackOpacity: 1, release: 0, dissolve: 0, finalFlow: 0 });
+  assert.deepEqual(start, { opacity: 1, sourceOpacity: 0, fallbackOpacity: 0, release: 0, dissolve: 1,
+    contractCharge: 0, contractSweep: 0, finalFlow: 0 });
   assert.deepEqual(getTitleReconstructionFrame(1), {
-    opacity: 1, sourceOpacity: 0, fallbackOpacity: 1, release: 0, dissolve: 0, finalFlow: 1
+    opacity: 1, sourceOpacity: 0, fallbackOpacity: 1, release: 0, dissolve: 0,
+    contractCharge: 0, contractSweep: 0, finalFlow: 1
   });
   let last = start;
   for (let i = 1; i <= 1000; i++) {
@@ -44,23 +46,49 @@ test("the title uses the historical dissolve mask rather than later floating pac
 
 });
 
-test("autoplay fully dissolves before reconstruction and preserves that gap in reverse", () => {
+test("the heart exit starts dissolution before the smoke handoff, not during reconstruction", () => {
+  assert.equal(getTitleContractFrame(.47).dissolve, 0);
+  assert.ok(getTitleContractFrame(.56).dissolve > .15);
+  assert.ok(getContractReleaseFrame(.56).exit > .4);
+  assert.ok(getTitleContractFrame(.66).dissolve > .65);
+  assert.equal(getTitleContractFrame(.78).dissolve, 1);
+  assert.deepEqual(getTitleContractFrame(gateRelease.introHandoff), getTitleReconstructionFrame(0));
+  for (const intro of [.78, .8, .84, .86, 1]) {
+    assert.equal(getTitleContractFrame(intro).dissolve, 1);
+    assert.equal(getTitleContractFrame(intro).sourceOpacity, 0);
+    assert.equal(getTitleContractFrame(intro).contractCharge, 0);
+  }
+  const shots = Array.from({ length: gateRelease.introDuration + 1 }, (_, ms) =>
+    getTitleContractFrame(Math.min(gateRelease.introHandoff, mapChargeIntroProgress(ms / gateRelease.introDuration))));
+  const firstErased = shots.findIndex(frame => frame.dissolve === 1);
+  assert.ok(firstErased < gateRelease.introDuration * .7, "Erasure finishes before the carrier handoff");
+  for (const frame of shots) assert.equal(frame.finalFlow, 0);
   const frames = Array.from({ length: gateRelease.duration + 1 }, (_, ms) =>
     getTitleReconstructionFrame(getReconstructionProgress(mapReleaseAutoplayProgress(ms / gateRelease.duration))));
-  const invisible = frames.filter(frame => frame.dissolve === 1 && frame.finalFlow === 0);
-  assert.ok(invisible.length >= 170, "The actual eased clock must hold a completely erased title");
-  const erasedAt = frames.findIndex(frame => frame.dissolve === 1);
-  const rebuildingAt = frames.findIndex(frame => frame.finalFlow > 0);
-  assert.ok(erasedAt > 600, "Dissolve must not be compressed into a short flash");
-  assert.ok(rebuildingAt > erasedAt + 170);
-  assert.ok(gateRelease.duration - rebuildingAt > 600, "Reconstruction needs its own readable interval");
-  for (const frame of frames.slice(rebuildingAt)) {
-    assert.equal(frame.release, 0, "Old rupture displacement must be gone before new glyphs return");
-    assert.ok(Math.abs(frame.dissolve + frame.finalFlow - 1) < 1e-12);
+  for (let i = 1; i < frames.length; i++) {
+    assert.ok(frames[i].dissolve <= frames[i - 1].dissolve, "No second dissolve during reconstruction");
+    assert.equal(frames[i].release, 0);
   }
-  const reverse = frames.toReversed();
-  const reverseErased = reverse.findIndex(frame => frame.dissolve === 1);
-  assert.ok(reverse.slice(reverseErased, reverseErased + 170).every(frame => frame.dissolve === 1));
+});
+
+test("chain release feeds a converging glyph trace and the heart pulse, with reversible phase ownership", () => {
+  const frames = Array.from({ length: 1001 }, (_, i) => getTitleContractFrame(i / 1000));
+  assert.ok(getTitleContractFrame(.25).contractCharge > .5);
+  assert.ok(getTitleContractFrame(.39).contractCharge > .4);
+  assert.equal(getTitleContractFrame(.47).contractCharge, 0);
+  assert.ok(getTitleContractFrame(.3).contractSweep > getTitleContractFrame(.2).contractSweep);
+  for (let i = 1; i < frames.length; i++) {
+    for (const key of Object.keys(frames[i]) as (keyof typeof frames[number])[]) {
+      assert.ok(Number.isFinite(frames[i][key]));
+      assert.ok(Math.abs(frames[i][key] - frames[i - 1][key]) < .04, key);
+    }
+    assert.ok(frames[i].dissolve >= frames[i - 1].dissolve);
+  }
+  const shader = between("createTitleLensRenderer", "drawSpaceLens");
+  assert.match(shader, /abs\(vUv\.x - 0\.5\).*uContractSweep/);
+  assert.match(shader, /vec3\(1\.0, 0\.9, 0\.95\) \* titleColor\.a, contractLight/);
+  assert.match(shader, /uniforms\.contractCharge, parameters\.contractCharge \?\? 0/);
+  assert.match(shader, /uniforms\.contractSweep, parameters\.contractSweep \?\? 0/);
 });
 
 test("the heart is drawn, pulses once and disperses before the reachable shot handoff", () => {

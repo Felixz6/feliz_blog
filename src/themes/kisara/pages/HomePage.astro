@@ -307,7 +307,7 @@ const gateStyle = [
     import {
       gateRelease, mapChargeIntroProgress, getChargeIntroClock,
       mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
-      getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, getContractReleaseFrame
+      getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, getContractReleaseFrame, getTitleContractFrame
     } from "../lib/gateRelease";
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
     import { titleDataStreamFragment } from "../lib/titleDataStream";
@@ -3792,6 +3792,8 @@ const gateStyle = [
           uniform float uDissolve;
           uniform float uTime;
           uniform float uFinalFlow;
+          uniform float uContractCharge;
+          uniform float uContractSweep;
           uniform float uLiquidPhase;
           uniform float uLiquidPressure;
           uniform float uFlowDirection;
@@ -4000,6 +4002,13 @@ const gateStyle = [
             titleColor.rgb = mix(
               titleColor.rgb, vec3(1.0, 0.82, 0.94) * titleColor.a, 1.0 - materialMask
             );
+            // Two in-glyph traces converge with the chain ash, then pulse with the heart.
+            float contractDistance = (abs(vUv.x - 0.5) - (1.0 - uContractSweep) * 0.5) / 0.075;
+            float contractBand = exp(-contractDistance * contractDistance);
+            float contractLight = uContractCharge * (0.18 + contractBand * 0.64);
+            titleColor.rgb = mix(
+              titleColor.rgb, vec3(1.0, 0.9, 0.95) * titleColor.a, contractLight
+            );
 
             vec2 trailAxis = normalize(vec2(flowDirection, -0.34));
             float trailDistance = (8.0 + liquidPressure * 26.0)
@@ -4108,6 +4117,8 @@ const gateStyle = [
           dissolve: gl.getUniformLocation(program, "uDissolve"),
           time: gl.getUniformLocation(program, "uTime"),
           finalFlow: gl.getUniformLocation(program, "uFinalFlow"),
+          contractCharge: gl.getUniformLocation(program, "uContractCharge"),
+          contractSweep: gl.getUniformLocation(program, "uContractSweep"),
           liquidPhase: gl.getUniformLocation(program, "uLiquidPhase"),
           liquidPressure: gl.getUniformLocation(program, "uLiquidPressure"),
           flowDirection: gl.getUniformLocation(program, "uFlowDirection"),
@@ -4246,6 +4257,8 @@ const gateStyle = [
           gl.uniform1f(uniforms.dissolve, parameters.dissolve);
           gl.uniform1f(uniforms.time, parameters.time);
           gl.uniform1f(uniforms.finalFlow, parameters.finalFlow ?? 0);
+          gl.uniform1f(uniforms.contractCharge, parameters.contractCharge ?? 0);
+          gl.uniform1f(uniforms.contractSweep, parameters.contractSweep ?? 0);
           gl.uniform1f(uniforms.liquidPhase, parameters.liquidPhase ?? 0);
           gl.uniform1f(uniforms.liquidPressure, parameters.liquidPressure ?? 0);
           gl.uniform1f(uniforms.flowDirection, parameters.flowDirection ?? 1);
@@ -4276,6 +4289,8 @@ const gateStyle = [
             dissolve: 0.16,
             time: performance.now() / 1000,
             finalFlow: 0.24,
+            contractCharge: 0.3,
+            contractSweep: 0.4,
             liquidPhase: 0.36,
             liquidPressure: 0.28,
             flowDirection: 1,
@@ -5050,7 +5065,8 @@ const gateStyle = [
           time: timestamp / 1000
         });
         if (!postReleaseActive) {
-          const titleFrame = getTitleReconstructionFrame(reconstruction);
+          const titleFrame = burstProgress >= gateRelease.phases.start
+            ? getTitleReconstructionFrame(reconstruction) : getTitleContractFrame(intro);
           const returnWeight = releaseReturnPose ? phaseProgress(reconstruction, .68, 1) : 0;
           if (releaseReturnPose) {
             setRuntimeStyle(gate, "--kisara-post-parallax-x", `${(releaseReturnPose.x * returnWeight).toFixed(3)}px`);

@@ -4,7 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 import {
   gateRelease, mapChargeIntroProgress, getChargeIntroClock,
-  mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame,
+  mapReleaseAutoplayProgress, getReconstructionProgress, getTitleReconstructionFrame, getTitleContractFrame,
   getTransformationFrame, getGateSceneHandoff, getReconstructionRadii, transformationTimeline
 } from "../src/themes/kisara/lib/gateRelease.ts";
 import { memoryScenes, transformationScenes, memoryFillDuration, getMemoryFrame, getMemoryBlackout, advanceMemoryProgress, advanceMemoryBlackout } from "../src/themes/kisara/lib/gateStory.ts";
@@ -20,7 +20,7 @@ const sourceBetween = (name: string, next: string) => {
 
 test("the release is reconstruction only, with no empty lead-in or accelerated shot clock", () => {
   assert.equal(gateRelease.introDuration, 1280);
-  assert.equal(gateRelease.duration, 1600);
+  assert.equal(gateRelease.duration, 800);
   assert.equal(gateRelease.introHandoff, 0.86);
   for (const p of [0, 0.01, 0.1, 0.5, 0.99, 1]) {
     const oldRecoveryEase = p * p * (3 - 2 * p);
@@ -723,7 +723,7 @@ function presentationFixture() {
   const context: Record<string, any> = {
     energyProgress: 1, chargeIntroProgress: 0.66, burstProgress: 0,
     gate: { clientWidth: 1600, clientHeight: 900 }, meterShell: {},
-    clamp, gateRelease, getReconstructionProgress, getReconstructionRadii, getTitleReconstructionFrame,
+    clamp, gateRelease, getReconstructionProgress, getReconstructionRadii, getTitleReconstructionFrame, getTitleContractFrame,
     smootherstep: (value: number) => {
       const p = clamp(value, 0, 1);
       return p ** 3 * (p * (p * 6 - 15) + 10);
@@ -780,6 +780,31 @@ test("the production presentation resets diffusion, settles the final frame, and
   assert.ok(Math.abs(fallbackRadius - expected.outer) < .001, "No GPU keeps the original bright diffusion fallback");
 });
 
+test("production title presentation follows the heart clock and crosses both handoffs without reappearing", () => {
+  const { context, draws, update } = presentationFixture();
+  for (const intro of [0, .14, .2, .25, .34, .39, .47, .56, .66, .78, .86, .78, .66, .56, .25, .14, 0]) {
+    context.burstProgress = 0;
+    context.chargeIntroProgress = intro;
+    update(1000 + intro * 1280, false);
+    const expected = getTitleContractFrame(intro);
+    for (const key of Object.keys(expected) as (keyof typeof expected)[]) {
+      assert.equal(draws.at(-1)![key], expected[key], `${intro}: ${key}`);
+    }
+  }
+  context.chargeIntroProgress = gateRelease.introHandoff;
+  context.burstProgress = 0;
+  update(2000, false);
+  const before = draws.at(-1)!;
+  context.burstProgress = gateRelease.phases.start;
+  update(2017, false);
+  const after = draws.at(-1)!;
+  for (const key of ["opacity", "sourceOpacity", "fallbackOpacity", "dissolve", "finalFlow", "contractCharge", "contractSweep"]) {
+    assert.equal(before[key], after[key], `Intro/reconstruction must agree on ${key}`);
+  }
+  assert.equal(after.dissolve, 1);
+  assert.equal(after.sourceOpacity, 0);
+});
+
 test("reverse rendering takes over the exact liquid pose, eases parallax and never resurrects frozen particles", () => {
   const { context, styles, draws, update, effects } = presentationFixture();
   context.releaseReturnPose = {
@@ -807,7 +832,7 @@ test("reverse rendering takes over the exact liquid pose, eases parallax and nev
   assert.equal(previousX, 0);
   assert.equal(context.postReleaseParticles.length, 0);
   assert.equal(effects.filter(effect => effect === "clear-post").length, 1);
-  assert.deepEqual(effects.slice(-2), ["abyss", "lens"], "The source material is restored before lens opacity drops");
+  assert.equal(effects.at(-1), "lens", "The erased title remains under the same GPU owner at the reverse handoff");
   context.burstProgress = .95;
   update(1800, false);
   assert.equal(styles.get("--kisara-post-release-opacity"), "0.000", "Reversing again cannot flash old particles");
@@ -883,12 +908,12 @@ test("returning to a cached procedural title restores its layer even when reduce
     titleAbyssTideContext: {}, titleAbyssTideImageData: {},
     titleDataCanvasWidth: 1200, titleDataCanvasHeight: 300,
     pageMode: "gate", document: { visibilityState: "visible" },
-    chargeIntroProgress: gateRelease.introHandoff, titleAbyssDomHandoffStart: .72,
-    burstProgress: gateRelease.phases.start, releaseStart: gateRelease.phases.start,
+    chargeIntroProgress: .1, titleAbyssDomHandoffStart: .72,
+    burstProgress: 0, releaseStart: gateRelease.phases.start,
     getTitleReconstructionFrame, getReconstructionProgress,
     progress: 1, energyProgress: 1, velocity: 0,
     titleAbyssLastPaintTimestamp: 950, titleAbyssLastFill: 1,
-    titleAbyssLastIntro: gateRelease.introHandoff,
+    titleAbyssLastIntro: .1,
     titleAbyssPointerTargetX: 0, titleAbyssPointerX: 0,
     titleAbyssPointerTargetY: 0, titleAbyssPointerY: 0,
     reducedMotion: true, litePerformance: false, mobilePerformance: false,
@@ -903,6 +928,9 @@ test("returning to a cached procedural title restores its layer even when reduce
   draw(1050);
   assert.equal(classes.has("is-title-abyss-ready"), false);
   state.burstProgress = gateRelease.phases.start;
+  draw(1080);
+  assert.equal(classes.has("is-title-abyss-ready"), false, "The smoke handoff must retain the erased glyph");
+  state.burstProgress = 0;
   draw(1100);
   assert.equal(classes.has("is-title-abyss-ready"), true);
   assert.equal(state.titleAbyssLastPaintTimestamp, 950, "The cached surface is reused without painting it again");

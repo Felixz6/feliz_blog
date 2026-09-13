@@ -12,7 +12,7 @@ const between = (value: number, start: number, end: number) => unit((value - sta
 export const gateRelease = {
   introDuration: 1280,
   introHandoff: 0.86,
-  duration: 1600,
+  duration: 800,
   phases: { start: 0.01 }
 } as const;
 
@@ -45,17 +45,35 @@ export function getReconstructionProgress(burst: number) {
 
 export function getTitleReconstructionFrame(progress: number) {
   const p = unit(progress);
-  const takeover = smooth(between(p, 0, 0.12));
-  // Finish erasing every cell before rebuilding; reset the displacement while invisible.
-  const finalFlow = smooth(between(p, 0.62, 1));
-  const dissolve = smooth(between(p, 0.08, 0.46)) * (1 - finalFlow);
+  // The heart has already erased the glyph before the smoke carrier opens.
+  const finalFlow = smooth(between(p, 0.08, 0.92));
+  return {
+    opacity: 1,
+    sourceOpacity: 0,
+    fallbackOpacity: finalFlow,
+    release: 0,
+    dissolve: 1 - finalFlow,
+    contractCharge: 0,
+    contractSweep: 0,
+    finalFlow
+  };
+}
+
+export function getTitleContractFrame(intro: number) {
+  const p = unit(intro);
+  const takeover = smooth(between(p, 0.14, 0.25));
+  const heart = getContractReleaseFrame(p);
+  const dissolve = smooth(between(p, 0.47, 0.78));
+  const gather = Math.sin(between(p, 0.16, 0.34) * Math.PI) ** 2;
   return {
     opacity: takeover,
     sourceOpacity: 1 - takeover,
     fallbackOpacity: 1 - dissolve,
-    release: smooth(between(p, 0.04, 0.4)) * (1 - smooth(between(p, 0.46, 0.62))),
+    release: 0,
     dissolve,
-    finalFlow
+    contractCharge: p >= 0.47 ? 0 : (gather * 0.55 + heart.pulse * 0.45) * (1 - heart.exit),
+    contractSweep: p >= 0.78 ? 0 : smooth(between(p, 0.16, 0.34)) * (1 - dissolve),
+    finalFlow: 0
   };
 }
 
