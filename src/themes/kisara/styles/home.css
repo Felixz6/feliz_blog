@@ -78,7 +78,7 @@
   display: grid;
   place-items: center;
   align-content: center;
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   padding: 110px 24px 70px;
   overflow: hidden;
   isolation: isolate;
@@ -211,8 +211,8 @@ html[data-kisara-found-self-entry] .kisara-found-self-first,
   position: absolute;
   z-index: 6;
   top: 31%;
-  left: clamp(34px, 8vw, 132px);
-  width: min(58vw, 760px);
+  left: clamp(34px, calc(8vw / var(--kisara-scale, 1)), 132px);
+  width: min(calc(58vw / var(--kisara-scale, 1)), 760px);
   transform: rotate(-3.4deg);
   transform-origin: left center;
 }
@@ -1321,8 +1321,8 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   margin-top: 30px;
   color: #ff7891;
   min-width: 20ch;
-  width: min(42ch, calc(100vw - 48px));
-  max-width: calc(100vw - 48px);
+  width: min(42ch, calc(calc(100vw / var(--kisara-scale, 1)) - 48px));
+  max-width: calc(calc(100vw / var(--kisara-scale, 1)) - 48px);
   min-height: 1.2em;
   text-align: center;
   box-sizing: border-box;
@@ -1357,185 +1357,91 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   will-change: transform, filter;
 }
 
-.kisara-gate-auto {
+.kisara-gate-auto,
+.kisara-gate-skip {
   position: absolute;
-  right: 106px;
   bottom: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 76px;
-  min-height: 27px;
-  padding: 5px 0;
-  border: 0;
-  border-bottom: 1px solid rgba(170, 190, 242, 0.36);
-  color: rgba(170, 190, 242, 0.64);
-  background: transparent;
+  gap: 10px;
+  width: 104px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 235, 243, .24);
+  border-radius: 4px;
+  color: #f3e9ed;
+  background: rgba(20, 18, 23, .86);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .06);
   font: inherit;
-  font-size: 0.62rem;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
   line-height: 1;
-  opacity: 0.78;
   isolation: isolate;
   cursor: pointer;
-  transition: color 180ms ease, border-color 180ms ease, opacity 180ms ease, filter 180ms ease;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-.kisara-gate-auto::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  right: -4px;
-  bottom: -1px;
-  left: -4px;
-  height: 1px;
-  opacity: 0;
-  transform: translateX(-26%) scaleX(0.18);
-  transform-origin: center;
-  background: linear-gradient(90deg, transparent, rgba(255, 120, 145, 0.9), transparent);
-  pointer-events: none;
+.kisara-gate-auto {
+  right: 162px;
 }
 
 .kisara-gate-auto-mark {
-  position: relative;
-  width: 12px;
-  height: 12px;
-  flex: 0 0 12px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  box-shadow: 0 0 0 rgba(255, 120, 145, 0);
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: #f29ab3;
 }
 
-.kisara-gate-auto-mark::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 52%;
-  width: 4px;
-  height: 5px;
-  background: currentColor;
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-  transform: translate3d(-42%, -50%, 0);
+.kisara-gate-auto svg,
+.kisara-gate-skip svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
 }
 
-.kisara-gate-auto:hover,
-.kisara-gate-auto:focus-visible,
-.kisara-gate-auto[data-state="replay"] {
-  color: #ff7891;
-  border-bottom-color: rgba(255, 120, 145, 0.76);
-  opacity: 1;
-  filter: drop-shadow(0 0 7px rgba(255, 120, 145, 0.34));
+.kisara-gate-auto .kisara-auto-replay-icon,
+.kisara-gate-auto[data-state="replay"] .kisara-auto-play-icon {
+  display: none;
+}
+
+.kisara-gate-auto[data-state="replay"] .kisara-auto-replay-icon {
+  display: block;
 }
 
 .kisara-gate-auto[data-state="playing"] {
-  color: #ffd9e2;
-  border-bottom-color: rgba(255, 120, 145, 0.68);
-  opacity: 1;
+  color: #ffdde7;
+  border-color: #c7748d;
+  background: #39232e;
   cursor: default;
-  filter: drop-shadow(0 0 8px rgba(255, 87, 126, 0.42));
 }
 
-.kisara-gate-auto[data-state="playing"]::after {
-  animation: kisara-auto-scan 1.35s ease-in-out infinite;
+@media (hover: hover) and (pointer: fine) {
+  .kisara-gate-auto:not(:disabled):hover,
+  .kisara-gate-skip:hover {
+    color: #fff;
+    border-color: #f29ab3;
+    background: #382b33;
+  }
 }
 
-.kisara-gate-auto[data-state="playing"] .kisara-gate-auto-mark {
-  animation: kisara-auto-pulse 1.15s ease-in-out infinite;
+.kisara-gate-auto:focus-visible,
+.kisara-gate-skip:focus-visible {
+  outline: 2px solid #ffd5e2;
+  outline-offset: 4px;
 }
 
-.kisara-gate-auto:disabled {
-  opacity: 1;
+.kisara-gate-auto:not(:disabled):active,
+.kisara-gate-skip:active {
+  background: #502b3b;
 }
 
 .kisara-gate-skip {
-  position: absolute;
   right: 48px;
-  bottom: 28px;
-  padding: 5px 0;
-  color: rgba(170, 190, 242, 0.62);
-  border-bottom: 1px solid rgba(170, 190, 242, 0.48);
-  font-size: 0.66rem;
-  font-weight: 800;
-  opacity: 0.72;
-  isolation: isolate;
-  transition: color 180ms ease, border-color 180ms ease, opacity 180ms ease, filter 180ms ease;
-  animation: kisara-skip-breathe 2.8s ease-in-out infinite;
-}
-
-.kisara-gate-skip::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  right: -4px;
-  bottom: -1px;
-  left: -4px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 120, 145, 0.95), transparent);
-  opacity: 0;
-  transform: translateX(-24%) scaleX(0.22);
-  transform-origin: center;
-  animation: kisara-skip-scan 2.8s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.kisara-gate-skip:hover,
-.kisara-gate-skip:focus-visible {
-  color: #ff7891;
-  border-bottom-color: rgba(255, 120, 145, 0.82);
-  opacity: 1;
-  filter: drop-shadow(0 0 8px rgba(255, 120, 145, 0.48));
-  animation-play-state: paused;
-}
-
-@keyframes kisara-skip-breathe {
-  0%, 100% {
-    opacity: 0.62;
-    filter: drop-shadow(0 0 0 rgba(255, 120, 145, 0));
-  }
-  50% {
-    opacity: 0.94;
-    filter: drop-shadow(0 0 7px rgba(255, 120, 145, 0.34));
-  }
-}
-
-@keyframes kisara-skip-scan {
-  0%, 18% {
-    opacity: 0;
-    transform: translateX(-24%) scaleX(0.22);
-  }
-  42% {
-    opacity: 0.82;
-  }
-  72%, 100% {
-    opacity: 0;
-    transform: translateX(24%) scaleX(0.72);
-  }
-}
-
-@keyframes kisara-auto-scan {
-  0%, 16% {
-    opacity: 0;
-    transform: translateX(-26%) scaleX(0.18);
-  }
-  46% {
-    opacity: 0.9;
-  }
-  78%, 100% {
-    opacity: 0;
-    transform: translateX(26%) scaleX(0.82);
-  }
-}
-
-@keyframes kisara-auto-pulse {
-  0%, 100% {
-    transform: scale(0.92);
-    box-shadow: 0 0 0 rgba(255, 120, 145, 0);
-  }
-  50% {
-    transform: scale(1.08);
-    box-shadow: 0 0 9px rgba(255, 120, 145, 0.56);
-  }
+  color: #d2cbd0;
 }
 
 .kisara-motion-toggle {
@@ -1630,14 +1536,23 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 .kisara-fridge-deck::after {
   top: 0;
   right: 7%;
-  width: min(36vw, 520px);
+  width: min(calc(36vw / var(--kisara-scale, 1)), 520px);
   height: 2px;
   background: linear-gradient(90deg, transparent, rgba(111, 143, 162, 0.5), rgba(210, 91, 128, 0.42), transparent);
 }
 
 .kisara-latest {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   color: #171a32;
   background: #dbe2ec;
+}
+
+body.kisara-home-page .kisara-latest {
+  width: 100%;
+  margin-inline: 0;
 }
 
 .kisara-home-band-heading {
@@ -1651,7 +1566,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 .kisara-home-band-heading h2 {
   margin: 18px 0 0;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3.3rem, 6vw, 5.2rem);
+  font-size: clamp(3.3rem, calc(6vw / var(--kisara-scale, 1)), 5.2rem);
   line-height: 0.92;
   letter-spacing: 0;
 }
@@ -1734,7 +1649,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 }
 
 .kisara-fridge-deck {
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   padding: 0;
   background: #020304;
 }
@@ -1777,8 +1692,8 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   flex-direction: column;
   justify-content: space-between;
   min-height: inherit;
-  padding-top: clamp(112px, 14vh, 150px);
-  padding-bottom: clamp(48px, 7vh, 72px);
+  padding-top: clamp(112px, calc(14vh / var(--kisara-scale, 1)), 150px);
+  padding-bottom: clamp(48px, calc(7vh / var(--kisara-scale, 1)), 72px);
 }
 
 .kisara-fridge-overlay-heading {
@@ -1834,7 +1749,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 .kisara-fridge-replay {
   position: absolute;
-  top: clamp(166px, 21vh, 214px);
+  top: clamp(166px, calc(21vh / var(--kisara-scale, 1)), 214px);
   right: 0;
   display: grid;
   place-items: center;
@@ -1884,17 +1799,17 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
   .kisara-fridge-deck,
   .kisara-fridge-scene {
-    min-height: 100svh;
+    min-height: calc(100svh / var(--kisara-scale, 1));
   }
 
   .kisara-fridge-content {
     min-height: inherit;
-    padding-top: clamp(72px, 10svh, 108px);
-    padding-bottom: clamp(42px, 6svh, 68px);
+    padding-top: clamp(72px, calc(10svh / var(--kisara-scale, 1)), 108px);
+    padding-bottom: clamp(42px, calc(6svh / var(--kisara-scale, 1)), 68px);
   }
 
   .kisara-fridge-replay {
-    top: clamp(116px, 16svh, 154px);
+    top: clamp(116px, calc(16svh / var(--kisara-scale, 1)), 154px);
   }
 
   .kisara-event-heading-note {
@@ -1909,7 +1824,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
   .kisara-event-board {
     grid-template-columns: minmax(0, 1.12fr) minmax(370px, 0.88fr);
-    height: clamp(380px, 53svh, 450px);
+    height: clamp(380px, calc(53svh / var(--kisara-scale, 1)), 450px);
     min-height: 0;
   }
 
@@ -1990,7 +1905,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   .kisara-event-brief h3 {
     max-width: 420px;
     margin-top: 7px;
-    font-size: clamp(1.42rem, 1.75vw, 1.78rem);
+    font-size: clamp(1.42rem, calc(1.75vw / var(--kisara-scale, 1)), 1.78rem);
   }
 
   .kisara-event-brief-copy {
@@ -2031,7 +1946,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 
   .kisara-latest {
-    padding: clamp(74px, 10svh, 100px) 0 clamp(82px, 11svh, 112px);
+    padding: clamp(74px, calc(10svh / var(--kisara-scale, 1)), 100px) 0 clamp(82px, calc(11svh / var(--kisara-scale, 1)), 112px);
   }
 
   .kisara-latest .kisara-home-band-heading {
@@ -2068,7 +1983,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 
   .kisara-event-brief {
-    padding: 42px clamp(32px, 6vw, 62px) 38px;
+    padding: 42px clamp(32px, calc(6vw / var(--kisara-scale, 1)), 62px) 38px;
   }
 
   .kisara-event-brief h3 {
@@ -2110,7 +2025,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
   .kisara-fridge-deck,
   .kisara-fridge-scene {
-    min-height: max(100svh, 760px);
+    min-height: max(calc(100svh / var(--kisara-scale, 1)), 760px);
   }
 
   .kisara-fridge-media > img {
@@ -2256,13 +2171,13 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 
   .kisara-event-reward {
-    width: calc(100vw - 20px);
-    max-height: calc(100vh - 20px);
+    width: calc(calc(100vw / var(--kisara-scale, 1)) - 20px);
+    max-height: calc(calc(100vh / var(--kisara-scale, 1)) - 20px);
   }
 
   .kisara-event-reward-shell {
     min-height: 0;
-    max-height: calc(100vh - 20px);
+    max-height: calc(calc(100vh / var(--kisara-scale, 1)) - 20px);
     clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
   }
 
@@ -2366,7 +2281,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 /* 002: native refrigerator footage with draggable physical inventory. */
 .kisara-fridge-deck {
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   padding: 0;
   background: #030507;
 }
@@ -2374,7 +2289,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 .kisara-fridge-scene {
   position: relative;
   display: block;
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   overflow: hidden;
   isolation: isolate;
   color: #f5f8f9;
@@ -2470,8 +2385,8 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   flex-direction: column;
   justify-content: space-between;
   min-height: inherit;
-  padding-top: clamp(92px, 12svh, 132px);
-  padding-bottom: clamp(68px, 8svh, 92px);
+  padding-top: clamp(92px, calc(12svh / var(--kisara-scale, 1)), 132px);
+  padding-bottom: clamp(68px, calc(8svh / var(--kisara-scale, 1)), 92px);
   pointer-events: none;
 }
 
@@ -2520,7 +2435,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 .kisara-fridge-copy {
   position: relative;
-  width: min(590px, 56vw);
+  width: min(590px, calc(56vw / var(--kisara-scale, 1)));
   padding-left: 22px;
   opacity: 0;
   transform: translate3d(-18px, 12px, 0);
@@ -2620,7 +2535,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   content: "";
   position: absolute;
   right: 4%;
-  bottom: clamp(18px, 3.7svh, 44px);
+  bottom: clamp(18px, calc(3.7svh / var(--kisara-scale, 1)), 44px);
   left: 45%;
   height: 20px;
   border-radius: 50%;
@@ -2663,22 +2578,22 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 }
 
 .kisara-fridge-body.is-milk {
-  width: clamp(88px, 6.5vw, 118px);
+  width: clamp(88px, calc(6.5vw / var(--kisara-scale, 1)), 118px);
   aspect-ratio: 180 / 260;
 }
 
 .kisara-fridge-body.is-can {
-  width: clamp(86px, 6.2vw, 112px);
+  width: clamp(86px, calc(6.2vw / var(--kisara-scale, 1)), 112px);
   aspect-ratio: 180 / 220;
 }
 
 .kisara-fridge-body.is-chips {
-  width: clamp(104px, 7.6vw, 136px);
+  width: clamp(104px, calc(7.6vw / var(--kisara-scale, 1)), 136px);
   aspect-ratio: 220 / 280;
 }
 
 .kisara-fridge-body.is-pig-capsule {
-  width: clamp(82px, 6.3vw, 108px);
+  width: clamp(82px, calc(6.3vw / var(--kisara-scale, 1)), 108px);
   aspect-ratio: 118 / 146;
 }
 
@@ -2782,8 +2697,8 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 .kisara-fridge-replay {
   position: absolute;
   z-index: 8;
-  top: clamp(128px, 16svh, 176px);
-  right: max(22px, calc((100vw - 1180px) / 2));
+  top: clamp(128px, calc(16svh / var(--kisara-scale, 1)), 176px);
+  right: max(22px, calc((calc(100vw / var(--kisara-scale, 1)) - 1180px) / 2));
   display: grid;
   place-items: center;
   width: 34px;
@@ -2841,12 +2756,12 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
 
 @media (max-width: 980px) {
   .kisara-fridge-content {
-    padding-top: clamp(80px, 10svh, 104px);
-    padding-bottom: clamp(42px, 6svh, 66px);
+    padding-top: clamp(80px, calc(10svh / var(--kisara-scale, 1)), 104px);
+    padding-bottom: clamp(42px, calc(6svh / var(--kisara-scale, 1)), 66px);
   }
 
   .kisara-fridge-copy {
-    width: min(560px, 66vw);
+    width: min(560px, calc(66vw / var(--kisara-scale, 1)));
   }
 
   .kisara-fridge-copy-title {
@@ -2854,14 +2769,14 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 
   .kisara-fridge-replay {
-    top: clamp(112px, 14svh, 148px);
+    top: clamp(112px, calc(14svh / var(--kisara-scale, 1)), 148px);
   }
 }
 
 @media (max-width: 600px) {
   .kisara-fridge-scene,
   .kisara-fridge-deck {
-    min-height: 100svh;
+    min-height: calc(100svh / var(--kisara-scale, 1));
   }
 
   .kisara-fridge-video,
@@ -2898,7 +2813,7 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 
   .kisara-fridge-copy {
-    width: min(64vw, 250px);
+    width: min(calc(64vw / var(--kisara-scale, 1)), 250px);
     padding-left: 15px;
   }
 
@@ -2920,19 +2835,19 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
   }
 
   .kisara-fridge-body.is-milk {
-    width: clamp(66px, 19vw, 82px);
+    width: clamp(66px, calc(19vw / var(--kisara-scale, 1)), 82px);
   }
 
   .kisara-fridge-body.is-can {
-    width: clamp(64px, 18vw, 78px);
+    width: clamp(64px, calc(18vw / var(--kisara-scale, 1)), 78px);
   }
 
   .kisara-fridge-body.is-chips {
-    width: clamp(76px, 22vw, 92px);
+    width: clamp(76px, calc(22vw / var(--kisara-scale, 1)), 92px);
   }
 
   .kisara-fridge-body.is-pig-capsule {
-    width: clamp(68px, 18vw, 82px);
+    width: clamp(68px, calc(18vw / var(--kisara-scale, 1)), 82px);
   }
 
   .kisara-fridge-physics::after {
@@ -3007,7 +2922,7 @@ html[data-yuimi-performance="lite"] .kisara-event-reward-burst::before {
   }
 
   .kisara-gate-auto {
-    right: 64px;
+    right: 138px;
   }
 
   .kisara-gate-skip {
@@ -3024,11 +2939,6 @@ html[data-yuimi-performance="lite"] .kisara-event-reward-burst::before {
     will-change: opacity, transform;
   }
 
-  .kisara-gate-skip::after {
-    animation: none;
-    opacity: 0;
-  }
-
   .kisara-event-scene:not([data-scene-visible="true"]) .kisara-event-photo::before,
   .kisara-event-scene:not([data-scene-visible="true"]) .kisara-event-camera-hud .is-recording i,
   .kisara-event-scene:not([data-scene-visible="true"]) .kisara-event-hotspot::before,
@@ -3042,7 +2952,7 @@ html[data-yuimi-performance="lite"] .kisara-event-reward-burst::before {
   .kisara-found-self-inscription {
     top: 34%;
     left: 36px;
-    width: 68vw;
+    width: calc(68vw / var(--kisara-scale, 1));
   }
 
   .kisara-found-self-inscription h1 {

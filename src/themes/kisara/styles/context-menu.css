@@ -4,8 +4,8 @@
   --menu-accent: #b72f56;
   position: fixed;
   z-index: 10060;
-  width: min(292px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
+  width: min(292px, calc(calc(100vw / var(--kisara-scale, 1)) - 24px));
+  max-height: calc(calc(100dvh / var(--kisara-scale, 1)) - 24px);
   padding: 10px;
   overflow: auto;
   overscroll-behavior: contain;

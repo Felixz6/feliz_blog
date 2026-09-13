@@ -168,6 +168,7 @@ import { getThemePath } from "@/core/themes/registry";
 </section>
 
 <script>
+  import { getKisaraScale } from "../lib/displayScale";
   import { waitForVideoFrame } from "../lib/videoFrame";
   type FridgeBody = {
     element: HTMLButtonElement;
@@ -308,9 +309,8 @@ import { getThemePath } from "@/core/themes/registry";
         };
 
         const measureBodies = () => {
-          const rect = stage.getBoundingClientRect();
-          boundsWidth = Math.max(1, rect.width);
-          boundsHeight = Math.max(1, rect.height);
+          boundsWidth = Math.max(1, stage.clientWidth);
+          boundsHeight = Math.max(1, stage.clientHeight);
           floorY = boundsHeight - clamp(boundsHeight * 0.042, 22, 48);
           bodies.forEach((body) => {
             body.width = Math.max(1, body.element.offsetWidth);
@@ -787,8 +787,8 @@ import { getThemePath } from "@/core/themes/registry";
           }
           measureBodies();
           const rect = stage.getBoundingClientRect();
-          const pointerX = event.clientX - rect.left;
-          const pointerY = event.clientY - rect.top;
+          const pointerX = (event.clientX - rect.left) / getKisaraScale();
+          const pointerY = (event.clientY - rect.top) / getKisaraScale();
           body.dragging = true;
           body.pointerId = event.pointerId;
           body.grabOffsetX = pointerX - body.x;
@@ -809,8 +809,8 @@ import { getThemePath } from "@/core/themes/registry";
           if (!body.dragging || body.pointerId !== event.pointerId) return;
           event.preventDefault();
           const rect = stage.getBoundingClientRect();
-          const pointerX = event.clientX - rect.left;
-          const pointerY = event.clientY - rect.top;
+          const pointerX = (event.clientX - rect.left) / getKisaraScale();
+          const pointerY = (event.clientY - rect.top) / getKisaraScale();
           const now = performance.now();
           const elapsed = Math.max(8, now - body.lastPointerAt) / 1000;
           body.vx = clamp((pointerX - body.lastPointerX) / elapsed, -1650, 1650);

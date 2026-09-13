@@ -1,4 +1,5 @@
 import { createFrameQueue } from "../lib/frameQueue";
+import { getKisaraScale } from "./displayScale";
 export const initKisaraChibiStage = (root: HTMLElement) => {
   if (!(root instanceof HTMLElement)) return;
   if (root.dataset.kisaraRuntimeBound === "true") return;
@@ -723,8 +724,8 @@ export const initKisaraChibiStage = (root: HTMLElement) => {
     if (!drag || event.pointerId !== drag.pointerId) return;
     event.preventDefault();
     stageRect ??= root.getBoundingClientRect();
-    const nextX = event.clientX - stageRect.left - drag.offsetX;
-    const nextY = event.clientY - stageRect.top - drag.offsetY;
+    const nextX = (event.clientX - stageRect.left - drag.offsetX) / getKisaraScale();
+    const nextY = (event.clientY - stageRect.top - drag.offsetY) / getKisaraScale();
     const deltaX = event.clientX - drag.lastX;
     drag.lastX = event.clientX;
     drag.moved ||= Math.abs(deltaX) > 2 || Math.abs(event.movementY || 0) > 2;

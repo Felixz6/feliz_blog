@@ -55,11 +55,11 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month:
   .kisara-transmission-shelf > a {
     position: relative;
     display: grid;
-    grid-template-columns: clamp(92px, 7vw, 118px) minmax(0, 1fr);
-    gap: clamp(18px, 2.2vw, 30px);
+    grid-template-columns: clamp(92px, calc(7vw / var(--kisara-scale, 1)), 118px) minmax(0, 1fr);
+    gap: clamp(18px, calc(2.2vw / var(--kisara-scale, 1)), 30px);
     align-items: center;
     min-height: 270px;
-    padding: 34px clamp(22px, 2.5vw, 34px);
+    padding: 34px clamp(22px, calc(2.5vw / var(--kisara-scale, 1)), 34px);
     border-right: 1px solid rgba(25, 31, 57, 0.2);
   }
   .kisara-transmission-shelf > a:last-child { border-right: 0; }

@@ -28,8 +28,16 @@ html[data-kisara-home-boot="pending"] body.kisara-home-page {
 }
 
 html[data-theme="kisara"] {
+  --kisara-scale: 1;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+@supports (zoom: .9) {
+  html[data-theme="kisara"] {
+    --kisara-scale: .9;
+    zoom: var(--kisara-scale);
+  }
 }
 
 html[data-theme="kisara"]::-webkit-scrollbar,
@@ -42,7 +50,7 @@ html[data-theme="kisara"] body::-webkit-scrollbar {
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: calc(100vh / var(--kisara-scale, 1));
   overflow-x: hidden;
   background: #111636;
 }
@@ -200,7 +208,7 @@ html[data-theme="kisara"] body[data-yuimi-selection-lock="true"] :where(img, pic
   position: fixed;
   z-index: 60;
   color: #f8f5ff;
-  max-height: calc(100svh - 24px);
+  max-height: calc(calc(100svh / var(--kisara-scale, 1)) - 24px);
   overflow-y: auto;
 }
 
@@ -213,7 +221,7 @@ html[data-theme="kisara"] body[data-yuimi-selection-lock="true"] :where(img, pic
   top: 68px;
   right: 28px;
   display: grid;
-  width: min(250px, calc(100vw - 24px));
+  width: min(250px, calc(calc(100vw / var(--kisara-scale, 1)) - 24px));
   padding: 12px;
   border: 1px solid rgba(145, 177, 255, 0.35);
   background: #171c40;
@@ -430,7 +438,7 @@ html[data-yuimi-performance="lite"] :is(
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: calc(100vw - 48px);
+  max-width: calc(calc(100vw / var(--kisara-scale, 1)) - 48px);
 }
 
 .kisara-audio-player > audio {
@@ -1357,343 +1365,7 @@ html[data-yuimi-performance="lite"] :is(
 }
 
 .kisara-main {
-  min-height: 100vh;
-}
-
-.kisara-scrollbar {
-  --kisara-scroll-progress: 0;
-  --kisara-scroll-energy: 0;
-  --kisara-scroll-boost: 0;
-  --kisara-scroll-boost-scale: 1;
-  --kisara-scroll-boost-glow: 8px;
-  --kisara-scroll-boost-duration: 820ms;
-  --kisara-scroll-thumb-size: 46px;
-  --kisara-scroll-thumb-y: 0px;
-  --kisara-scroll-marker-y: 23px;
-  --kisara-scroll-active-length: 26px;
-  --kisara-scroll-core-length: 15px;
-  --kisara-scroll-accent: #ff4969;
-  --kisara-scroll-hot: #fff4fa;
-  --kisara-scroll-soft: rgba(255, 73, 105, 0.5);
-  position: fixed;
-  z-index: 46;
-  top: 92px;
-  right: 8px;
-  bottom: 24px;
-  width: 22px;
-  pointer-events: none;
-  cursor: default;
-  outline: none;
-  transition: opacity 180ms ease;
-}
-
-.kisara-scrollbar.is-idle {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.kisara-scrollbar::before,
-.kisara-scrollbar::after,
-.kisara-scrollbar-progress {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  pointer-events: none;
-  transform: translateX(-50%);
-}
-
-.kisara-scrollbar::before {
-  bottom: 0;
-  width: 1px;
-  border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    color-mix(in srgb, var(--kisara-scroll-accent) 42%, transparent) 16%,
-    color-mix(in srgb, var(--kisara-scroll-accent) 24%, transparent) 84%,
-    transparent
-  );
-  box-shadow: 0 0 7px rgba(111, 157, 255, 0.15);
-  transition: background 220ms ease, box-shadow 220ms ease;
-}
-
-.kisara-scrollbar::after {
-  top: var(--kisara-scroll-marker-y);
-  width: 3px;
-  height: 24px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, transparent, var(--kisara-scroll-hot) 34%, var(--kisara-scroll-accent) 62%, transparent);
-  box-shadow: 0 0 8px var(--kisara-scroll-soft);
-  opacity: 0;
-  transform: translate(-50%, -24%) scaleY(0.45);
-  transform-origin: center top;
-  transition: top 80ms linear, opacity 180ms ease, background 220ms ease, box-shadow 220ms ease;
-}
-
-.kisara-scrollbar-progress {
-  width: 2px;
-  height: var(--kisara-scroll-marker-y);
-  border-radius: 999px;
-  overflow: visible;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--kisara-scroll-accent) 36%, transparent),
-    var(--kisara-scroll-accent) 68%,
-    var(--kisara-scroll-hot)
-  );
-  box-shadow: 0 0 8px var(--kisara-scroll-soft), 0 0 18px color-mix(in srgb, var(--kisara-scroll-accent) 28%, transparent);
-  transition: background 220ms ease, box-shadow 220ms ease;
-}
-
-.kisara-scrollbar-progress::before,
-.kisara-scrollbar-progress::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  pointer-events: none;
-  opacity: 0;
-}
-
-.kisara-scrollbar-progress::after {
-  display: none;
-}
-
-.kisara-scrollbar-progress::before {
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  opacity: calc(0.12 + var(--kisara-scroll-energy) * 0.22);
-  background: linear-gradient(180deg, transparent 0 18%, var(--kisara-scroll-hot) 50%, transparent 82% 100%);
-  filter: blur(1.5px);
-  transform: translate(-50%, -75%);
-  animation: kisara-scroll-line-flow 2100ms linear infinite;
-}
-
-.kisara-scrollbar-thumb {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  display: block;
-  width: 14px;
-  height: var(--kisara-scroll-thumb-size);
-  transform: translate3d(-50%, var(--kisara-scroll-thumb-y), 0);
-  cursor: default;
-  will-change: transform;
-  transition: height 180ms ease, filter 180ms ease;
-}
-
-.kisara-scrollbar-thumb::before,
-.kisara-scrollbar-thumb::after,
-.kisara-scrollbar-thumb i {
-  content: "";
-  position: absolute;
-  left: 50%;
-  pointer-events: none;
-}
-
-.kisara-scrollbar-thumb::before {
-  top: 50%;
-  width: 4px;
-  height: var(--kisara-scroll-active-length);
-  border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    color-mix(in srgb, var(--kisara-scroll-accent) 54%, transparent) 18%,
-    var(--kisara-scroll-accent) 38%,
-    var(--kisara-scroll-hot) 48% 54%,
-    var(--kisara-scroll-accent) 68%,
-    color-mix(in srgb, var(--kisara-scroll-accent) 48%, transparent) 84%,
-    transparent 100%
-  );
-  box-shadow:
-    0 0 5px var(--kisara-scroll-soft),
-    0 0 13px color-mix(in srgb, var(--kisara-scroll-accent) 42%, transparent);
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  transition: height 180ms ease, background 220ms ease, box-shadow 220ms ease;
-}
-
-.kisara-scrollbar-thumb::after {
-  top: 50%;
-  width: 1px;
-  height: var(--kisara-scroll-core-length);
-  border-radius: 999px;
-  background: linear-gradient(180deg, transparent, var(--kisara-scroll-hot) 28% 72%, transparent);
-  box-shadow: 0 0 5px var(--kisara-scroll-hot), 0 0 9px var(--kisara-scroll-soft);
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  transition: height 180ms ease, background 220ms ease, box-shadow 220ms ease;
-}
-
-.kisara-scrollbar-thumb i {
-  z-index: 1;
-  top: 50%;
-  width: 0;
-  height: 0;
-  background: transparent;
-  opacity: 0;
-  transform: translate(-50%, -50%);
-  transition: width 180ms ease, height 180ms ease, opacity 180ms ease, background 180ms ease, box-shadow 180ms ease;
-}
-
-.kisara-scrollbar-thumb i::before,
-.kisara-scrollbar-thumb i::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  pointer-events: none;
-  opacity: 0;
-}
-
-.kisara-scrollbar.is-scroll-guided .kisara-scrollbar-thumb {
-  filter: drop-shadow(0 0 5px var(--kisara-scroll-soft));
-}
-
-.kisara-scrollbar.is-scroll-guided::after {
-  opacity: 0.78;
-  animation: kisara-scroll-guide-flow 1240ms cubic-bezier(0.18, 0.68, 0.24, 1) infinite;
-}
-
-.kisara-scrollbar.is-gate-progress {
-  cursor: default;
-}
-
-.kisara-scrollbar.is-gate-progress .kisara-scrollbar-thumb {
-  cursor: default;
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="awakening"],
-.kisara-scrollbar.is-gate-progress[data-stage="outer-bind"],
-.kisara-scrollbar.is-gate-progress[data-stage="returning"] {
-  --kisara-scroll-accent: #7fa8ff;
-  --kisara-scroll-hot: #f0f5ff;
-  --kisara-scroll-soft: rgba(111, 157, 255, 0.58);
-}
-
-.kisara-scrollbar.is-returning .kisara-scrollbar-thumb::before {
-  animation: kisara-scroll-return 720ms ease-in-out infinite;
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="inner-bind"],
-.kisara-scrollbar.is-gate-progress[data-stage="maximum-tension"],
-.kisara-scrollbar.is-gate-progress[data-stage="glitch"] {
-  --kisara-scroll-accent: #d773b8;
-  --kisara-scroll-hot: #fff1fb;
-  --kisara-scroll-soft: rgba(215, 115, 184, 0.62);
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="rupture"],
-.kisara-scrollbar.is-gate-progress[data-stage="enchant"] {
-  --kisara-scroll-accent: #ff4969;
-  --kisara-scroll-hot: #fff7fb;
-  --kisara-scroll-soft: rgba(255, 73, 105, 0.72);
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="rupture"] .kisara-scrollbar-thumb::before {
-  animation: kisara-scroll-rupture 360ms cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="enchant"] .kisara-scrollbar-thumb::before {
-  animation: kisara-scroll-heartbeat 760ms ease-in-out infinite;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.kisara-scrollbar.is-gate-progress[data-stage="reconstruction"] {
-  --kisara-scroll-accent: #82b7ff;
-  --kisara-scroll-hot: #fff5fb;
-  --kisara-scroll-soft: rgba(255, 85, 139, 0.68);
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="reconstruction"] .kisara-scrollbar-progress::before {
-  opacity: 0.72;
-  background: linear-gradient(180deg, transparent 0 12%, #82b7ff 38%, #fff 52%, #ff558b 68%, transparent 88% 100%);
-  animation-duration: 760ms;
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="complete"] {
-  --kisara-scroll-accent: #ff7896;
-  --kisara-scroll-hot: #ffffff;
-  --kisara-scroll-soft: rgba(255, 120, 150, 0.68);
-}
-
-.kisara-scrollbar.is-gate-progress[data-stage="complete"] .kisara-scrollbar-thumb::before {
-  animation: kisara-scroll-complete 1500ms ease-in-out infinite;
-}
-
-.kisara-scrollbar.is-release-boosted .kisara-scrollbar-thumb {
-  transform: translate3d(-50%, var(--kisara-scroll-thumb-y), 0)
-    scaleY(var(--kisara-scroll-boost-scale));
-  filter:
-    drop-shadow(0 0 var(--kisara-scroll-boost-glow) var(--kisara-scroll-hot))
-    drop-shadow(0 0 7px var(--kisara-scroll-accent));
-}
-
-.kisara-scrollbar.is-release-boosted .kisara-scrollbar-thumb::before,
-.kisara-scrollbar.is-release-boosted .kisara-scrollbar-thumb::after,
-.kisara-scrollbar.is-release-boosted .kisara-scrollbar-thumb i::before,
-.kisara-scrollbar.is-release-boosted .kisara-scrollbar-thumb i::after {
-  animation-duration: var(--kisara-scroll-boost-duration);
-}
-
-@keyframes kisara-scroll-rupture {
-  0%, 100% { transform: translate(-50%, -50%) scaleY(0.9); }
-  38% { transform: translate(calc(-50% - 1px), -50%) scaleY(1.12); }
-  58% { transform: translate(calc(-50% + 1px), -50%) scaleY(0.96); }
-}
-
-@keyframes kisara-scroll-return {
-  0%, 100% { transform: translate(-50%, -50%) scaleY(0.9); opacity: 0.72; }
-  50% { transform: translate(-50%, -50%) scaleY(1.06); opacity: 1; }
-}
-
-@keyframes kisara-scroll-line-flow {
-  from { transform: translate(-50%, -78%); }
-  to { transform: translate(-50%, 78%); }
-}
-
-@keyframes kisara-scroll-guide-flow {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -28%) scaleY(0.28);
-  }
-  26% {
-    opacity: 0.82;
-  }
-  68% {
-    opacity: 0.52;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, 74%) scaleY(1.04);
-  }
-}
-
-@keyframes kisara-scroll-heartbeat {
-  0%, 100% { transform: translate(-50%, -50%) scaleY(0.94); }
-  35% { transform: translate(-50%, -50%) scaleY(1.1); }
-  52% { transform: translate(-50%, -50%) scaleY(0.98); }
-  67% { transform: translate(-50%, -50%) scaleY(1.05); }
-}
-
-@keyframes kisara-scroll-complete {
-  0%, 100% { transform: translate(-50%, -50%) scaleY(0.94); box-shadow: 0 0 6px #fff, 0 0 14px var(--kisara-scroll-soft); }
-  50% { transform: translate(-50%, -50%) scaleY(1.08); box-shadow: 0 0 9px #fff, 0 0 22px var(--kisara-scroll-soft); }
+  min-height: calc(100vh / var(--kisara-scale, 1));
 }
 
 
@@ -1819,7 +1491,7 @@ html[data-yuimi-performance="lite"] :is(
   display: grid;
   place-items: start;
   align-content: center;
-  min-height: calc(100vh - 80px);
+  min-height: calc(calc(100vh / var(--kisara-scale, 1)) - 80px);
   padding-top: 80px;
 }
 
@@ -2153,7 +1825,7 @@ html[data-yuimi-performance="lite"] :is(
   grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1fr);
   gap: 80px;
   align-items: center;
-  min-height: 100vh;
+  min-height: calc(100vh / var(--kisara-scale, 1));
   padding-block: 120px 80px;
 }
 
@@ -2346,7 +2018,7 @@ html[data-yuimi-performance="lite"] :is(
     bottom: 70px;
     left: 14px;
     gap: 2px;
-    max-width: calc(100vw - 36px);
+    max-width: calc(calc(100vw / var(--kisara-scale, 1)) - 36px);
   }
 
   .kisara-audio-control {
@@ -2402,23 +2074,6 @@ html[data-yuimi-performance="lite"] :is(
 
   .kisara-audio-secret-hearts i:nth-child(n + 7) {
     display: none;
-  }
-
-  .kisara-scrollbar {
-    --kisara-scroll-active-length: 22px;
-    --kisara-scroll-core-length: 13px;
-    top: 76px;
-    right: 1px;
-    bottom: 72px;
-    width: 14px;
-  }
-
-  .kisara-scrollbar-thumb {
-    width: 14px;
-  }
-
-  .kisara-scrollbar-progress::before {
-    animation-duration: 4200ms;
   }
 
   .kisara-ambient-particles i:nth-child(n + 10) {

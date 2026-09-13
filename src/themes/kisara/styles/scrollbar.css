@@ -1,0 +1,89 @@
+.kisara-scrollbar {
+  --kisara-scroll-accent: #c67e96;
+  --kisara-scroll-thumb-size: 46px;
+  --kisara-scroll-thumb-y: 0px;
+  position: fixed;
+  z-index: 46;
+  top: 102px;
+  right: 10px;
+  bottom: 28px;
+  width: 10px;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.kisara-scrollbar.is-idle { opacity: 0; }
+
+.kisara-scrollbar::before,
+.kisara-scrollbar-progress {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  width: 2px;
+  border-radius: 1px;
+}
+
+.kisara-scrollbar::before {
+  content: "";
+  bottom: 0;
+  background: rgba(146, 137, 148, .22);
+}
+
+.kisara-scrollbar-progress {
+  height: 100%;
+  background: var(--kisara-scroll-accent);
+  opacity: .5;
+  transform: scaleY(var(--kisara-scroll-progress, 0));
+  transform-origin: center top;
+}
+
+.kisara-scrollbar-thumb {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  width: 6px;
+  height: var(--kisara-scroll-thumb-size);
+  border: 1px solid rgba(255, 244, 248, .5);
+  border-radius: 3px;
+  background: var(--kisara-scroll-accent);
+  box-shadow: 0 1px 3px rgba(14, 12, 16, .16);
+  transform: translate3d(0, var(--kisara-scroll-thumb-y), 0);
+}
+
+.kisara-scrollbar-thumb i {
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  right: 1px;
+  height: 8px;
+  border-block: 1px solid rgba(255, 255, 255, .7);
+  transform: translateY(-50%);
+}
+
+.kisara-scrollbar.is-gate-progress[data-stage="awakening"],
+.kisara-scrollbar.is-gate-progress[data-stage="outer-bind"],
+.kisara-scrollbar.is-gate-progress[data-stage="returning"] {
+  --kisara-scroll-accent: #9eaed5;
+}
+
+.kisara-scrollbar.is-gate-progress[data-stage="rupture"],
+.kisara-scrollbar.is-gate-progress[data-stage="enchant"],
+.kisara-scrollbar.is-gate-progress[data-stage="complete"] {
+  --kisara-scroll-accent: #ed94af;
+}
+
+@media (max-width: 600px) {
+  .kisara-scrollbar {
+    top: 82px;
+    right: 3px;
+    bottom: 76px;
+    width: 8px;
+  }
+  .kisara-scrollbar::before,
+  .kisara-scrollbar-progress { left: 3px; }
+  .kisara-scrollbar-thumb { left: 1px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kisara-scrollbar { transition: none; }
+}

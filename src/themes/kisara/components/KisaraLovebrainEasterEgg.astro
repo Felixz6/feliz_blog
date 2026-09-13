@@ -1142,8 +1142,8 @@ import { Icon } from "astro-icon/components";
     z-index: 5;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(12px, 2.1vw, 34px);
-    width: min(1040px, 84vw);
+    gap: clamp(12px, calc(2.1vw / var(--kisara-scale, 1)), 34px);
+    width: min(1040px, calc(84vw / var(--kisara-scale, 1)));
     align-items: center;
   }
 
@@ -1164,9 +1164,9 @@ import { Icon } from "astro-icon/components";
       opacity 90ms linear;
   }
 
-  .kisara-lovebrain-portrait-lineup .is-kisara { --portrait-y: -1.5vh; --portrait-r: -4deg; --portrait-counter-r: 4deg; }
-  .kisara-lovebrain-portrait-lineup .is-shu { --portrait-y: 3vh; --portrait-r: 2deg; --portrait-counter-r: -2deg; }
-  .kisara-lovebrain-portrait-lineup .is-ayano { --portrait-y: -2.5vh; --portrait-r: 4deg; --portrait-counter-r: -4deg; }
+  .kisara-lovebrain-portrait-lineup .is-kisara { --portrait-y: calc(-1.5vh / var(--kisara-scale, 1)); --portrait-r: -4deg; --portrait-counter-r: 4deg; }
+  .kisara-lovebrain-portrait-lineup .is-shu { --portrait-y: calc(3vh / var(--kisara-scale, 1)); --portrait-r: 2deg; --portrait-counter-r: -2deg; }
+  .kisara-lovebrain-portrait-lineup .is-ayano { --portrait-y: calc(-2.5vh / var(--kisara-scale, 1)); --portrait-r: 4deg; --portrait-counter-r: -4deg; }
 
   .kisara-lovebrain-portrait-card {
     display: block;
@@ -1222,11 +1222,11 @@ import { Icon } from "astro-icon/components";
   }
 
   .kisara-lovebrain-portrait-copy b {
-    font: 900 clamp(0.72rem, 1vw, 0.94rem)/1 "Arial Narrow", Arial, sans-serif;
+    font: 900 clamp(0.72rem, calc(1vw / var(--kisara-scale, 1)), 0.94rem)/1 "Arial Narrow", Arial, sans-serif;
   }
 
   .kisara-lovebrain-portrait-copy small {
-    font-size: clamp(0.58rem, 0.78vw, 0.72rem);
+    font-size: clamp(0.58rem, calc(0.78vw / var(--kisara-scale, 1)), 0.72rem);
     font-weight: 800;
   }
 
@@ -1307,7 +1307,7 @@ import { Icon } from "astro-icon/components";
   }
 
   .kisara-lovebrain-loop-caption span {
-    font: 900 clamp(1.2rem, 4vw, 4.2rem)/0.86 "Arial Narrow", Arial, sans-serif;
+    font: 900 clamp(1.2rem, calc(4vw / var(--kisara-scale, 1)), 4.2rem)/0.86 "Arial Narrow", Arial, sans-serif;
   }
 
   .kisara-lovebrain-loop-caption b {
@@ -1329,7 +1329,7 @@ import { Icon } from "astro-icon/components";
     top: 50%;
     left: 50%;
     z-index: 3;
-    width: min(74vw, 880px);
+    width: min(calc(74vw / var(--kisara-scale, 1)), 880px);
     aspect-ratio: 1;
     border: 4px dashed rgba(255, 255, 255, 0.34);
     border-radius: 50%;
@@ -1361,7 +1361,7 @@ import { Icon } from "astro-icon/components";
   }
 
   .kisara-lovebrain-final-copy span {
-    font: 900 clamp(0.92rem, 2vw, 1.65rem)/1 "Arial Narrow", Arial, sans-serif;
+    font: 900 clamp(0.92rem, calc(2vw / var(--kisara-scale, 1)), 1.65rem)/1 "Arial Narrow", Arial, sans-serif;
   }
 
   .kisara-lovebrain-final-copy b {
@@ -1528,8 +1528,8 @@ import { Icon } from "astro-icon/components";
 
     .kisara-lovebrain-portrait-lineup {
       gap: 7px;
-      width: 110vw;
-      transform: translateX(-5vw);
+      width: calc(110vw / var(--kisara-scale, 1));
+      transform: translateX(calc(-5vw / var(--kisara-scale, 1)));
     }
 
     .kisara-lovebrain-portrait-frame {

@@ -1,3 +1,5 @@
+import { getKisaraScale } from "./displayScale";
+
 const gateStageLabels = {
   awakening: "锁链唤醒",
   "outer-bind": "外环缠绕",
@@ -37,22 +39,19 @@ export const initKisaraLayoutRuntime = () => {
   let gateRailActive = false;
   let gateRailProgress = 0;
   let gateRailStage = "document";
-  let gateRailGuided = false;
   let gateRailTransitioning = false;
-  let gateRailPlaybackRate = 1;
-  let gateRailPressure = 0;
-  let gateRailReleaseMode = "manual";
 
   const getScrollbarMetrics = () => {
     if (!(scrollbar instanceof HTMLElement)) return null;
     const root = document.scrollingElement ?? document.documentElement;
     const trackRect = scrollbar.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const scrollHeight = Math.max(root.scrollHeight, body.scrollHeight);
+    const scrollHeight = root.scrollHeight;
     const scrollRange = Math.max(0, scrollHeight - viewportHeight);
     const minimumThumbSize = window.innerWidth <= 600 ? 34 : 46;
-    const thumbSize = clamp(trackRect.height * (viewportHeight / Math.max(scrollHeight, 1)), minimumThumbSize, 82);
-    return { trackRect, scrollRange, thumbSize };
+    const trackHeight = scrollbar.clientHeight;
+    const thumbSize = clamp(trackHeight * (viewportHeight / Math.max(scrollHeight, 1)), minimumThumbSize, 82);
+    return { trackRect, trackHeight, scrollRange, thumbSize };
   };
 
   const updateScrollbar = () => {
@@ -64,37 +63,14 @@ export const initKisaraLayoutRuntime = () => {
     const pageProgress = metrics.scrollRange > 0 ? clamp(window.scrollY / metrics.scrollRange, 0, 1) : 0;
     const progress = gateMode ? gateRailProgress : pageProgress;
     const thumbSize = gateMode ? (window.innerWidth <= 600 ? 34 : 46) : metrics.thumbSize;
-    const thumbTravel = Math.max(0, metrics.trackRect.height - thumbSize);
+    const thumbTravel = Math.max(0, metrics.trackHeight - thumbSize);
     const thumbY = thumbTravel * progress;
-    const markerY = thumbY + thumbSize * 0.5;
     scrollbar.classList.toggle("is-idle", metrics.scrollRange <= 1 || metrics.trackRect.height <= 0);
     scrollbar.classList.toggle("is-gate-progress", gateMode);
-    scrollbar.classList.toggle("is-scroll-guided", gateMode && gateRailGuided);
-    scrollbar.classList.toggle("is-returning", gateMode && gateRailTransitioning);
-    scrollbar.classList.toggle(
-      "is-release-boosted",
-      gateMode && gateRailReleaseMode === "forward" && gateRailPressure > 0.08
-    );
     scrollbar.dataset.stage = gateMode ? gateRailStage : "document";
-    scrollbar.dataset.releaseMode = gateMode ? gateRailReleaseMode : "document";
     scrollbar.style.setProperty("--kisara-scroll-progress", String(progress));
     scrollbar.style.setProperty("--kisara-scroll-thumb-size", `${thumbSize}px`);
     scrollbar.style.setProperty("--kisara-scroll-thumb-y", `${thumbY}px`);
-    scrollbar.style.setProperty("--kisara-scroll-marker-y", `${markerY}px`);
-    scrollbar.style.setProperty("--kisara-scroll-energy", String(gateMode ? progress : 0));
-    scrollbar.style.setProperty("--kisara-scroll-boost", String(gateMode ? gateRailPressure : 0));
-    scrollbar.style.setProperty(
-      "--kisara-scroll-boost-scale",
-      String(1 + (gateMode ? gateRailPressure : 0) * 0.16)
-    );
-    scrollbar.style.setProperty(
-      "--kisara-scroll-boost-glow",
-      `${8 + (gateMode ? gateRailPressure : 0) * 20}px`
-    );
-    scrollbar.style.setProperty(
-      "--kisara-scroll-boost-duration",
-      `${Math.round(820 - (gateMode ? gateRailPlaybackRate - 1 : 0) * 420)}ms`
-    );
     scrollbar.setAttribute("aria-label", gateMode ? "Kisara 契约演出进度" : "页面滚动进度");
     scrollbar.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
     scrollbar.setAttribute(
@@ -115,11 +91,7 @@ export const initKisaraLayoutRuntime = () => {
     gateRailActive = Boolean(detail.active);
     gateRailProgress = clamp(Number(detail.progress) || 0, 0, 1);
     gateRailStage = typeof detail.stage === "string" ? detail.stage : "awakening";
-    gateRailGuided = Boolean(detail.guided);
     gateRailTransitioning = Boolean(detail.transitioning);
-    gateRailPlaybackRate = clamp(Number(detail.playbackRate) || 1, 0.1, 2);
-    gateRailPressure = clamp(Number(detail.pressure) || 0, 0, 1);
-    gateRailReleaseMode = typeof detail.releaseMode === "string" ? detail.releaseMode : "manual";
     scheduleScrollbarUpdate();
   };
 
@@ -130,11 +102,7 @@ export const initKisaraLayoutRuntime = () => {
       active: gateProgressSource.dataset.kisaraScrollActive === "true",
       progress: gateProgressSource.dataset.kisaraScrollProgress,
       stage: gateProgressSource.dataset.kisaraScrollStage,
-      guided: gateProgressSource.dataset.kisaraScrollGuided === "true",
       transitioning: gateProgressSource.dataset.kisaraScrollTransitioning === "true",
-      playbackRate: gateProgressSource.dataset.kisaraScrollPlaybackRate,
-      pressure: gateProgressSource.dataset.kisaraScrollPressure,
-      releaseMode: gateProgressSource.dataset.kisaraScrollReleaseMode
     });
   };
 
@@ -243,8 +211,11 @@ export const initKisaraLayoutRuntime = () => {
     menu.style.top = "0px";
     const menuWidth = menu.offsetWidth;
     const menuHeight = menu.offsetHeight;
-    const left = Math.max(12, Math.min(x, window.innerWidth - menuWidth - 12));
-    const top = Math.max(12, Math.min(y, window.innerHeight - menuHeight - 12));
+    const scale = getKisaraScale();
+    x /= scale;
+    y /= scale;
+    const left = Math.max(12, Math.min(x, window.innerWidth / scale - menuWidth - 12));
+    const top = Math.max(12, Math.min(y, window.innerHeight / scale - menuHeight - 12));
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
     menu.style.setProperty("--menu-origin", `${x > left ? "right" : "left"} ${y > top ? "bottom" : "top"}`);

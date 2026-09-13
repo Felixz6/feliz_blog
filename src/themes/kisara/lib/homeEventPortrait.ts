@@ -30,8 +30,8 @@ export function bindHomeEventPortrait(root: HTMLElement) {
   let active = false, revealed = false, hovering = false, focused = false;
   let step = 0, frame = 0, timer = 0, due = 0, remaining = 220;
   const layout = () => {
-    const rect = root.getBoundingClientRect();
-    const box = homePortraitLayout(rect.width, rect.height);
+    // CSS variables must use local sizes, not rects already reduced by the theme zoom.
+    const box = homePortraitLayout(root.clientWidth, root.clientHeight);
     const values = {
       "board-width": box.mediaWidth, "board-height": box.mediaHeight,
       "board-x": box.x, "board-y": box.y, "portrait-size": box.size,

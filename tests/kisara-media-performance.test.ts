@@ -167,8 +167,8 @@ test("Kisara Home 003 uses a one-shot board scene with a portrait and the four o
   assert.match(homeEventSource, /kisara-home-board-aside">BE LIKE:<\/span>/);
   assert.match(homeEventSource, /未必是人类<\/p>/);
   assert.doesNotMatch(homeEventSource, /kisara-home-tags|tagGroups|PERSONAL INDEX/);
-  assert.match(homeEventStyles, /\.kisara-home-video-event \{[^]*display: block;[^]*min-height: 100svh/);
-  assert.match(homeEventStyles, /\.kisara-home-video-stage \{[^]*display: block;[^]*min-height: 100svh/);
+  assert.match(homeEventStyles, /\.kisara-home-video-event \{[^]*display: block;[^]*min-height: calc\(100svh \/ var\(--kisara-scale, 1\)\)/);
+  assert.match(homeEventStyles, /\.kisara-home-video-stage \{[^]*display: block;[^]*min-height: calc\(100svh \/ var\(--kisara-scale, 1\)\)/);
   assert.doesNotMatch(homeEventSource, /data-home-event-progress|data-home-event-replay|data-notebook-tab/);
   assert.doesNotMatch(runtime, /requestVideoFrameCallback|requestAnimationFrame|animation\.currentTime/);
   assert.match(runtime, /prefers-reduced-motion: reduce/);

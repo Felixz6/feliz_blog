@@ -1,3 +1,5 @@
+import { getKisaraLocalRect } from "./displayScale.ts";
+
 export function settleWithin(task: Promise<unknown>, timeout: number, signal: AbortSignal) {
   return new Promise<void>(resolve => {
     const finish = () => {
@@ -65,7 +67,7 @@ export function createComicMotion(signal: AbortSignal, reducedMotion: boolean) {
     async play(scene: HTMLElement, reverse = false) {
       cancel();
       const serial = generation;
-      const bounds = scene.getBoundingClientRect();
+      const bounds = getKisaraLocalRect(scene);
       const paper = scene.querySelector<HTMLElement>(".kisara-comic-paper");
       const x = bounds.width * .5;
       const y = bounds.height * .45;

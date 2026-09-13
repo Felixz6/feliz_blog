@@ -3,7 +3,7 @@
   z-index: 2;
   isolation: isolate;
   display: block;
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   overflow: hidden;
   color: #26272b;
   background: #edf1f0;
@@ -12,8 +12,8 @@
 .kisara-home-video-stage {
   display: block;
   position: relative;
-  min-height: 100svh;
-  height: max(820px, 100svh);
+  min-height: calc(100svh / var(--kisara-scale, 1));
+  height: max(820px, calc(100svh / var(--kisara-scale, 1)));
   --portrait-size: 160px;
   --portrait-x: 33%;
   --portrait-y: 32%;
@@ -198,7 +198,7 @@
   z-index: 1;
   top: 12%;
   left: 50%;
-  --knife-height: clamp(126px, 16svh, 154px);
+  --knife-height: clamp(126px, calc(16svh / var(--kisara-scale, 1)), 154px);
   width: calc(var(--knife-height) * 2 / 7);
   height: var(--knife-height);
   transform-origin: 50% 100%;
@@ -254,7 +254,7 @@
   position: absolute;
   top: calc(100% + 24px);
   left: 50%;
-  width: var(--bubble-width, min(380px, calc(100vw - 40px)));
+  width: var(--bubble-width, min(380px, calc(calc(100vw / var(--kisara-scale, 1)) - 40px)));
   padding: 14px;
   transform: translateX(-50%);
   border: 2px solid #44444b;
@@ -380,7 +380,7 @@
 }
 
 @media (max-width: 760px) {
-  .kisara-home-video-stage { height: max(820px, 100svh); }
+  .kisara-home-video-stage { height: max(820px, calc(100svh / var(--kisara-scale, 1))); }
   .kisara-home-board-caption {
     top: calc(var(--portrait-y) + var(--portrait-size) / 2 + 284px);
     left: 20px;

@@ -3,7 +3,7 @@ html[data-theme="kisara"] body[data-kisara-page="404"] {
 }
 
 html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-main {
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
 }
 
 html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-footer {
@@ -20,9 +20,9 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
   isolation: isolate;
   display: grid;
   width: 100%;
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   margin: 0;
-  padding: clamp(116px, 15vh, 176px) clamp(28px, 8vw, 156px) clamp(44px, 8vh, 92px);
+  padding: clamp(116px, calc(15vh / var(--kisara-scale, 1)), 176px) clamp(28px, calc(8vw / var(--kisara-scale, 1)), 156px) clamp(44px, calc(8vh / var(--kisara-scale, 1)), 92px);
   overflow: hidden;
   color: #fff8fb;
 }
@@ -84,7 +84,7 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
   position: absolute;
   display: block;
   width: 1px;
-  height: clamp(76px, 12vh, 144px);
+  height: clamp(76px, calc(12vh / var(--kisara-scale, 1)), 144px);
   background: linear-gradient(180deg, transparent, rgba(197, 213, 255, 0.78), transparent);
   opacity: 0.38;
   transform: rotate(16deg);
@@ -92,16 +92,16 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
 }
 
 .kisara-not-found-rain i:nth-child(1) { top: 12%; left: 7%; animation-delay: -1.7s; }
-.kisara-not-found-rain i:nth-child(2) { top: 48%; left: 24%; height: clamp(52px, 8vh, 88px); animation-delay: -3.1s; }
+.kisara-not-found-rain i:nth-child(2) { top: 48%; left: 24%; height: clamp(52px, calc(8vh / var(--kisara-scale, 1)), 88px); animation-delay: -3.1s; }
 .kisara-not-found-rain i:nth-child(3) { top: 16%; right: 22%; animation-delay: -0.7s; }
-.kisara-not-found-rain i:nth-child(4) { top: 58%; right: 8%; height: clamp(62px, 9vh, 104px); animation-delay: -2.4s; }
-.kisara-not-found-rain i:nth-child(5) { top: 8%; right: 42%; height: clamp(44px, 7vh, 74px); animation-delay: -4s; }
+.kisara-not-found-rain i:nth-child(4) { top: 58%; right: 8%; height: clamp(62px, calc(9vh / var(--kisara-scale, 1)), 104px); animation-delay: -2.4s; }
+.kisara-not-found-rain i:nth-child(5) { top: 8%; right: 42%; height: clamp(44px, calc(7vh / var(--kisara-scale, 1)), 74px); animation-delay: -4s; }
 
 .kisara-not-found-content {
   align-self: center;
   justify-self: end;
   width: min(100%, 510px);
-  margin-top: clamp(30px, 7vh, 88px);
+  margin-top: clamp(30px, calc(7vh / var(--kisara-scale, 1)), 88px);
   text-align: left;
 }
 
@@ -127,9 +127,9 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
 
 .kisara-not-found-code {
   display: flex;
-  margin: clamp(14px, 2.6vh, 26px) 0 0;
+  margin: clamp(14px, calc(2.6vh / var(--kisara-scale, 1)), 26px) 0 0;
   color: #fff8fc;
-  font: 900 clamp(6.7rem, 16vw, 11.5rem)/0.8 "Arial Rounded MT Bold", "Yu Gothic UI", "Microsoft YaHei UI", ui-rounded, sans-serif;
+  font: 900 clamp(6.7rem, calc(16vw / var(--kisara-scale, 1)), 11.5rem)/0.8 "Arial Rounded MT Bold", "Yu Gothic UI", "Microsoft YaHei UI", ui-rounded, sans-serif;
   letter-spacing: 0;
   text-shadow:
     0 3px 0 rgba(114, 57, 106, 0.76),
@@ -149,9 +149,9 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
 }
 
 .kisara-not-found-title {
-  margin: clamp(20px, 3vh, 30px) 0 0;
+  margin: clamp(20px, calc(3vh / var(--kisara-scale, 1)), 30px) 0 0;
   color: #fff8fb;
-  font: 800 clamp(1.72rem, 3.2vw, 2.55rem)/1.18 "Arial Rounded MT Bold", "Yu Gothic UI", "Microsoft YaHei UI", ui-rounded, sans-serif;
+  font: 800 clamp(1.72rem, calc(3.2vw / var(--kisara-scale, 1)), 2.55rem)/1.18 "Arial Rounded MT Bold", "Yu Gothic UI", "Microsoft YaHei UI", ui-rounded, sans-serif;
   letter-spacing: 0;
   text-shadow: 0 5px 18px rgba(12, 9, 37, 0.52);
 }
@@ -160,7 +160,7 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
   max-width: 33rem;
   margin: 12px 0 0;
   color: rgba(241, 240, 255, 0.86);
-  font: 600 clamp(0.94rem, 1.3vw, 1.08rem)/1.8 "Microsoft YaHei UI", "Yu Gothic UI", ui-rounded, sans-serif;
+  font: 600 clamp(0.94rem, calc(1.3vw / var(--kisara-scale, 1)), 1.08rem)/1.8 "Microsoft YaHei UI", "Yu Gothic UI", ui-rounded, sans-serif;
   letter-spacing: 0;
   text-wrap: balance;
   text-shadow: 0 3px 14px rgba(12, 9, 37, 0.72);
@@ -170,7 +170,7 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: clamp(24px, 4vh, 38px);
+  margin-top: clamp(24px, calc(4vh / var(--kisara-scale, 1)), 38px);
 }
 
 .kisara-not-found nav :is(a, button) {
@@ -338,11 +338,11 @@ html[data-theme="kisara"] body[data-kisara-page="404"] .kisara-header {
   }
 
   .kisara-not-found-code {
-    font-size: clamp(6.1rem, 31vw, 8.8rem);
+    font-size: clamp(6.1rem, calc(31vw / var(--kisara-scale, 1)), 8.8rem);
   }
 
   .kisara-not-found-title {
-    font-size: clamp(1.58rem, 7vw, 2.05rem);
+    font-size: clamp(1.58rem, calc(7vw / var(--kisara-scale, 1)), 2.05rem);
   }
 
   .kisara-not-found nav :is(a, button) {

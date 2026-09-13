@@ -1,5 +1,5 @@
 .kisara-opening.kisara-comic-section {
-  position: relative; isolation: isolate; z-index: 3; width: 100%; height: 100svh; height: 100dvh;
+  position: relative; isolation: isolate; z-index: 3; width: 100%; height: calc(100svh / var(--kisara-scale, 1)); height: calc(100dvh / var(--kisara-scale, 1));
   min-height: 0; margin: 0; padding: 0; overflow: hidden; color: #171719; background: #fff;
 }
 .kisara-comic-section::before, .kisara-comic-section::after { content: none; }

@@ -42,7 +42,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
 
 .kisara-game-scene-bridge {
   position: relative;
-  height: clamp(112px, 16svh, 180px);
+  height: clamp(112px, calc(16svh / var(--kisara-scale, 1)), 180px);
   margin-block: -1px;
   overflow: hidden;
   contain: paint;
@@ -83,10 +83,10 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
 
 .kisara-game-scene {
   position: relative;
-  min-height: 100vh;
-  min-height: 100svh;
-  height: 100vh;
-  height: 100svh;
+  min-height: calc(100vh / var(--kisara-scale, 1));
+  min-height: calc(100svh / var(--kisara-scale, 1));
+  height: calc(100vh / var(--kisara-scale, 1));
+  height: calc(100svh / var(--kisara-scale, 1));
   overflow: hidden;
   isolation: isolate;
   scroll-snap-align: start;
@@ -127,7 +127,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
 
 .kisara-game-scene-step.is-previous {
   top: 88px;
-  left: clamp(20px, 3vw, 48px);
+  left: clamp(20px, calc(3vw / var(--kisara-scale, 1)), 48px);
 }
 
 .kisara-game-scene-step.is-previous svg {
@@ -157,13 +157,13 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
 
 .kisara-arcade::before {
   top: -1px;
-  height: 10vh;
+  height: calc(10vh / var(--kisara-scale, 1));
   background: linear-gradient(180deg, #0a0b14 0%, rgba(10, 11, 20, 0.64) 22%, transparent 100%);
 }
 
 .kisara-arcade::after {
   bottom: 0;
-  height: 22vh;
+  height: calc(22vh / var(--kisara-scale, 1));
   background: linear-gradient(180deg, transparent, rgba(6, 7, 12, 0.82));
 }
 
@@ -241,8 +241,8 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   position: absolute;
   z-index: 5;
   top: 15.5%;
-  left: clamp(34px, 5vw, 82px);
-  width: min(410px, 29vw);
+  left: clamp(34px, calc(5vw / var(--kisara-scale, 1)), 82px);
+  width: min(410px, calc(29vw / var(--kisara-scale, 1)));
   opacity: 0;
   transform: translate3d(-30px, 0, 0);
   transition: opacity 520ms ease, transform 760ms cubic-bezier(0.16, 0.82, 0.2, 1);
@@ -307,17 +307,17 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   display: grid;
   grid-template-columns: minmax(220px, 0.58fr) minmax(600px, 1.42fr);
   align-items: end;
-  gap: clamp(28px, 4vw, 72px);
-  width: min(1420px, calc(100% - 9vw));
+  gap: clamp(28px, calc(4vw / var(--kisara-scale, 1)), 72px);
+  width: min(1420px, calc(100% - calc(9vw / var(--kisara-scale, 1))));
   height: 100%;
   margin: 0 auto;
-  padding: 19vh 0 3.5vh;
+  padding: calc(19vh / var(--kisara-scale, 1)) 0 calc(3.5vh / var(--kisara-scale, 1));
 }
 
 .kisara-arcade-queue {
   align-self: end;
   min-width: 0;
-  padding-bottom: 5vh;
+  padding-bottom: calc(5vh / var(--kisara-scale, 1));
   opacity: 0;
   transform: translate3d(-24px, 20px, 0);
   transition: opacity 540ms ease 180ms, transform 780ms cubic-bezier(0.16, 0.82, 0.2, 1) 180ms;
@@ -419,7 +419,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   --machine-enter-y: 54px;
   justify-self: end;
   align-self: end;
-  width: min(760px, 57vw, 82vh);
+  width: min(760px, calc(57vw / var(--kisara-scale, 1)), calc(82vh / var(--kisara-scale, 1)));
   min-width: 0;
   padding: 0 2px;
   opacity: 0;
@@ -1234,9 +1234,9 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
 }
 
 @keyframes kisara-arcade-arrival {
-  0% { opacity: 0; transform: translateY(-17vh) scaleX(0.38); }
+  0% { opacity: 0; transform: translateY(calc(-17vh / var(--kisara-scale, 1))) scaleX(0.38); }
   42% { opacity: 0.95; }
-  100% { opacity: 0; transform: translateY(76vh) scaleX(1); }
+  100% { opacity: 0; transform: translateY(calc(76vh / var(--kisara-scale, 1))) scaleX(1); }
 }
 
 @keyframes kisara-arcade-panel-in {
@@ -1259,23 +1259,23 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
 
 @media (max-width: 1180px) {
   .kisara-game-hero h1 { font-size: 5rem; }
-  .kisara-game-hero-copy { width: min(460px, 42vw); }
-  .kisara-arcade-heading { top: 14%; width: 31vw; }
+  .kisara-game-hero-copy { width: min(460px, calc(42vw / var(--kisara-scale, 1))); }
+  .kisara-arcade-heading { top: 14%; width: calc(31vw / var(--kisara-scale, 1)); }
   .kisara-arcade-heading h2 { font-size: 2.7rem; }
   .kisara-arcade-layout { grid-template-columns: minmax(200px, 0.48fr) minmax(560px, 1.52fr); gap: 28px; }
-  .kisara-arcade-machine { width: min(700px, 62vw, 82vh); }
+  .kisara-arcade-machine { width: min(700px, calc(62vw / var(--kisara-scale, 1)), calc(82vh / var(--kisara-scale, 1))); }
   .kisara-arcade-panels h3 { font-size: 3.25rem; }
   .kisara-arcade-controls { grid-template-columns: 103px minmax(230px, 1fr) 94px; padding-inline: 20px; }
   .kisara-arcade-machine-actions { gap: 10px; }
 }
 
 @media (max-width: 900px) {
-  .kisara-game-hero-copy { top: 16%; width: min(430px, 51vw); }
+  .kisara-game-hero-copy { top: 16%; width: min(430px, calc(51vw / var(--kisara-scale, 1))); }
   .kisara-game-hero h1 { font-size: 4.35rem; }
-  .kisara-game-message-current { width: 44vw; }
-  .kisara-arcade-heading { top: 11%; width: 44vw; }
-  .kisara-arcade-layout { grid-template-columns: 190px minmax(0, 1fr); width: calc(100% - 42px); padding-top: 19vh; }
-  .kisara-arcade-machine { width: min(650px, 70vw, 82vh); }
+  .kisara-game-message-current { width: calc(44vw / var(--kisara-scale, 1)); }
+  .kisara-arcade-heading { top: 11%; width: calc(44vw / var(--kisara-scale, 1)); }
+  .kisara-arcade-layout { grid-template-columns: 190px minmax(0, 1fr); width: calc(100% - 42px); padding-top: calc(19vh / var(--kisara-scale, 1)); }
+  .kisara-arcade-machine { width: min(650px, calc(70vw / var(--kisara-scale, 1)), calc(82vh / var(--kisara-scale, 1))); }
   .kisara-arcade-machine-marquee { grid-template-columns: 1fr auto; padding-inline: 20px; }
   .kisara-arcade-machine-marquee > span { display: none; }
   .kisara-arcade-machine-marquee output { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1291,7 +1291,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
     scroll-behavior: smooth;
   }
   body[data-kisara-page="games"] .kisara-header.is-inner-header { backdrop-filter: blur(8px); }
-  .kisara-game-scene { min-height: 100svh; height: 100svh; }
+  .kisara-game-scene { min-height: calc(100svh / var(--kisara-scale, 1)); height: calc(100svh / var(--kisara-scale, 1)); }
   .kisara-game-hero::before {
     background:
       linear-gradient(180deg, rgba(7, 18, 34, 0.5), transparent 28%, transparent 65%, rgba(7, 10, 18, 0.82)),
@@ -1299,12 +1299,12 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   }
   .kisara-game-hero-media video { object-position: 50% center; }
   .kisara-game-hero-video { filter: saturate(0.8) contrast(0.94) brightness(0.86) blur(1px); }
-  .kisara-game-hero-copy { top: 14%; left: 19px; width: min(86vw, 390px); }
+  .kisara-game-hero-copy { top: 14%; left: 19px; width: min(calc(86vw / var(--kisara-scale, 1)), 390px); }
   .kisara-game-hero-copy > p:first-child { margin-bottom: 17px; font-size: 0.58rem; }
   .kisara-game-hero h1 { font-size: 3.35rem; line-height: 0.86; }
   .kisara-game-hero-copy > div { grid-template-columns: 1fr; gap: 8px; max-width: 270px; margin-top: 22px; }
   .kisara-game-hero-copy > div p { font-size: 0.78rem; line-height: 1.65; }
-  .kisara-game-message-current { top: 42%; right: -8%; width: 72vw; height: 38%; opacity: 0.68; }
+  .kisara-game-message-current { top: 42%; right: -8%; width: calc(72vw / var(--kisara-scale, 1)); height: 38%; opacity: 0.68; }
   .kisara-game-hero-readout { display: none; }
   .kisara-game-scene-step.is-next { bottom: 21px; }
   .kisara-game-scene-step.is-previous { top: 73px; left: 14px; }
@@ -1314,7 +1314,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   .kisara-game-scene-rail button i { width: 14px; }
   .kisara-game-scene-rail button[aria-current="true"] i { transform: scaleX(1.45); }
 
-  .kisara-arcade::before { height: 9vh; }
+  .kisara-arcade::before { height: calc(9vh / var(--kisara-scale, 1)); }
   .kisara-arcade-backdrop img { object-position: 55% center; filter: saturate(0.76) brightness(0.5) blur(1px); }
   .kisara-arcade-backdrop::after {
     background:
@@ -1332,7 +1332,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
     align-items: end;
     gap: 12px;
     width: calc(100% - 24px);
-    padding: 24vh 0 2.2vh;
+    padding: calc(24vh / var(--kisara-scale, 1)) 0 calc(2.2vh / var(--kisara-scale, 1));
   }
   .kisara-arcade-queue { align-self: auto; padding: 0; }
   .kisara-arcade-queue > header { padding-bottom: 7px; font-size: 0.5rem; }
@@ -1389,7 +1389,7 @@ body[data-kisara-page="games"] .kisara-header.is-inner-header {
   .kisara-game-hero h1 { font-size: 3rem; }
   .kisara-game-hero-copy > div p { max-width: 240px; }
   .kisara-arcade-heading { top: 9%; }
-  .kisara-arcade-layout { padding-top: 23.5vh; }
+  .kisara-arcade-layout { padding-top: calc(23.5vh / var(--kisara-scale, 1)); }
   .kisara-arcade-panels { width: 72%; }
   .kisara-arcade-panels h3 { font-size: 2.18rem; }
   .kisara-arcade-panels article > p { max-width: 92%; }

@@ -52,7 +52,7 @@ body[data-yuimi-article-page="true"] .kisara-article-header h1 {
   margin: 30px 0 0;
   color: #fff9fc;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3rem, 6vw, 5.35rem);
+  font-size: clamp(3rem, calc(6vw / var(--kisara-scale, 1)), 5.35rem);
   font-weight: 400;
   line-height: 0.98;
   letter-spacing: 0;
@@ -81,7 +81,7 @@ body[data-yuimi-article-page="true"] .kisara-article-tags span {
   display: grid;
   grid-template-columns: minmax(0, 760px) minmax(220px, 1fr);
   grid-template-areas: "content toc";
-  gap: clamp(64px, 8vw, 110px);
+  gap: clamp(64px, calc(8vw / var(--kisara-scale, 1)), 110px);
   align-items: start;
   margin-top: 72px;
 }
@@ -117,7 +117,7 @@ body[data-yuimi-article-page="true"] .kisara-prose h2 {
   counter-increment: kisara-article-section;
   margin: 4.4rem 0 1.55rem;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(2rem, calc(4vw / var(--kisara-scale, 1)), 2.75rem);
   font-weight: 400;
   line-height: 1.12;
 }
@@ -364,7 +364,7 @@ body[data-yuimi-article-page="true"] .kisara-toc-heading strong {
 body[data-yuimi-article-page="true"] .kisara-toc nav {
   display: grid;
   gap: 2px;
-  max-height: calc(100vh - 188px);
+  max-height: calc(calc(100vh / var(--kisara-scale, 1)) - 188px);
   padding-right: 10px;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -517,7 +517,7 @@ body[data-yuimi-article-page="true"] .kisara-reading-progress span {
   }
 
   body[data-yuimi-article-page="true"] .kisara-article-header h1 {
-    font-size: clamp(2.65rem, 13vw, 3.7rem);
+    font-size: clamp(2.65rem, calc(13vw / var(--kisara-scale, 1)), 3.7rem);
   }
 
   body[data-yuimi-article-page="true"] .kisara-article-header > p:not(.kisara-section-index) {

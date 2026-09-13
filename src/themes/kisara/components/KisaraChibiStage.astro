@@ -468,7 +468,7 @@ const characters = [
     top: 0;
     left: 0;
     display: block;
-    width: clamp(124px, 14.2vw, 176px);
+    width: clamp(124px, calc(14.2vw / var(--kisara-scale, 1)), 176px);
     padding: 0;
     color: inherit;
     border: 0;
@@ -517,19 +517,19 @@ const characters = [
 
   .kisara-chibi[data-chibi="ayano"] {
     --chibi-acrylic: 104, 156, 255;
-    width: clamp(112px, 12.7vw, 158px);
+    width: clamp(112px, calc(12.7vw / var(--kisara-scale, 1)), 158px);
     aspect-ratio: 149 / 236;
   }
 
   .kisara-chibi[data-chibi="sharon"] {
     --chibi-acrylic: 177, 139, 255;
-    width: clamp(132px, 15.2vw, 188px);
+    width: clamp(132px, calc(15.2vw / var(--kisara-scale, 1)), 188px);
     aspect-ratio: 196 / 241;
   }
 
   .kisara-chibi[data-chibi="shu"] {
     --chibi-acrylic: 124, 181, 150;
-    width: clamp(112px, 12.8vw, 158px);
+    width: clamp(112px, calc(12.8vw / var(--kisara-scale, 1)), 158px);
     aspect-ratio: 177 / 266;
   }
 
@@ -731,8 +731,8 @@ const characters = [
   }
 
   .kisara-chibi-bubble.is-image {
-    top: calc(-24% - clamp(56px, 5vw, 70px));
-    width: clamp(108px, 10vw, 138px);
+    top: calc(-24% - clamp(56px, calc(5vw / var(--kisara-scale, 1)), 70px));
+    width: clamp(108px, calc(10vw / var(--kisara-scale, 1)), 138px);
     min-width: 0;
     min-height: 0;
     padding: 3px;
@@ -802,12 +802,12 @@ const characters = [
     }
 
     .kisara-chibi {
-      width: clamp(110px, 31vw, 142px);
+      width: clamp(110px, calc(31vw / var(--kisara-scale, 1)), 142px);
     }
 
     .kisara-chibi[data-chibi="ayano"],
-    .kisara-chibi[data-chibi="shu"] { width: clamp(100px, 27vw, 128px); }
-    .kisara-chibi[data-chibi="sharon"] { width: clamp(116px, 33vw, 150px); }
+    .kisara-chibi[data-chibi="shu"] { width: clamp(100px, calc(27vw / var(--kisara-scale, 1)), 128px); }
+    .kisara-chibi[data-chibi="sharon"] { width: clamp(116px, calc(33vw / var(--kisara-scale, 1)), 150px); }
 
     .kisara-chibi-bubble {
       top: -18%;

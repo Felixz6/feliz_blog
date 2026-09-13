@@ -82,6 +82,7 @@ export function bindWorksPage() {
   document.addEventListener("astro:before-swap", cleanup, { once: true, signal });
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const displayScale = Number.parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
   const performanceTier = document.documentElement.dataset.yuimiPerformance;
   const heroReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     || performanceTier === "mobile"
@@ -98,7 +99,7 @@ export function bindWorksPage() {
     const rect = hero.getBoundingClientRect();
     const field = sliceField.getBoundingClientRect();
     heroBounds = { left: rect.left, top: rect.top + window.scrollY, width: rect.width, height: rect.height };
-    sliceFieldBounds = { left: field.left, top: field.top + window.scrollY, width: field.width, height: field.height };
+    sliceFieldBounds = { left: field.left, top: field.top + window.scrollY, width: sliceField.clientWidth, height: sliceField.clientHeight };
   };
   cacheHeroGeometry();
   if (hero instanceof HTMLElement && typeof ResizeObserver === "function") {
@@ -638,8 +639,8 @@ export function bindWorksPage() {
     if (!fruitPhysicsEnabled || !fruitPhysicsVisible || document.hidden || !(sliceField instanceof HTMLElement)) return;
     const fieldRect = sliceFieldBounds;
     const point = {
-      x: event.clientX - fieldRect.left,
-      y: event.clientY + window.scrollY - fieldRect.top,
+      x: (event.clientX - fieldRect.left) / displayScale,
+      y: (event.clientY + window.scrollY - fieldRect.top) / displayScale,
       time: event.timeStamp || performance.now()
     };
     if (point.x < 0 || point.y < 0 || point.x > fieldRect.width || point.y > fieldRect.height) {
@@ -1209,7 +1210,7 @@ export function bindWorksPage() {
     const rotationEase = 1 - Math.pow(0.68, frameScale);
     dragState.rotation += (dragState.targetRotation - dragState.rotation) * rotationEase;
     const lift = Math.min(1.055, 1.018 + Math.hypot(dragState.pointerVelocityX, dragState.pointerVelocityY) * 0.0022);
-    dragGhost.style.transform = `translate3d(${dragState.renderX}px, ${dragState.renderY}px, 0) rotate(${dragState.rotation}deg) scale(${lift})`;
+    dragGhost.style.transform = `translate3d(${dragState.renderX / displayScale}px, ${dragState.renderY / displayScale}px, 0) rotate(${dragState.rotation}deg) scale(${lift})`;
     dragGhost.style.setProperty("--drag-speed", String(Math.min(1, Math.hypot(dragState.pointerVelocityX, dragState.pointerVelocityY) / 32)));
     dragFrame = requestAnimationFrame(updateDragPosition);
   };
@@ -1223,10 +1224,10 @@ export function bindWorksPage() {
     dragGhost = null;
     if (!(ghost instanceof HTMLElement)) return;
     settlingGhosts.add(ghost);
-    const startTransform = `translate3d(${state.renderX}px, ${state.renderY}px, 0) rotate(${state.rotation}deg) scale(1.03)`;
+    const startTransform = `translate3d(${state.renderX / displayScale}px, ${state.renderY / displayScale}px, 0) rotate(${state.rotation}deg) scale(1.03)`;
     const endTransform = accepted
-      ? `translate3d(${state.renderX + state.velocityX * 0.7}px, ${state.renderY + state.velocityY * 0.7 + 7}px, 0) rotate(${state.rotation * 0.55}deg) scale(0.76)`
-      : `translate3d(${state.originGhostX}px, ${state.originGhostY}px, 0) rotate(${state.baseRotation}deg) scale(0.94)`;
+      ? `translate3d(${(state.renderX + state.velocityX * 0.7) / displayScale}px, ${(state.renderY + state.velocityY * 0.7 + 7) / displayScale}px, 0) rotate(${state.rotation * 0.55}deg) scale(0.76)`
+      : `translate3d(${state.originGhostX / displayScale}px, ${state.originGhostY / displayScale}px, 0) rotate(${state.baseRotation}deg) scale(0.94)`;
     const animation = ghost.animate(
       [
         { transform: startTransform, opacity: 0.94, filter: "saturate(1.08) blur(0px)" },
@@ -1338,7 +1339,7 @@ export function bindWorksPage() {
         const shouldShow = Boolean(dragState || inPantry || (inBoard && !inBoardAction));
         customPointer.dataset.visible = String(shouldShow);
         customPointer.dataset.mode = dragState?.moved ? "grab" : inBoard ? "blade" : "hand";
-        customPointer.style.transform = `translate3d(${pendingPointer.x}px, ${pendingPointer.y}px, 0)`;
+        customPointer.style.transform = `translate3d(${pendingPointer.x / displayScale}px, ${pendingPointer.y / displayScale}px, 0)`;
       });
     }
 
@@ -1349,7 +1350,7 @@ export function bindWorksPage() {
       const ghostWidth = dragState.source === "pantry"
         ? Math.min(184, Math.max(118, dragState.originRect.width))
         : Math.min(178, Math.max(142, dragState.originRect.width));
-      dragGhost = createDragGhost(dragState.element, ghostWidth);
+      dragGhost = createDragGhost(dragState.element, ghostWidth / displayScale);
       const ghostRect = dragGhost.getBoundingClientRect();
       dragState.ghostWidth = ghostRect.width;
       dragState.ghostHeight = ghostRect.height;
@@ -1359,7 +1360,7 @@ export function bindWorksPage() {
       dragState.renderY = dragState.originGhostY;
       dragState.targetX = event.clientX - ghostRect.width * dragState.anchorX;
       dragState.targetY = event.clientY - ghostRect.height * dragState.anchorY;
-      dragGhost.style.transform = `translate3d(${dragState.originGhostX}px, ${dragState.originGhostY}px, 0) rotate(${dragState.baseRotation}deg) scale(1.018)`;
+      dragGhost.style.transform = `translate3d(${dragState.originGhostX / displayScale}px, ${dragState.originGhostY / displayScale}px, 0) rotate(${dragState.baseRotation}deg) scale(1.018)`;
       dragState.element.classList.add("is-drag-source");
       root.dataset.dragging = "true";
       queueDragPosition();

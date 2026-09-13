@@ -3,7 +3,7 @@ body[data-kisara-page="friends"] {
 }
 
 body[data-kisara-page="friends"] .kisara-main {
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   background: #0c1230;
 }
 
@@ -16,7 +16,7 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
   --friends-pointer-x: 0px;
   --friends-pointer-y: 0px;
   position: relative;
-  min-height: 100svh;
+  min-height: calc(100svh / var(--kisara-scale, 1));
   overflow: hidden;
   isolation: isolate;
   color: #f7f3f6;
@@ -45,10 +45,10 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
 }
 
 .kisara-friends::after {
-  right: -8vw;
-  bottom: -22vh;
-  left: 12vw;
-  height: 42vh;
+  right: calc(-8vw / var(--kisara-scale, 1));
+  bottom: calc(-22vh / var(--kisara-scale, 1));
+  left: calc(12vw / var(--kisara-scale, 1));
+  height: calc(42vh / var(--kisara-scale, 1));
   opacity: 0.68;
   background: linear-gradient(180deg, transparent, rgba(255, 132, 186, 0.15));
   filter: blur(32px);
@@ -118,9 +118,9 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
   box-shadow: 0 0 16px rgba(131, 183, 255, 0.82);
 }
 
-.orbit-one { top: -17vh; right: -10vw; width: 62vw; height: 58vw; }
-.orbit-two { right: 11vw; bottom: -31vh; width: 48vw; height: 40vw; opacity: 0.54; animation-direction: reverse; animation-duration: 25s; }
-.orbit-three { top: 24%; left: -22vw; width: 38vw; height: 30vw; opacity: 0.32; animation-duration: 30s; }
+.orbit-one { top: calc(-17vh / var(--kisara-scale, 1)); right: calc(-10vw / var(--kisara-scale, 1)); width: calc(62vw / var(--kisara-scale, 1)); height: calc(58vw / var(--kisara-scale, 1)); }
+.orbit-two { right: calc(11vw / var(--kisara-scale, 1)); bottom: calc(-31vh / var(--kisara-scale, 1)); width: calc(48vw / var(--kisara-scale, 1)); height: calc(40vw / var(--kisara-scale, 1)); opacity: 0.54; animation-direction: reverse; animation-duration: 25s; }
+.orbit-three { top: 24%; left: calc(-22vw / var(--kisara-scale, 1)); width: calc(38vw / var(--kisara-scale, 1)); height: calc(30vw / var(--kisara-scale, 1)); opacity: 0.32; animation-duration: 30s; }
 
 .kisara-friends-thread {
   position: absolute;
@@ -141,8 +141,8 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
   position: relative;
   z-index: 3;
   width: min(510px, calc(100% - 48px));
-  margin: 0 clamp(24px, 9vw, 150px);
-  padding-top: clamp(126px, 18vh, 190px);
+  margin: 0 clamp(24px, calc(9vw / var(--kisara-scale, 1)), 150px);
+  padding-top: clamp(126px, calc(18vh / var(--kisara-scale, 1)), 190px);
 }
 
 .kisara-friends-kicker {
@@ -169,14 +169,14 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
 .kisara-friends-heading h1 {
   margin: 22px 0 0;
   color: #fff7fa;
-  font: 500 clamp(4rem, 7vw, 7.8rem)/0.82 Georgia, "Times New Roman", serif;
+  font: 500 clamp(4rem, calc(7vw / var(--kisara-scale, 1)), 7.8rem)/0.82 Georgia, "Times New Roman", serif;
   letter-spacing: 0;
   text-shadow: 0 9px 38px rgba(7, 8, 25, 0.42);
 }
 
 .kisara-friends-heading h1 em {
   display: inline-block;
-  margin-left: clamp(24px, 5vw, 74px);
+  margin-left: clamp(24px, calc(5vw / var(--kisara-scale, 1)), 74px);
   color: #ff9ac3;
   font-size: 0.68em;
   font-style: italic;
@@ -203,9 +203,9 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
 .kisara-friends-stage {
   position: absolute;
   z-index: 4;
-  top: clamp(142px, 20vh, 220px);
-  right: clamp(24px, 7vw, 120px);
-  width: min(520px, 41vw);
+  top: clamp(142px, calc(20vh / var(--kisara-scale, 1)), 220px);
+  right: clamp(24px, calc(7vw / var(--kisara-scale, 1)), 120px);
+  width: min(520px, calc(41vw / var(--kisara-scale, 1)));
   padding: 25px 26px 21px;
   background: linear-gradient(145deg, rgba(12, 18, 50, 0.34), rgba(255, 189, 221, 0.08));
   border-left: 1px solid rgba(255, 196, 224, 0.44);
@@ -322,8 +322,8 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
 .kisara-friends-side-note {
   position: absolute;
   z-index: 4;
-  right: clamp(36px, 7vw, 120px);
-  bottom: clamp(36px, 9vh, 92px);
+  right: clamp(36px, calc(7vw / var(--kisara-scale, 1)), 120px);
+  bottom: clamp(36px, calc(9vh / var(--kisara-scale, 1)), 92px);
   display: grid;
   grid-template-columns: 28px auto;
   gap: 10px;
@@ -340,8 +340,8 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
 .kisara-friends-back-link {
   position: absolute;
   z-index: 5;
-  bottom: clamp(35px, 8vh, 82px);
-  left: clamp(24px, 9vw, 150px);
+  bottom: clamp(35px, calc(8vh / var(--kisara-scale, 1)), 82px);
+  left: clamp(24px, calc(9vw / var(--kisara-scale, 1)), 150px);
   display: inline-flex;
   gap: 9px;
   align-items: center;
@@ -369,9 +369,9 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
 }
 
 @media (max-width: 620px) {
-  .kisara-friends { min-height: max(980px, 100svh); }
+  .kisara-friends { min-height: max(980px, calc(100svh / var(--kisara-scale, 1))); }
   .kisara-friends-heading { width: calc(100% - 40px); margin-inline: 20px; padding-top: 106px; }
-  .kisara-friends-heading h1 { margin-top: 18px; font-size: clamp(3.5rem, 17vw, 5.6rem); }
+  .kisara-friends-heading h1 { margin-top: 18px; font-size: clamp(3.5rem, calc(17vw / var(--kisara-scale, 1)), 5.6rem); }
   .kisara-friends-heading h1 em { margin-left: 26px; }
   .kisara-friends-lead { margin-top: 25px; font-size: 0.88rem; line-height: 1.76; }
   .kisara-friends-note { font-size: 0.66rem; }
@@ -381,9 +381,9 @@ body[data-kisara-page="friends"] .kisara-header.is-inner-header {
   .kisara-friends-slot-copy strong { font-size: 0.62rem; }
   .kisara-friends-slot-copy small { font-size: 0.62rem; }
   .kisara-friends-back-link { left: 20px; bottom: 28px; font-size: 0.52rem; }
-  .orbit-one { top: 9%; right: -58vw; width: 122vw; height: 108vw; }
-  .orbit-two { right: -33vw; bottom: -9%; width: 100vw; height: 82vw; }
-  .orbit-three { top: 28%; left: -58vw; width: 98vw; height: 76vw; }
+  .orbit-one { top: 9%; right: calc(-58vw / var(--kisara-scale, 1)); width: calc(122vw / var(--kisara-scale, 1)); height: calc(108vw / var(--kisara-scale, 1)); }
+  .orbit-two { right: calc(-33vw / var(--kisara-scale, 1)); bottom: -9%; width: calc(100vw / var(--kisara-scale, 1)); height: calc(82vw / var(--kisara-scale, 1)); }
+  .orbit-three { top: 28%; left: calc(-58vw / var(--kisara-scale, 1)); width: calc(98vw / var(--kisara-scale, 1)); height: calc(76vw / var(--kisara-scale, 1)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

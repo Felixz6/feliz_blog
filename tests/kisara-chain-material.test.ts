@@ -453,7 +453,7 @@ test("the long left chain turns back into s while the right return stays behind 
     const sample = sampleTitleChainCurve(right, i / 100);
     assert.equal(sample.plane, sample.x >= right.glyphBackZones[0].left ? "back" : "front");
   }
-  assert.ok(home.includes("arcPart, heat, !isFront"));
+  assert.ok(home.includes("arcPart, heat, occluded"));
 });
 
 test("a measured counter owns the right chain's front-to-back passage rather than a generic wave boundary", () => {
