@@ -121,9 +121,10 @@ function fixture() {
   const win = Object.assign(new EventTarget(), {
     innerHeight: 900, matchMedia: () => ({ matches: false }), setTimeout, clearTimeout,
   });
-  const previous = ["document", "window"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+  const previous = ["document", "window", "getComputedStyle"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
   Object.defineProperty(globalThis, "document", { configurable: true, value: doc });
   Object.defineProperty(globalThis, "window", { configurable: true, value: win });
+  Object.defineProperty(globalThis, "getComputedStyle", { configurable: true, value: () => ({ zoom: ".9" }) });
   return {
     scene: scene as unknown as HTMLElement, rawScene: scene, image, branches, groups,
     doc, win, nodes, animations,

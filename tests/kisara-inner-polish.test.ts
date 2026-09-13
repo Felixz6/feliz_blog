@@ -124,13 +124,13 @@ test("A visible half cannot be recycled because the other half has already falle
   assert.equal(f.queues.length, 1);
 });
 
-function pointerFixture() {
+function pointerFixture(scale = 1) {
   const cuts: any[] = [], trails: any[] = [];
   const fruit = new Element();
   const states = new Map<any, any>([[fruit, { x: 100, y: 100, hitRadiusX: 35, phase: "whole", isPig: false }]]);
   const geometry = between(works, "const pointToSegmentDistance =", "const appendSliceTrail =");
   const pointerSource = between(works, "const sliceHeroFruits =", "if (hero instanceof HTMLElement)");
-  const move = new Function("fruitPhysics", "cuts", "trails", "HTMLElement", "clamp", `
+  const move = new Function("fruitPhysics", "cuts", "trails", "HTMLElement", "clamp", "displayScale", `
     const sliceField = new HTMLElement(), sliceFieldBounds = { left: 0, top: 0, width: 600, height: 600 };
     const fruitPhysicsEnabled = true, fruitPhysicsVisible = true, document = { hidden: false }, window = { scrollY: 0 };
     let lastSlicePoint = null, lastSliceEventTime = 0;
@@ -140,7 +140,7 @@ function pointerFixture() {
     ${geometry}
     ${pointerSource}
     return sliceHeroFruits;
-  `)(states, cuts, trails, Element, clamp);
+  `)(states, cuts, trails, Element, clamp, scale);
   return { cuts, trails, states, move: (x: number, y: number, time: number) => move({ clientX: x, clientY: y, timeStamp: time }) };
 }
 
@@ -154,6 +154,19 @@ test("Slow one-pixel pointer samples accumulate into a cut instead of resetting 
   const still = pointerFixture();
   for (let i = 0; i < 10; i++) still.move(100, 100, 1000 + i * 8);
   assert.equal(still.cuts.length, 0);
+});
+
+test("A 90 percent fruit field retains the same body hit and tip-graze rejection", () => {
+  for (const y of [65, 80, 100, 120, 135]) {
+    const normal = pointerFixture();
+    const scaled = pointerFixture(.9);
+    normal.move(20, y, 1000);
+    normal.move(180, y, 1016);
+    scaled.move(18, y * .9, 1000);
+    scaled.move(162, y * .9, 1016);
+    assert.equal(scaled.cuts.length, normal.cuts.length);
+    assert.equal(scaled.trails.length, normal.trails.length);
+  }
 });
 
 test("Blade must enter the fruit body; tip grazes and old positions do not trigger cuts", () => {

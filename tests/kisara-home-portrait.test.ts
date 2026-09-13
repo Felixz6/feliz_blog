@@ -9,13 +9,14 @@ function fixture(reduced = false) {
     attributes = new Set<string>();
     hidden = false;
     image = { loading: "lazy" };
-    style = { setProperty() {} };
+    style = { setProperty(_key: string, _value: string) {} };
     setAttribute(key: string) { this.attributes.add(key); }
     removeAttribute(key: string) { this.attributes.delete(key); }
     hasAttribute(key: string) { return this.attributes.has(key); }
     querySelector(_selector: string): unknown { return this.image; }
   }
   const root = Object.assign(new Element(), {
+    clientWidth: 1440, clientHeight: 900,
     getBoundingClientRect: () => ({ width: 1440, height: 900 }),
     querySelectorAll: (selector: string) => selector === "[data-portrait-knife]" ? knives : frames,
   });
@@ -73,6 +74,25 @@ test("003 portrait stays attached to the mapped knife tip and its bubble fits na
     assert.ok(box.portraitX + half <= width - 19.99, `${width}: bubble right edge`);
     assert.ok(box.portraitY + box.size / 2 + 30 + 200 < height);
   }
+});
+
+test("003 uses unzoomed local geometry so media still covers the full 90 percent stage", () => {
+  const f = fixture();
+  const values = new Map<string, number>();
+  f.root.getBoundingClientRect = () => ({ width: 1296, height: 810 });
+  f.root.style.setProperty = (key: string, value: string) => { values.set(key, Number.parseFloat(value)); };
+  try {
+    // This runtime callback is also invoked after a ResizeObserver notification.
+    window.dispatchEvent(new Event("resize"));
+    const width = values.get("--board-width")!, height = values.get("--board-height")!;
+    const x = values.get("--board-x")!, y = values.get("--board-y")!;
+    assert.ok(x <= 0 && y <= 0);
+    assert.ok((width + x) * .9 >= 1296);
+    assert.ok((height + y) * .9 >= 810);
+    const expected = homePortraitLayout(1440, 900);
+    assert.equal(values.get("--portrait-x"), expected.portraitX);
+    assert.equal(values.get("--portrait-y"), expected.portraitY);
+  } finally { f.destroy(); }
 });
 
 test("003 expanded reaction and mobile caption have separate space inside the scene", () => {

@@ -10,7 +10,7 @@ const between = (start: string, end: string) => {
   return source.slice(a, b);
 };
 
-function fixture() {
+function fixture(scale = 1) {
   const doc: any = { activeElement: null };
   class Element extends EventTarget {
     hidden = true;
@@ -31,12 +31,12 @@ function fixture() {
   trigger.focus();
   const win = Object.assign(new EventTarget(), { innerWidth: 320, innerHeight: 568, clearTimeout() {} });
   const controller = new AbortController();
-  const runtime = new Function("menu", "document", "window", "HTMLElement", "Element", "Node", "items", "signal", `
+  const runtime = new Function("menu", "document", "window", "HTMLElement", "Element", "Node", "items", "signal", "getKisaraScale", `
     let returnFocus = null, menuSession = 0;
     const panelButton = null, clearFeedback = () => {}, closePanel = () => {};
     ${between("  const closeMenu =", '  panelButton?.addEventListener("click"')}
     return { showMenu, closeMenu, keepNativeMenu, session: () => menuSession };
-  `)(menu, doc, win, Element, Element, Element, items, controller.signal);
+  `)(menu, doc, win, Element, Element, Element, items, controller.signal, () => scale);
   return { runtime, menu, trigger, items, doc, win, Element, destroy: () => controller.abort() };
 }
 
@@ -72,6 +72,19 @@ test("Context menu arrow keys wrap, Home/End select boundaries and Tab dismisses
     assert.equal(f.doc.activeElement, f.items.at(-1));
     key("Tab");
     assert.equal(f.menu.hidden, true);
+  } finally { f.destroy(); }
+});
+
+test("Context menu converts viewport positions to the 90 percent theme coordinate space", () => {
+  const f = fixture(.9);
+  try {
+    f.runtime.showMenu(319, 567);
+    const left = Number.parseFloat(f.menu.style.left);
+    const top = Number.parseFloat(f.menu.style.top);
+    assert.ok(Math.abs((left + f.menu.offsetWidth + 12) * .9 - 320) < .001);
+    assert.ok(Math.abs((top + f.menu.offsetHeight + 12) * .9 - 568) < .001);
+    f.runtime.showMenu(100, 110);
+    assert.ok(Number.parseFloat(f.menu.style.left) * .9 <= 100);
   } finally { f.destroy(); }
 });
 

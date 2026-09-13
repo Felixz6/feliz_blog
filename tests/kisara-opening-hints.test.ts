@@ -69,7 +69,7 @@ test("Five page branches, four chapters, and page/chapter visit state survive re
 
 test("001 is opaque and viewport-filling with no old transparent bridge markup", () => {
   assert.match(home, /class="kisara-opening kisara-comic-section"/);
-  assert.match(css, /\.kisara-opening\.kisara-comic-section\s*\{[^}]*height: 100svh;[^}]*background: #fff;/);
+  assert.match(css, /\.kisara-opening\.kisara-comic-section\s*\{[^}]*height: calc\(100svh \/ var\(--kisara-scale, 1\)\);[^}]*background: #fff;/);
   assert.match(css, /\.kisara-comic-section::before, \.kisara-comic-section::after \{ content: none; \}/);
   assert.doesNotMatch(home, /class="kisara-opening-edge"|class="kisara-opening-inner"/);
   assert.doesNotMatch(readSource("src/themes/kisara/styles/home.css"), /\.kisara-opening/);
