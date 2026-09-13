@@ -25,16 +25,16 @@
 .kisara-comic-pages { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 14px; min-height: 0; }
 .kisara-comic-panel { position: relative; min-width: 0; min-height: 0; border: 2px solid var(--comic-ink); background: #f1f1f1; }
 .kisara-comic-panel > a { display: block; height: 100%; color: var(--comic-ink); text-decoration: none; }
-.kisara-comic-panel figure { position: relative; height: 100%; margin: 0; overflow: hidden; }
-.kisara-comic-panel img { width: 100%; height: 100%; object-fit: cover; object-position: center 24%; transition: transform 240ms var(--comic-ease); }
-.kisara-comic-panel noscript img { position: absolute; inset: 0; }
-.kisara-comic-panel.is-hero img { object-position: 50% 20%; }
-.kisara-comic-panel.is-quiet img { object-position: 50% 38%; }
-.kisara-comic-panel.is-action img { object-position: 50% 22%; }
-.kisara-comic-panel.is-smile img { object-position: 55% 40%; }
-.kisara-comic-panel.is-candle img { object-position: 50% 30%; }
+.kisara-comic-panel figure { display: grid; grid-template-rows: minmax(0,1fr) auto; height: 100%; min-height: 0; margin: 0; overflow: hidden; }
+.kisara-comic-panel-art { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #fff; }
+.kisara-comic-panel img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--comic-focus-x,50%) var(--comic-focus-y,30%); transform-origin: var(--comic-focus-x,50%) var(--comic-focus-y,30%); transition: transform 240ms var(--comic-ease); }
+.kisara-comic-panel.is-hero { --comic-focus-x: 50%; --comic-focus-y: 24%; }
+.kisara-comic-panel.is-quiet { --comic-focus-x: 52%; --comic-focus-y: 38%; }
+.kisara-comic-panel.is-action { --comic-focus-x: 50%; --comic-focus-y: 28%; }
+.kisara-comic-panel.is-smile { --comic-focus-x: 58%; --comic-focus-y: 43%; }
+.kisara-comic-panel.is-candle { --comic-focus-x: 50%; --comic-focus-y: 30%; }
 .kisara-comic-panel figcaption {
-  position: absolute; left: 0; right: 0; bottom: 0; display: grid;
+  position: relative; min-width: 0; display: grid;
   grid-template-columns: 22px minmax(0,1fr) 18px; align-items: center; gap: 6px 8px;
   padding: 15px 12px; border-top: 2px solid var(--comic-ink); background: #fff;
 }
@@ -83,7 +83,7 @@ body.kisara-home-page:not(.is-lovebrain-home-active):has(> .kisara-comic-flight)
 .kisara-comic-flight.is-leave { background: #000; }
 .kisara-comic-flight .is-hint-drawing .kisara-opening-easter-hint-copy::after { animation: none; }
 @media (hover: hover) and (pointer: fine) {
-  .kisara-comic-panel > a:hover img { transform: scale(1.025); }
+  .kisara-comic-panel > a:hover img { transform: scale(1.015); }
   .kisara-comic-panel > a:hover figcaption > svg { transform: translate(2px,-2px) rotate(-45deg); }
   .kisara-comic-route-details a:hover, .kisara-comic-next:hover { color: var(--comic-red); }
 }
@@ -108,13 +108,12 @@ body.kisara-home-page:not(.is-lovebrain-home-active):has(> .kisara-comic-flight)
   .kisara-comic-navigation { gap: 10px; grid-template-rows: minmax(0,1fr) 100px; }
   .kisara-comic-pages { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(3,minmax(0,1fr)); gap: 8px; }
   .kisara-comic-panel.is-hero { grid-column: 1/-1; }
-  .kisara-comic-panel.is-hero img { object-position: 50% 18%; }
-  .kisara-comic-panel figcaption { left: auto; right: 0; top: 0; bottom: 0; width: 74px; padding: 8px 6px; border-top: 0; border-left: 2px solid var(--comic-ink); grid-template-columns: 1fr 12px; align-content: end; gap: 4px; }
+  .kisara-comic-panel figure { grid-template-rows: minmax(0,1fr); grid-template-columns: minmax(0,1fr) 74px; }
+  .kisara-comic-panel figcaption { padding: 8px 6px; border-top: 0; border-left: 2px solid var(--comic-ink); grid-template-columns: minmax(0,1fr) 12px; align-content: end; gap: 4px; }
   .kisara-comic-page-number { grid-column: 1/-1; font-size: 9px; padding: 0; }
   .kisara-comic-page-name { font-size: 12px; }
   .kisara-comic-page-detail { display: none; }
   .kisara-comic-panel.is-active figcaption { border-left-color: var(--comic-red); }
-  .kisara-comic-panel figure > img, .kisara-comic-panel noscript img { width: calc(100% - 72px); }
   .kisara-comic-route-details section { grid-template-columns: 1fr; gap: 2px; }
   .kisara-comic-route-details h3 { padding: 0; font-size: 10px; }
   .kisara-comic-route-details ul { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 14px; }
@@ -150,8 +149,8 @@ body.kisara-home-page:not(.is-lovebrain-home-active):has(> .kisara-comic-flight)
   .kisara-comic-navigation { grid-template-rows: minmax(0,1fr) 52px; gap: 8px; }
   .kisara-comic-pages { grid-template-columns: repeat(5,minmax(0,1fr)); grid-template-rows: minmax(0,1fr); }
   .kisara-comic-panel.is-hero { grid-column: auto; }
-  .kisara-comic-panel figure > img, .kisara-comic-panel noscript img { width: 100%; }
-  .kisara-comic-panel figcaption { left: 0; top: auto; width: auto; grid-template-columns: 12px minmax(0,1fr) 12px; border-left: 0; border-top: 2px solid var(--comic-ink); }
+  .kisara-comic-panel figure { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+  .kisara-comic-panel figcaption { grid-template-columns: 12px minmax(0,1fr) 12px; border-left: 0; border-top: 2px solid var(--comic-ink); }
   .kisara-comic-page-number { grid-column: auto; }
   .kisara-comic-route-details section { grid-template-columns: 80px minmax(0,1fr); gap: 12px; }
   .kisara-comic-route-details ul { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }

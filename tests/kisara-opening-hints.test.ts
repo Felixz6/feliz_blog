@@ -78,7 +78,7 @@ test("001 is opaque and viewport-filling with no old transparent bridge markup",
 
 test("Comic assets are deferred; 001 no longer downloads or drives its former footage", () => {
   for (const id of ["quiet", "action", "smile", "candle"]) assert.match(opening, new RegExp(`id: "${id}"`));
-  assert.match(opening, /hero-hybrid\.webp/);
+  assert.match(opening, /hero-panel-v2\.webp/);
   assert.doesNotMatch(opening, /hero-structure\.svg|kisara-comic-portrait/);
   assert.match(opening, /data-comic-src/);
   assert.match(runtime, /await image\.decode\(\)/);
@@ -87,6 +87,48 @@ test("Comic assets are deferred; 001 no longer downloads or drives its former fo
   assert.doesNotMatch(runtime, /requestAnimationFrame|setInterval/);
   assert.match(runtime, /observer\.disconnect\(\)/);
   assert.match(runtime, /serial !== generation/);
+});
+
+test("comic artwork and captions have separate responsive grid tracks", () => {
+  assert.match(opening, /<div class="kisara-comic-panel-art">\s*<img data-comic-src/);
+  assert.match(opening, /<\/noscript>\s*<\/div>\s*<figcaption>/);
+  assert.match(css, /\.kisara-comic-panel figure \{[^}]*grid-template-rows: minmax\(0,1fr\) auto/);
+  assert.match(css, /\.kisara-comic-panel-art \{[^}]*min-height: 0;[^}]*overflow: hidden/);
+  const caption = css.match(/\.kisara-comic-panel figcaption \{([^}]+)\}/)![1];
+  assert.match(caption, /position: relative/);
+  assert.doesNotMatch(caption, /position: absolute/);
+  assert.match(css, /grid-template-columns: minmax\(0,1fr\) 74px/);
+  assert.doesNotMatch(css, /width: calc\(100% - 72px\)/);
+  for (const id of ["hero", "quiet", "action", "smile", "candle"]) {
+    assert.match(css, new RegExp(`\\.kisara-comic-panel\\.is-${id} \\{[^}]*--comic-focus-x:[^}]*--comic-focus-y:`));
+  }
+  assert.match(css, /object-position: var\(--comic-focus-x,50%\) var\(--comic-focus-y,30%\)/);
+  assert.match(css, /transform: scale\(1\.015\)/);
+});
+
+test("the home background and Works portrait use full panels without replacing archived artwork", async () => {
+  const { default: sharp } = await import("sharp");
+  const root = "../public/themes/kisara/assets/home-comic/";
+  const hero = readFileSync(new URL(`${root}hero-panel-v2.webp`, import.meta.url));
+  assert.deepEqual(hero, readFileSync(new URL("../design/kisara-comic-001/assets/panel-clean.webp", import.meta.url)));
+  const heroMeta = await sharp(hero).metadata();
+  assert.equal(heroMeta.hasAlpha, false);
+  assert.deepEqual([heroMeta.width, heroMeta.height], [752, 1148]);
+  const smile = readFileSync(new URL(`${root}smile-panel-v2.webp`, import.meta.url));
+  const smileMeta = await sharp(smile).metadata();
+  assert.deepEqual([smileMeta.width, smileMeta.height], [738, 1244]);
+  assert.equal(smileMeta.hasAlpha, false);
+  assert.match(opening, /file: "smile-panel-v2\.webp", width: 738, height: 1244/);
+  assert.doesNotMatch(opening, /file: "smile\.webp"|file: "hero-hybrid\.webp"/);
+  let total = hero.length + smile.length;
+  for (const name of ["quiet", "action", "candle"]) {
+    total += statSync(new URL(`${root}${name}.webp`, import.meta.url)).size;
+  }
+  assert.ok(total < 450_000, "Full-panel framing must retain a bounded five-image payload");
+  for (const bytes of [hero, smile]) {
+    const pixels = await sharp(bytes).resize({ width: 180 }).stats();
+    assert.ok(pixels.channels[0].stdev > 20);
+  }
 });
 
 test("Comic entrance and return retain paper spread without a standalone portrait or page sliding", () => {

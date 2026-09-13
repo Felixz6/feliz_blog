@@ -4,10 +4,10 @@ import { hiddenRoutes, routeBranches } from "../data/openingRoutes";
 
 const assetRoot = "/themes/kisara/assets/home-comic";
 const panels = {
-  home: { id: "hero", file: "hero-hybrid.webp", width: 752, height: 1148 },
+  home: { id: "hero", file: "hero-panel-v2.webp", width: 752, height: 1148 },
   blog: { id: "quiet", file: "quiet.webp", width: 430, height: 583 },
   games: { id: "action", file: "action.webp", width: 454, height: 720 },
-  projects: { id: "smile", file: "smile.webp", width: 610, height: 560 },
+  projects: { id: "smile", file: "smile-panel-v2.webp", width: 738, height: 1244 },
   about: { id: "candle", file: "candle.webp", width: 310, height: 644 },
 };
 ---
@@ -27,8 +27,10 @@ const panels = {
         <li class:list={["kisara-comic-branch", "kisara-comic-panel", `is-${panel.id}`, { "is-active": branch.id === "home" }]} data-kisara-route-branch={branch.id}>
           <a href={branch.href} data-kisara-route-kind="page" data-kisara-route-id={branch.id} data-astro-prefetch="hover" aria-expanded={branch.id === "home"} aria-controls={`comic-routes-${branch.id}`} aria-label={`${branch.label}：${branch.detail}`}>
             <figure>
-              <img data-comic-src={`${assetRoot}/${panel.file}`} width={panel.width} height={panel.height} decoding="async" alt="" />
-              <noscript><img src={`${assetRoot}/${panel.file}`} width={panel.width} height={panel.height} alt="" /></noscript>
+              <div class="kisara-comic-panel-art">
+                <img data-comic-src={`${assetRoot}/${panel.file}`} width={panel.width} height={panel.height} decoding="async" alt="" />
+                <noscript><img src={`${assetRoot}/${panel.file}`} width={panel.width} height={panel.height} alt="" /></noscript>
+              </div>
               <figcaption>
                 <span class="kisara-comic-page-number">{String(index + 1).padStart(2, "0")}</span>
                 <span class="kisara-comic-page-name">{branch.label}</span>
