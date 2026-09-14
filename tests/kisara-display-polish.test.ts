@@ -132,6 +132,65 @@ test("004 fills the viewport at 90 percent without narrowing the section backgro
   assert.match(component, /calc\(7vw \/ var\(--kisara-scale, 1\)\)/);
 });
 
+test("Blog hero fills the viewport and its reading banner escapes only the archive column", () => {
+  const css = postcss.parse(read("src/themes/kisara/styles/blog.css"));
+  const heights: string[] = [];
+  const banner = new Map<string, string>();
+  css.walkRules(rule => {
+    if (rule.selector === ".kisara-blog-hero") {
+      rule.walkDecls("min-height", decl => { heights.push(decl.value); });
+    }
+    if (rule.selector === ".kisara-blog-archive-heading") {
+      rule.walkDecls(decl => { banner.set(decl.prop, decl.value); });
+    }
+  });
+  assert.deepEqual(heights.slice(-2), [
+    "max(680px, calc(100svh / var(--kisara-scale, 1)))",
+    "max(720px, calc(100svh / var(--kisara-scale, 1)))",
+  ]);
+  assert.equal(banner.get("width"), "calc(100vw / var(--kisara-scale, 1))");
+  assert.equal(banner.get("margin-inline"), "calc(50% - 50vw / var(--kisara-scale, 1))");
+  assert.equal(banner.get("min-height"), "420px"); // Existing mobile composition remains intact.
+  assert.match(read("src/themes/kisara/styles/blog.css"), /width: min\(1180px, calc\(100% - 48px\)\)/);
+  for (const scale of [.9, 1]) {
+    for (const [width, height] of [[390, 844], [768, 1024], [1440, 900], [2330, 1024]]) {
+      const viewport = width / scale;
+      const archive = Math.min(1180, viewport - 48);
+      const bannerLeft = (viewport - archive) / 2 + archive / 2 - viewport / 2;
+      assert.ok(Math.abs(bannerLeft * scale) < 1e-9);
+      assert.ok(Math.abs((bannerLeft + viewport) * scale - width) < 1e-9);
+      assert.ok(Math.max(width <= 560 ? 720 : 680, height / scale) * scale >= height);
+    }
+  }
+});
+
+test("Blog cast shrinks as one group and hit geometry follows its transformed bounds", () => {
+  const css = postcss.parse(read("src/themes/kisara/styles/blog.css"));
+  let transform = "";
+  css.walkRules(rule => {
+    if (rule.selector.split(",").map(selector => selector.trim()).includes(".kisara-blog-character-stage")) {
+      rule.walkDecls("transform", decl => { transform = decl.value; });
+    }
+  });
+  assert.equal(transform, "translate3d(0, -50%, 0) scale(.92)");
+  const source = range(read("src/themes/kisara/lib/blogPage.js"),
+    "  const cacheCastGeometry =", "  const prepareCastHitMasks =");
+  const masks = [{ image: {}, rect: null as any }];
+  class Stage {
+    getBoundingClientRect() { return { left: 60, top: -20, width: 1440 * .9 * .92, height: 975 * .9 * .92 }; }
+  }
+  const cache = vm.runInNewContext(`${source}; cacheCastGeometry`, {
+    hero: { querySelector: () => new Stage() }, HTMLElement: Stage, castHitMasks: masks,
+    window: { scrollY: 100 },
+    getComputedStyle: () => ({ getPropertyValue: (key: string) => key === "--cast-x" ? "-1.2%" : "4.4%" }),
+  });
+  cache();
+  assert.equal(masks[0].rect.width, 1440 * .9 * .92);
+  assert.equal(masks[0].rect.height, 975 * .9 * .92);
+  assert.equal(masks[0].rect.left, 60 + -1.2 * masks[0].rect.width / 100);
+  assert.equal(masks[0].rect.top, 80 + 4.4 * masks[0].rect.height / 100);
+});
+
 test("A split ring keeps identical material and opacity on both glyph depth layers", () => {
   const source = range(home, "      const drawChainLinkArc =", "      const drawChainLayer =");
   const draws: { alpha: number; shaded: boolean }[] = [];
