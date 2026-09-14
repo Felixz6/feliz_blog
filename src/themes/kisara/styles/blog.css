@@ -536,12 +536,15 @@ body[data-kisara-page="blog"]:not([data-yuimi-article-page]) .kisara-footer::bef
 
 .kisara-blog-archive-heading {
   position: relative;
+  /* Only the reading scene escapes the archive's constrained content column. */
+  width: calc(100vw / var(--kisara-scale, 1));
+  margin-inline: calc(50% - 50vw / var(--kisara-scale, 1));
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
   grid-template-rows: 1fr auto;
   gap: 22px 54px;
   align-items: end;
-  min-height: clamp(320px, calc(30vw / var(--kisara-scale, 1)), 400px);
+  min-height: clamp(320px, calc(30vw / var(--kisara-scale, 1)), calc(400px / var(--kisara-scale, 1)));
   padding: clamp(38px, calc(5vw / var(--kisara-scale, 1)), 64px) clamp(30px, calc(4.5vw / var(--kisara-scale, 1)), 56px) 46px;
   border-bottom: 1px solid rgba(145, 177, 255, 0.28);
   isolation: isolate;
@@ -2258,7 +2261,7 @@ body[data-kisara-page="blog"]:not([data-yuimi-article-page]) .kisara-footer::bef
   width: min(calc(116vw / var(--kisara-scale, 1)), 1880px);
   opacity: 1;
   filter: none;
-  transform: translate3d(0, -50%, 0) scale(1);
+  transform: translate3d(0, -50%, 0) scale(.92);
   transform-origin: 60% 58%;
 }
 
@@ -2814,7 +2817,7 @@ body[data-kisara-page="blog"]:not([data-yuimi-article-page]) .kisara-footer::bef
 }
 
 /* The settled cast retains its original registration; entry and focus share one short motion treatment. */
-.kisara-blog-hero { min-height: max(680px, calc(92svh / var(--kisara-scale, 1))); background: #141416; }
+.kisara-blog-hero { min-height: max(680px, calc(100svh / var(--kisara-scale, 1))); background: #141416; }
 .kisara-blog-hero .kisara-blog-copy-stack { top: 20%; width: min(42%, 520px); }
 .kisara-blog-hero .kisara-blog-index-spine h1 {
   gap: 20px;
@@ -2890,7 +2893,7 @@ body[data-kisara-page="blog"]:not([data-yuimi-article-page]) .kisara-footer::bef
   .kisara-blog-hero .kisara-blog-index-spine h1 em { font-size: 24px; }
 }
 @media (max-width: 560px) {
-  .kisara-blog-hero { min-height: max(720px, calc(92svh / var(--kisara-scale, 1))); }
+  .kisara-blog-hero { min-height: max(720px, calc(100svh / var(--kisara-scale, 1))); }
   .kisara-blog-hero .kisara-blog-copy-stack { top: 108px; left: 22px; width: calc(100% - 44px); }
   .kisara-blog-hero .kisara-blog-index-spine h1 { font-size: 64px; gap: 12px; }
   .kisara-blog-hero .kisara-blog-index-spine h1 em { font-size: 23px; }
