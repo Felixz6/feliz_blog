@@ -169,9 +169,10 @@ test("Fridge buffering does not reload or finish the scene on its short watchdog
   assert.equal(recoveries, 1);
 });
 
-test("Works starts content independently, preserves an in-flight request and recovers late video", () => {
+test("Works starts content independently, initializes unready route media and recovers late video", () => {
   const prep = works.slice(works.indexOf("const prepareHeroVideo ="), works.indexOf("const playHeroIntro ="));
-  assert.match(prep, /if \(heroVideo\.networkState === 0\) heroVideo\.load\(\)/);
+  assert.doesNotMatch(prep, /if \(heroVideo\.networkState === 0\)/);
+  assert.match(prep, /heroVideo\.load\(\)/);
   assert.match(prep, /removeEventListener\("loadeddata", loaded\)/);
   const intro = works.slice(works.indexOf("const playHeroIntro ="), works.indexOf("const syncHeroScroll ="));
   assert.doesNotMatch(intro, /await prepareHeroVideo/);
