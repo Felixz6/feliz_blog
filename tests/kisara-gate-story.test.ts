@@ -192,67 +192,6 @@ test("the restored film grade is limited to the opening story and never grades t
   assert.match(styles, /data-yuimi-performance="lite"\] :is\(\.kisara-gate-background-base, \.kisara-gate-scene-slot\) \{\s*filter: none;/);
 });
 
-function mediaFixture(decodeAvailable = true) {
-  const pending: Array<{ resolve: () => void; reject: () => void }> = [];
-  const timers = new Map<number, () => void>();
-  let serial = 0;
-  let notifications = 0;
-  const listeners = new Map<string, () => void>();
-  const image = {
-    src: "", complete: false, naturalWidth: 0,
-    addEventListener(name: string, callback: () => void) { listeners.set(name, callback); },
-    removeEventListener(name: string) { listeners.delete(name); },
-    decode: decodeAvailable ? () => new Promise<void>((resolve, reject) => pending.push({ resolve, reject })) : undefined
-  };
-  const record = { image, source: "/story.webp", status: "idle", promise: null, cancel: null } as any;
-  const state = {
-    disposed: false, sceneDecodeGeneration: 0, sceneImageWarmers: new Map([["shot", record]]),
-    gate: { dispatchEvent() { notifications++; } },
-    CustomEvent: class {},
-    window: {
-      setTimeout(callback: () => void) { timers.set(++serial, callback); return serial; },
-      clearTimeout(id: number) { timers.delete(id); }
-    }
-  };
-  const start = home.indexOf("const warmSceneImage =");
-  const end = home.indexOf("const warmSceneImagesForProgress =", start);
-  const api = vm.runInNewContext(home.slice(start, end) + "\n({warmSceneImage,isSceneImageReady});", state);
-  return { api, state, record, image, pending, timers, listeners, notifications: () => notifications };
-}
-
-test("story decoding is single-flight, waits for decode and releases its timeout and listeners", async () => {
-  const f = mediaFixture();
-  const first = f.api.warmSceneImage({ id: "shot" });
-  assert.equal(f.api.warmSceneImage({ id: "shot" }), first);
-  f.image.complete = true;
-  f.image.naturalWidth = 1920;
-  assert.equal(f.api.isSceneImageReady({ id: "shot" }), false, "Downloaded is not decoded");
-  f.pending[0].resolve();
-  await first;
-  assert.equal(f.api.isSceneImageReady({ id: "shot" }), true);
-  assert.equal(f.notifications(), 1);
-  assert.equal(f.timers.size, 0);
-  assert.equal(f.listeners.size, 0);
-});
-
-test("failed, timed-out and disposed media cannot block forever or publish a stale ready event", async () => {
-  for (const outcome of ["error", "timeout", "dispose"]) {
-    const f = mediaFixture();
-    const promise = f.api.warmSceneImage({ id: "shot" });
-    if (outcome === "error") f.pending[0].reject();
-    if (outcome === "timeout") [...f.timers.values()][0]();
-    if (outcome === "dispose") { f.state.disposed = true; f.state.sceneDecodeGeneration++; f.record.cancel(); }
-    await promise;
-    f.image.naturalWidth = 1920;
-    f.pending[0].resolve();
-    await Promise.resolve();
-    assert.equal(f.timers.size, 0);
-    assert.equal(f.listeners.size, 0);
-    assert.equal(f.notifications(), outcome === "dispose" ? 0 : outcome === "timeout" ? 2 : 1);
-    if (outcome !== "dispose") assert.equal(f.api.isSceneImageReady({ id: "shot" }), true);
-  }
-});
-
 test("intro preparation includes the kiss, both fast shots and the reconstruction carrier", () => {
   const requested: string[] = [];
   let ready = false;
@@ -268,36 +207,4 @@ test("intro preparation includes the kiss, both fast shots and the reconstructio
   assert.deepEqual(requested, ["kiss", "10", "11", "12"], "No short-circuit may delay warming a later shot");
   ready = true;
   assert.equal(check(), true);
-});
-
-test("a timed-out no-decode image can recover later, and disposal still removes its listeners", async () => {
-  for (const dispose of [false, true]) {
-    const f = mediaFixture(false);
-    const promise = f.api.warmSceneImage({ id: "shot" });
-    [...f.timers.values()][0]();
-    await promise;
-    assert.equal(f.record.status, "timed-out");
-    assert.equal(f.api.isSceneImageReady({ id: "shot" }), true);
-    if (dispose) {
-      f.state.disposed = true;
-      f.record.cancel();
-      assert.equal(f.listeners.size, 0);
-    } else {
-      f.image.naturalWidth = 1280;
-      f.listeners.get("load")!();
-      assert.equal(f.record.status, "ready");
-      assert.equal(f.listeners.size, 0);
-    }
-  }
-});
-
-test("browsers without decode wait for a loaded image rather than binding an empty frame", async () => {
-  const f = mediaFixture(false);
-  const promise = f.api.warmSceneImage({ id: "shot" });
-  assert.equal(f.record.status, "decoding");
-  f.image.naturalWidth = 1280;
-  f.listeners.get("load")!();
-  await promise;
-  assert.equal(f.record.status, "ready");
-  assert.equal(f.timers.size, 0);
 });

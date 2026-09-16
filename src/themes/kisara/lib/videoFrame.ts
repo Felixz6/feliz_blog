@@ -1,4 +1,4 @@
-export function waitForVideoFrame(video: HTMLVideoElement, signal: AbortSignal, timeout = 1500) {
+export function waitForVideoFrame(video: HTMLVideoElement, signal: AbortSignal, timeout = 15000) {
   return new Promise<boolean>(resolve => {
     let frame = 0;
     let paint = 0;
@@ -42,6 +42,7 @@ export function waitForVideoFrame(video: HTMLVideoElement, signal: AbortSignal, 
     if (video.requestVideoFrameCallback) frame = video.requestVideoFrameCallback(inspect);
     else {
       for (const name of ["playing", "loadeddata", "seeked"]) video.addEventListener(name, fallback);
+      fallback();
     }
   });
 }
