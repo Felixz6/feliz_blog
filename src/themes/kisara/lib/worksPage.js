@@ -457,8 +457,9 @@ export function bindWorksPage() {
     heroVideo.addEventListener("error", failed, { once: true });
     try {
       heroVideo.preload = "auto";
-      // The HTML already starts this request. Do not reset a slow in-flight fetch.
-      if (heroVideo.networkState === 0) heroVideo.load();
+      // Astro adopts media from a parsed document. Initialize its unready pipeline
+      // once per entry; networkState alone does not prove that it can make progress.
+      heroVideo.load();
     } catch {
       settle(heroVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
     }

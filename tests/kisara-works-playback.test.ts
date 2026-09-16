@@ -40,11 +40,12 @@ function fixture(readyState = 0, reduced = false) {
     }
     load() { this.loads++; }
   }
-  const video = new Video();
-  const hero = Object.assign(new Element(), {
+  let video = new Video();
+  const createHero = (media: Video) => Object.assign(new Element(), {
     dataset: { introState: "idle", videoState: "idle" },
-    querySelector: (selector: string) => selector === "[data-works-hero-video]" ? video : null,
+    querySelector: (selector: string) => selector === "[data-works-hero-video]" ? media : null,
   });
+  let hero = createHero(video);
   const document = Object.assign(new EventTarget(), {
     hidden: false,
     documentElement: new Element(),
@@ -76,7 +77,9 @@ function fixture(readyState = 0, reduced = false) {
   });
   bind();
   return {
-    video, hero, document, window,
+    get video() { return video; },
+    get hero() { return hero; },
+    document, window,
     frame() {
       const pending = [...frames.values()];
       frames.clear();
@@ -90,6 +93,13 @@ function fixture(readyState = 0, reduced = false) {
     },
     visible(value: boolean) { intersect!([{ isIntersecting: value }]); },
     reenter() { bind(); },
+    navigate() {
+      document.dispatchEvent(new Event("astro:before-swap"));
+      video = new Video();
+      hero = createHero(video);
+      bind();
+      document.dispatchEvent(new Event("astro:page-load"));
+    },
     restore() { window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true })); },
     cleanup() { window.__yuimiKisaraInnerCleanup?.(); },
   };
@@ -102,7 +112,7 @@ test("Works entry requests playback without waiting for optional preload data", 
       f.frame();
       await flush();
       assert.equal(f.video.plays, 1, `readyState ${readyState} must not block play()`);
-      assert.equal(f.video.loads, 0, "Keep the HTML request instead of restarting it");
+      assert.equal(f.video.loads, readyState < 2 ? 1 : 0, "Initialize unready route media once; reuse decoded media");
       assert.equal(f.video.muted, true);
       f.video.dispatchEvent(new Event("canplay"));
       assert.equal(f.video.plays, 1, "Readiness must not issue a duplicate pending play");
@@ -121,7 +131,31 @@ test("Works soft preparation timeout does not cancel a pending cold playback", a
     f.video.readyState = 4;
     f.video.dispatchEvent(new Event("canplay"));
     assert.equal(f.video.plays, 1);
-    assert.equal(f.video.loads, 0);
+    assert.equal(f.video.loads, 1, "A slow preparation must not trigger another load");
+  } finally { f.cleanup(); }
+});
+
+test("Works initializes every newly swapped video even when its networkState already says loading", async () => {
+  const f = fixture(1);
+  try {
+    for (let entry = 0; entry < 3; entry++) {
+      if (entry) f.navigate();
+      assert.equal(f.video.networkState, 2);
+      assert.equal(f.video.loads, 1, "An adopted unready element needs entry initialization, not a networkState guess");
+      f.frame();
+      await flush();
+      assert.equal(f.video.plays, 1);
+      f.video.readyState = 4;
+      f.video.dispatchEvent(new Event("loadeddata"));
+      f.video.dispatchEvent(new Event("canplay"));
+      f.visible(false);
+      f.visible(true);
+      assert.equal(f.video.loads, 1, "Readiness and viewport recovery must keep the initialized pipeline");
+      const departed = f.video;
+      f.document.dispatchEvent(new Event("astro:before-swap"));
+      departed.dispatchEvent(new Event("canplay"));
+      assert.equal(departed.paused, true, "The departing route cannot resume its old video");
+    }
   } finally { f.cleanup(); }
 });
 
