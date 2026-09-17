@@ -21,11 +21,14 @@ export function bindHomeEvent(root: HTMLElement) {
   let pending = false;
   let generation = 0;
   let watchdog = 0;
+  let retryTimer = 0;
+  let retries = 0;
   let frameController: AbortController | null = null;
   let framePending: Promise<unknown> | null = null;
   const state = (value: string) => { root.dataset.state = value; };
   const hydrate = () => {
-    if (source.hasAttribute("src") || signal.aborted) return;
+    root.querySelectorAll<HTMLImageElement>("img[loading]").forEach(image => { image.loading = "eager"; });
+    if (motion.matches || source.hasAttribute("src") || signal.aborted) return;
     source.src = source.dataset.src!;
     video.preload = "auto";
     video.load();
@@ -39,11 +42,13 @@ export function bindHomeEvent(root: HTMLElement) {
     frameController?.abort();
     frameController = null;
     pending = false;
+    window.clearTimeout(retryTimer);
+    retryTimer = 0;
     clearWatchdog();
     video.pause();
   };
-  const showStill = (value: string) => {
-    completed = true;
+  const showStill = (value: string, complete = false) => {
+    completed = complete;
     pause();
     state(value);
     portrait.reveal();
@@ -64,7 +69,7 @@ export function bindHomeEvent(root: HTMLElement) {
     watchdog = window.setTimeout(() => {
       if (signal.aborted || attempt !== generation || completed) return;
       showStill("ready");
-    }, 6000);
+    }, 20000);
     frameController?.abort();
     frameController = new AbortController();
     framePending = waitForVideoFrame(video, frameController.signal).then(ready => {
@@ -85,7 +90,24 @@ export function bindHomeEvent(root: HTMLElement) {
     } catch {
       if (signal.aborted || attempt !== generation) return;
       showStill("ready");
+      if (video.error) scheduleRetry();
     }
+  };
+  const recover = () => {
+    if (signal.aborted || suspended || !visible || completed || pending || motion.matches) return;
+    if (video.readyState >= 2 && video.paused && !video.error) void play(!started);
+  };
+  const scheduleRetry = () => {
+    if (signal.aborted || completed || retries >= 2 || retryTimer || motion.matches
+      || video.error?.code === 3 || video.error?.code === 4) return;
+    const delay = 1000 * ++retries;
+    retryTimer = window.setTimeout(() => {
+      retryTimer = 0;
+      if (signal.aborted || suspended || !visible || completed) return;
+      // Only an actual media error warrants restarting the request.
+      if (video.error) video.load();
+      void play(!started);
+    }, delay);
   };
   const refresh = () => {
     if (signal.aborted) return;
@@ -94,7 +116,7 @@ export function bindHomeEvent(root: HTMLElement) {
     root.toggleAttribute("data-scene-visible", next);
     portrait.setActive(next);
     if (next && motion.matches) {
-      showStill("complete");
+      showStill("complete", true);
     }
     if (next === visible) return;
     visible = next;
@@ -108,6 +130,7 @@ export function bindHomeEvent(root: HTMLElement) {
     pause();
     completed = false;
     started = false;
+    retries = 0;
     visible = false;
     root.removeAttribute("data-scene-visible");
     root.removeAttribute("data-frame-ready");
@@ -129,7 +152,8 @@ export function bindHomeEvent(root: HTMLElement) {
   };
 
   video.addEventListener("playing", () => {
-    if (suspended || !visible || completed) { pause(); return; }
+    if (suspended || !visible || completed
+      || (!pending && ["ready", "error"].includes(root.dataset.state ?? ""))) { pause(); return; }
   }, { signal });
   video.addEventListener("pause", () => {
     if (!completed && started) state("paused");
@@ -144,7 +168,17 @@ export function bindHomeEvent(root: HTMLElement) {
   }, { signal });
   video.addEventListener("error", () => {
     showStill("error");
+    if (visible) scheduleRetry();
   }, { signal });
+  video.addEventListener("loadeddata", recover, { signal });
+  video.addEventListener("canplay", recover, { signal });
+  window.addEventListener("online", () => {
+    if (visible && !completed) {
+      if (video.error) scheduleRetry();
+      else recover();
+    }
+  }, { signal });
+  root.addEventListener("pointerdown", recover, { passive: true, signal });
   document.addEventListener("visibilitychange", () => document.hidden ? suspend() : resume(), { signal });
   window.addEventListener("pagehide", suspend, { signal });
   window.addEventListener("pageshow", resume, { signal });
@@ -152,7 +186,7 @@ export function bindHomeEvent(root: HTMLElement) {
   document.addEventListener("resume", resume, { signal });
   motion.addEventListener("change", () => {
     if (motion.matches) {
-      if (visible) showStill("complete");
+      if (visible) showStill("complete", true);
       else pause();
     }
     else if (visible && !completed) void play();
@@ -162,7 +196,7 @@ export function bindHomeEvent(root: HTMLElement) {
     if (document.hidden || !entries.some(entry => entry.isIntersecting)) return;
     if (!motion.matches) hydrate();
     preloadObserver?.disconnect();
-  }, { rootMargin: "45% 0px" }) : null;
+  }, { rootMargin: `${Math.round(window.innerHeight * .9)}px 0px` }) : null;
   const visibilityObserver = typeof IntersectionObserver === "function"
     ? new IntersectionObserver(refresh, { threshold: [0, .15, .35, .6, 1] }) : null;
   if (!visibilityObserver) window.addEventListener("scroll", refresh, { passive: true, signal });
@@ -173,9 +207,17 @@ export function bindHomeEvent(root: HTMLElement) {
   return {
     reset,
     refresh,
+    preload: hydrate,
     prepareCoveredEntry() {
+      hydrate();
       refresh();
-      return framePending ?? Promise.resolve();
+      // Releasing the visual cover is not permission to abandon the download.
+      return new Promise<void>(resolve => {
+        const finish = () => { window.clearTimeout(timer); signal.removeEventListener("abort", finish); resolve(); };
+        const timer = window.setTimeout(finish, 1800);
+        signal.addEventListener("abort", finish, { once: true });
+        Promise.resolve(framePending).then(finish);
+      });
     },
     destroy() {
       pause();

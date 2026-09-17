@@ -201,6 +201,9 @@ import { getThemePath } from "@/core/themes/registry";
       resetScene: (() => void) | null = null;
       refreshScene: (() => void) | null = null;
       coveredEntry: (() => Promise<void>) | null = null;
+      preloadScene: (() => void) | null = null;
+
+      preloadPresentation() { this.preloadScene?.(); }
 
       playCoveredEntry() {
         return this.coveredEntry?.() ?? Promise.resolve();
@@ -237,6 +240,7 @@ import { getThemePath } from "@/core/themes/registry";
 
         let sceneVisible = false;
         let openingStarted = false;
+        let waitingForMedia = false;
         let opened = false;
         let waitingForFreshEntry = false;
         let recoveryFrame = 0;
@@ -271,6 +275,7 @@ import { getThemePath } from "@/core/themes/registry";
           video.preload = "auto";
           video.load();
         };
+        this.preloadScene = hydrateMedia;
 
         const bodies: FridgeBody[] = bodyElements.map((element, index) => ({
           element,
@@ -588,7 +593,12 @@ import { getThemePath } from "@/core/themes/registry";
           const shouldReload = stallRecoveries === 0;
           stallRecoveries += 1;
           resetActiveOpening(shouldReload);
-          if (!shouldRetry || document.hidden || !sceneVisible || waitingForFreshEntry) return;
+          if (!shouldRetry) {
+            // A genuinely broken clip must not disable the fridge interaction.
+            finishOpening();
+            return;
+          }
+          if (document.hidden || !sceneVisible || waitingForFreshEntry) return;
 
           const retryGeneration = playbackGeneration;
           playbackRetryTimer = window.setTimeout(() => {
@@ -632,6 +642,12 @@ import { getThemePath } from "@/core/themes/registry";
               schedulePlaybackWatchdog(playGeneration, currentTime);
               return;
             }
+            if (!video.error && (video.readyState < 3 || video.seeking)) {
+              // Buffering is not a decoder failure. load() here would discard
+              // the bytes that the visitor has already waited for.
+              schedulePlaybackWatchdog(playGeneration, currentTime);
+              return;
+            }
             recoverStalledOpening(playGeneration);
           }, baseline > 0.025 ? 700 : 1300);
         };
@@ -642,6 +658,7 @@ import { getThemePath } from "@/core/themes/registry";
           if (!isRecoveryRetry) stallRecoveries = 0;
           const playGeneration = ++playbackGeneration;
           openingStarted = true;
+          waitingForMedia = false;
           this.classList.remove("is-fridge-resetting", "is-fridge-open");
           this.classList.add("is-fridge-playing");
           if (status) status.textContent = "OPENING";
@@ -685,12 +702,17 @@ import { getThemePath } from "@/core/themes/registry";
               this.setAttribute("data-frame-ready", "");
               finishCoveredEntry?.();
             }
-            else if (!document.hidden && sceneVisible) finishOpening();
+            else if (!document.hidden && sceneVisible) {
+              resetActiveOpening();
+              waitingForMedia = true;
+              finishCoveredEntry?.();
+            }
           });
           void video.play().catch(() => recoverStalledOpening(playGeneration));
         };
 
         const armOpening = (waitForExit = false) => {
+          waitingForMedia = false;
           playbackGeneration += 1;
           clearPlaybackTimers();
           stallRecoveries = 0;
@@ -922,7 +944,7 @@ import { getThemePath } from "@/core/themes/registry";
             if (!entries.some(entry => entry.isIntersecting) || document.hidden) return;
             hydrateMedia();
             this.preloadObserver?.disconnect();
-          }, { rootMargin: "65% 0px" });
+          }, { rootMargin: `${Math.round(window.innerHeight * .9)}px 0px` });
           this.preloadObserver.observe(this);
           this.observer = new IntersectionObserver((entries) => {
             const entry = entries[entries.length - 1];
@@ -959,15 +981,32 @@ import { getThemePath } from "@/core/themes/registry";
           finishCoveredEntry = finish;
           signal.addEventListener("abort", finish, { once: true });
           document.addEventListener("visibilitychange", visibility);
-          timer = window.setTimeout(() => {
-            if (!signal.aborted && !document.hidden && sceneVisible) finishOpening();
-            finish();
-          }, 1800);
+          timer = window.setTimeout(finish, 1800);
           sceneVisible = measureSceneVisibility();
           armOpening(false);
           startOpening();
           if (reducedMotion || !sceneVisible || signal.aborted || opened) finish();
         });
+        const resumeLoadedOpening = () => {
+          if (signal.aborted || document.hidden || !sceneVisible || opened || openingStarted
+            || waitingForFreshEntry || !waitingForMedia || video.readyState < 2) return;
+          startOpening(true);
+        };
+        video.addEventListener("error", () => {
+          if (signal.aborted || opened || !openingStarted) return;
+          if (video.error?.code === 3 || video.error?.code === 4) finishOpening();
+          else recoverStalledOpening(playbackGeneration);
+        }, { signal });
+        video.addEventListener("loadeddata", resumeLoadedOpening, { signal });
+        video.addEventListener("canplay", resumeLoadedOpening, { signal });
+        window.addEventListener("online", () => {
+          if (!sceneVisible || opened || document.hidden) return;
+          if (video.error && stallRecoveries < 2) {
+            stallRecoveries++;
+            video.load();
+            waitingForMedia = true;
+          } else resumeLoadedOpening();
+        }, { signal });
         signal.addEventListener("abort", () => {
           playbackGeneration += 1;
           clearPlaybackTimers();
@@ -995,6 +1034,7 @@ import { getThemePath } from "@/core/themes/registry";
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
         this.resetScene = null;
+        this.preloadScene = null;
         this.refreshScene = null;
         this.coveredEntry = null;
       }

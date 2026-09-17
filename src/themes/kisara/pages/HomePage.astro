@@ -318,6 +318,7 @@ const gateStyle = [
     import { createGateReconstructionRenderer } from "../lib/gateReconstruction";
     import { titleDataStreamFragment } from "../lib/titleDataStream";
     import { memoryFillDuration, getMemoryFrame, getMemoryBlackout, getMemoryWarmIndices, advanceMemoryProgress, advanceMemoryBlackout } from "../lib/gateStory";
+    import { createStoryImageLoader } from "../lib/storyImageLoader";
     const releaseStaleKisaraHomeRuntime = (candidate) => {
       if (!(candidate instanceof HTMLElement) || candidate.dataset.bound !== "true") return false;
       const candidateAutoControl = candidate.querySelector("[data-kisara-auto]");
@@ -451,77 +452,23 @@ const gateStyle = [
         sceneId: "",
         rendered: Object.create(null)
       }));
-      let sceneDecodeGeneration = 0;
-      const sceneImageWarmers = new Map(sceneManifest.map((scene, index) => {
-        const image = new Image();
-        image.decoding = "async";
-        image.fetchPriority = index < 2 ? "high" : "low";
-        return [scene.id, {
-          image,
-          source: scene.image,
-          status: "idle",
-          promise: null,
-          cancel: null
-        }];
-      }));
-      const warmSceneImage = (scene) => {
-        const record = scene?.id ? sceneImageWarmers.get(scene.id) : null;
-        if (!record || ["ready", "failed", "timed-out"].includes(record.status)) {
-          return record?.promise ?? Promise.resolve();
-        }
-        if (record.status === "decoding") return record.promise;
-
-        const generation = sceneDecodeGeneration;
-        record.status = "decoding";
-        record.promise = new Promise(resolve => {
-          let finished = false;
-          let released = false;
-          const finish = (ready, notify = true, timedOut = false) => {
-            if (finished) return;
-            finished = !timedOut;
-            window.clearTimeout(timer);
-            if (finished) {
-              record.image.removeEventListener("load", loaded);
-              record.image.removeEventListener("error", failed);
-              record.cancel = null;
-            }
-            if (!disposed && generation === sceneDecodeGeneration) {
-              record.status = ready ? "ready" : timedOut ? "timed-out" : "failed";
-              if (notify) gate.dispatchEvent(new CustomEvent("kisara:scene-ready"));
-            }
-            if (!released) { released = true; resolve(undefined); }
-          };
-          const loaded = () => finish(record.image.naturalWidth > 0);
-          const failed = () => finish(false);
-          const timer = window.setTimeout(() => finish(false, true, true), 3500);
-          record.cancel = () => finish(false, false);
-          record.image.addEventListener("error", failed, { once: true });
-          if (typeof record.image.decode !== "function") {
-            record.image.addEventListener("load", loaded, { once: true });
-          }
-          if (!record.image.src) record.image.src = record.source;
-          if (typeof record.image.decode === "function") {
-            record.image.decode().then(loaded, failed);
-          } else if (record.image.complete) {
-            loaded();
-          }
-        });
-        return record.promise;
-      };
-      const isSceneImageReady = (scene) => {
-        const record = scene?.id ? sceneImageWarmers.get(scene.id) : null;
-        if (!record || record.status === "failed" || record.status === "timed-out") return true;
-        if (record.status === "ready") return true;
-        warmSceneImage(scene);
-        return false;
-      };
+      const sceneLoader = createStoryImageLoader(sceneManifest, signal, () => {
+        if (!disposed) gate.dispatchEvent(new CustomEvent("kisara:scene-ready"));
+      });
+      const sceneImageWarmers = sceneLoader.records;
+      const warmSceneImage = sceneLoader.request;
+      const isSceneImageReady = sceneLoader.ready;
       const warmSceneImagesForProgress = (fill, intro) => {
-        getMemoryWarmIndices(fill).forEach(index => warmSceneImage(memorySceneRecords[index]));
-        if (fill >= 0.65 || intro > 0.001) warmSceneImage(transformationSceneRecords[0]);
-        if (fill >= 0.78 || intro >= 0.08) warmSceneImage(transformationSceneRecords[1]);
-        if (fill >= 0.88 || intro >= 0.25) warmSceneImage(transformationSceneRecords[2]);
+        const active = pageMode === "gate" && !foundSelfActive && !lovebrainActive;
+        sceneLoader.setActive(active);
+        if (!active || document.hidden) return;
+        getMemoryWarmIndices(fill).forEach(index => warmSceneImage(memorySceneRecords[index], 2));
+        if (fill >= 0.55 || intro > 0.001) transformationSceneRecords.forEach(scene => warmSceneImage(scene, 2));
+        // Once the user engages the story, trickle the remaining sub-1MB sequence
+        // through the same two-slot queue instead of discovering fast cuts too late.
+        if (fill > 0.01 || intro > 0) sceneManifest.forEach(scene => warmSceneImage(scene, 0));
       };
-      if (!foundSelfEntryRequested) memorySceneRecords.slice(0, 2).forEach(warmSceneImage);
+      if (!foundSelfEntryRequested) memorySceneRecords.slice(0, 2).forEach(scene => warmSceneImage(scene, 2));
       const isStoryFrameReady = (fill, intro) => {
         let ready = true;
         memorySceneRecords.forEach((record, index) => {
@@ -8598,6 +8545,9 @@ const gateStyle = [
 
       const smoothScrollToHomeSection = (stop) => {
         if (chapterTransition.active || comicTransition.active) return true;
+        const nextMedia = stop.element.querySelector("kisara-fridge-scene, kisara-home-event-video") as
+          (HTMLElement & { preloadPresentation?: () => void }) | null;
+        nextMedia?.preloadPresentation?.();
         clearHomeGateReturnArm();
         homeSectionWheelAccumulator = 0;
         if (stop.element === opening && isOpeningStopCurrent()) return true;
@@ -9139,8 +9089,6 @@ const gateStyle = [
         gate.removeAttribute("data-binding");
         deactivateOpeningBridgePortal();
         lifecycle.abort();
-        sceneDecodeGeneration += 1;
-        sceneImageWarmers.forEach(record => record.cancel?.());
         sceneImageWarmers.clear();
         spaceLensInitGeneration += 1;
         spaceLensInitController?.abort();

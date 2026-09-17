@@ -80,6 +80,7 @@ const reactions = ["😋", "🤤", "😍", "😚"];
     class KisaraHomeEventVideo extends HTMLElement {
       runtime: ReturnType<typeof bindHomeEvent> | null = null;
       resetPresentation() { this.runtime?.reset(); }
+      preloadPresentation() { this.runtime?.preload(); }
       prepareCoveredEntry() { return this.runtime?.prepareCoveredEntry(); }
       refreshPresentationAfterVisibility() { this.runtime?.refresh(); }
       connectedCallback() {

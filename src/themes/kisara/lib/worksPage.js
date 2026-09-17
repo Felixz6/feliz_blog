@@ -26,6 +26,10 @@ export function bindWorksPage() {
   let heroIntroDeadline = 0;
   let heroIntroRemaining = 1580;
   let resumeHeroVideo = false;
+  let heroVideoStarted = false;
+  let heroVideoPlayGeneration = 0;
+  let heroVideoRetryTimer = 0;
+  let heroVideoRetries = 0;
   let heroResizeObserver = null;
   let heroBounds = { left: 0, top: 0, width: 1, height: 1 };
   let sliceFieldBounds = { left: 0, top: 0, width: 360, height: 360 };
@@ -56,6 +60,7 @@ export function bindWorksPage() {
     heroResizeObserver?.disconnect();
     window.cancelAnimationFrame(heroIntroFrame);
     window.clearTimeout(heroVideoWaitTimer);
+    window.clearTimeout(heroVideoRetryTimer);
     pendingSliceEvents.length = 0;
     trailPool.forEach(trail => { trail.sliceAnimation?.cancel(); trail.remove(); });
     if (heroVideo instanceof HTMLVideoElement) heroVideo.pause();
@@ -319,6 +324,7 @@ export function bindWorksPage() {
       heroIntroTimer = 0;
       if (heroVideo instanceof HTMLVideoElement && !heroVideo.paused && !heroVideo.ended) {
         resumeHeroVideo = true;
+        heroVideoPlayGeneration += 1;
         heroVideo.pause();
       }
     } else {
@@ -329,8 +335,13 @@ export function bindWorksPage() {
       }
       if (resumeHeroVideo && heroVideo instanceof HTMLVideoElement) {
         resumeHeroVideo = false;
+        const playGeneration = ++heroVideoPlayGeneration;
+        heroVideo.muted = true;
         void heroVideo.play().catch(() => {
-          if (!signal.aborted) hero.dataset.videoState = "fallback";
+          if (!signal.aborted && playGeneration === heroVideoPlayGeneration) {
+            heroVideoStarted = false;
+            hero.dataset.videoState = "fallback";
+          }
         });
       }
     }
@@ -340,6 +351,7 @@ export function bindWorksPage() {
     fruitPhysicsObserver = new IntersectionObserver(([entry]) => {
       fruitPhysicsVisible = Boolean(entry?.isIntersecting);
       syncWorksActivity();
+      recoverHeroVideo();
     }, { threshold: 0.02 });
     fruitPhysicsObserver.observe(hero);
   }
@@ -351,12 +363,56 @@ export function bindWorksPage() {
     hero.dataset.introState = "complete";
   };
 
+  const startPreparedHeroVideo = () => {
+    if (signal.aborted || heroReducedMotion || document.hidden || !fruitPhysicsVisible
+      || !(hero instanceof HTMLElement) || !(heroVideo instanceof HTMLVideoElement)
+      || hero.dataset.introState === "idle" || hero.dataset.videoState === "complete"
+      || heroVideoStarted || heroVideo.error) return;
+    // Preload is advisory; play() must be allowed to request the first frame.
+    heroVideoStarted = true;
+    hero.dataset.videoState = "playing";
+    resumeHeroVideo = true;
+    syncWorksActivity();
+  };
+  const retryHeroVideo = () => {
+    if (signal.aborted || heroReducedMotion || document.hidden || !fruitPhysicsVisible
+      || !(heroVideo instanceof HTMLVideoElement) || !heroVideo.error || heroVideoRetries >= 2
+      || heroVideoRetryTimer || heroVideo.error.code === 3 || heroVideo.error.code === 4) return;
+    heroVideoRetryTimer = window.setTimeout(() => {
+      heroVideoRetryTimer = 0;
+      if (signal.aborted || document.hidden || !fruitPhysicsVisible || !heroVideo.error) return;
+      heroVideoStarted = false;
+      heroVideo.preload = "auto";
+      heroVideo.load();
+    }, 1000 * ++heroVideoRetries);
+  };
   heroVideo?.addEventListener("error", () => {
     if (signal.aborted || !(hero instanceof HTMLElement)) return;
     hero.dataset.videoState = "fallback";
     resumeHeroVideo = false;
+    heroVideoStarted = false;
+    heroVideoPlayGeneration += 1;
     heroVideo.pause();
+    retryHeroVideo();
   }, { signal });
+  heroVideo?.addEventListener("loadeddata", startPreparedHeroVideo, { signal });
+  heroVideo?.addEventListener("canplay", startPreparedHeroVideo, { signal });
+  heroVideo?.addEventListener("playing", () => {
+    if (document.hidden || !fruitPhysicsVisible) {
+      resumeHeroVideo = true;
+      heroVideo.pause();
+    }
+  }, { signal });
+  heroVideo?.addEventListener("ended", () => {
+    if (!signal.aborted && hero instanceof HTMLElement) {
+      hero.dataset.videoState = "complete";
+      resumeHeroVideo = false;
+    }
+  }, { signal });
+  const recoverHeroVideo = () => { retryHeroVideo(); startPreparedHeroVideo(); };
+  document.addEventListener("visibilitychange", recoverHeroVideo, { signal });
+  window.addEventListener("online", recoverHeroVideo, { signal });
+  hero?.addEventListener("pointerdown", recoverHeroVideo, { passive: true, signal });
 
   const prepareHeroVideo = () => new Promise((resolve) => {
     if (!(heroVideo instanceof HTMLVideoElement)) {
@@ -370,9 +426,12 @@ export function bindWorksPage() {
       if (settled) return;
       settled = true;
       window.clearTimeout(heroVideoWaitTimer);
+      heroVideo.removeEventListener("loadeddata", loaded);
+      heroVideo.removeEventListener("error", failed);
+      signal.removeEventListener("abort", failed);
       cancelHeroVideoWait = null;
       ready = ready && !signal.aborted && loadGeneration === heroVideoLoadGeneration;
-      if (ready) {
+      if (ready && !heroVideoStarted) {
         try {
           heroVideo.currentTime = 0;
         } catch {
@@ -381,17 +440,25 @@ export function bindWorksPage() {
       }
       resolve(ready);
     };
+    const loaded = () => settle(true);
+    const failed = () => settle(false);
     cancelHeroVideoWait = () => settle(false);
+    heroVideoPlayGeneration += 1;
+    resumeHeroVideo = false;
     heroVideo.pause();
+    if (heroVideo.error) retryHeroVideo();
     if (heroVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       settle(true);
       return;
     }
     heroVideoWaitTimer = window.setTimeout(() => settle(false), 3500);
-    signal.addEventListener("abort", () => settle(false), { once: true });
-    heroVideo.addEventListener("loadeddata", () => settle(true), { once: true, signal });
-    heroVideo.addEventListener("error", () => settle(false), { once: true, signal });
+    signal.addEventListener("abort", failed, { once: true });
+    heroVideo.addEventListener("loadeddata", loaded, { once: true });
+    heroVideo.addEventListener("error", failed, { once: true });
     try {
+      heroVideo.preload = "auto";
+      // Astro adopts media from a parsed document. Initialize its unready pipeline
+      // once per entry; networkState alone does not prove that it can make progress.
       heroVideo.load();
     } catch {
       settle(heroVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
@@ -407,9 +474,8 @@ export function bindWorksPage() {
     hero.dataset.introState = heroReducedMotion ? "complete" : "idle";
     hero.dataset.videoState = heroReducedMotion ? "complete" : "idle";
     if (heroReducedMotion) return;
-    const videoReady = await prepareHeroVideo();
-    if (signal.aborted || generation !== heroIntroGeneration) return;
-    if (!videoReady) hero.dataset.videoState = "fallback";
+    heroVideoStarted = false;
+    const preparation = prepareHeroVideo();
     void hero.offsetWidth;
     heroIntroFrame = window.requestAnimationFrame(() => {
       heroIntroFrame = 0;
@@ -418,14 +484,10 @@ export function bindWorksPage() {
       startFruitPhysics();
       heroIntroRemaining = 1580;
       syncWorksActivity();
-      if (videoReady && heroVideo instanceof HTMLVideoElement) {
-        hero.dataset.videoState = "playing";
-        heroVideo.addEventListener("ended", () => {
-          if (!signal.aborted) hero.dataset.videoState = "complete";
-        }, { once: true, signal });
-        resumeHeroVideo = true;
-        syncWorksActivity();
-      }
+      startPreparedHeroVideo();
+    });
+    void preparation.then(() => {
+      if (!signal.aborted && generation === heroIntroGeneration) startPreparedHeroVideo();
     });
   };
 

@@ -26,7 +26,7 @@ test("Fridge inventory begins dropping just before the door reaches its open fra
 
 test("Fridge coverage survives playback retries until a ready frame, final fallback, or cancellation", async () => {
   const start = fridgeSource.indexOf("this.coveredEntry = () =>");
-  const end = fridgeSource.indexOf('signal.addEventListener("abort", () => {', start);
+  const end = fridgeSource.indexOf("const resumeLoadedOpening =", start);
   assert.ok(start >= 0 && end > start);
   const code = stripTypeScriptTypes(fridgeSource.slice(start, end));
   for (const outcome of ["ready", "timeout", "hidden", "abort"]) {
@@ -62,7 +62,7 @@ test("Fridge coverage survives playback retries until a ready frame, final fallb
     await pending;
     assert.equal(timers.size, 0);
     assert.equal(scope.finishCoveredEntry, null);
-    assert.equal(scope.opened, outcome === "timeout");
+    assert.equal(scope.opened, false, "A cover timeout must not complete the video");
     controller.abort();
   }
 });

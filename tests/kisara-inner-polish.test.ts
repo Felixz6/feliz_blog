@@ -263,6 +263,7 @@ test("Works visibility suspends video, pointer queues and intro time, then resum
     let fruitPhysicsVisible = true, fruitPhysicsLastTime = 100;
     let fruitPhysicsFrame = 1, heroPointerFrame = 2, heroIntroTimer = 3;
     let heroIntroDeadline = 1580, heroIntroRemaining = 1580, resumeHeroVideo = false, lastSlicePoint = {};
+    let heroVideoPlayGeneration = 0;
     const pendingSliceEvents = [1, 2], requestFruitPhysicsFrame = () => {}, finishHeroIntro = () => {};
     ${between(works, "const syncWorksActivity =", 'if (hero instanceof HTMLElement && "IntersectionObserver"')}
     return { sync: syncWorksActivity, snapshot: () => ({ fruitPhysicsFrame, heroPointerFrame, heroIntroRemaining, pending: pendingSliceEvents.length }) };
