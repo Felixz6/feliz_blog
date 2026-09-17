@@ -30,6 +30,7 @@ function fixture(reduced = false, withPortrait = false) {
   source.dataset.src = "/fragment.mp4";
   Object.defineProperty(source, "src", { set(value: string) { source.setAttribute("src", value); } });
   const timers = new Map<number, Function>();
+  const timerDelays = new Map<number, number>();
   const motion = Object.assign(new EventTarget(), { matches: reduced });
   let id = 0;
   let rect = { top: 2100, bottom: 3000, height: 900, width: 1440 };
@@ -41,11 +42,12 @@ function fixture(reduced = false, withPortrait = false) {
     ended: false,
     readyState: 4,
     seeking: false,
+    error: null as { code: number } | null,
     preload: "none",
     loads: 0,
     plays: 0,
     pauses: 0,
-    load() { this.loads++; },
+    load() { this.loads++; this.error = null; },
     play() {
       this.plays++;
       this.paused = false;
@@ -86,8 +88,8 @@ function fixture(reduced = false, withPortrait = false) {
   const window = Object.assign(new EventTarget(), {
     innerHeight: 900,
     matchMedia: () => motion,
-    setTimeout(callback: Function) { const next = ++id; timers.set(next, callback); return next; },
-    clearTimeout(id: number) { timers.delete(id); },
+    setTimeout(callback: Function, delay: number) { const next = ++id; timers.set(next, callback); timerDelays.set(next, delay); return next; },
+    clearTimeout(id: number) { timers.delete(id); timerDelays.delete(id); },
     requestAnimationFrame(callback: FrameRequestCallback) { const next = ++id; paints.set(next, callback); return next; },
     cancelAnimationFrame(id: number) { paints.delete(id); },
   });
@@ -100,6 +102,12 @@ function fixture(reduced = false, withPortrait = false) {
   return {
     video, root, timers, observers, motion, document, window, playPromises,
     runtime, show, hide,
+    expire(delay: number) {
+      const entry = [...timerDelays].find(([, value]) => value === delay);
+      assert.ok(entry, `Missing ${delay}ms timer`);
+      const callback = timers.get(entry[0])!;
+      timers.delete(entry[0]); timerDelays.delete(entry[0]); callback();
+    },
     paint() { const callbacks = [...paints.values()]; paints.clear(); callbacks.forEach(callback => callback(0)); },
     destroy() {
       runtime.destroy();
@@ -155,12 +163,59 @@ test("003 pauses in a hidden document and resumes the held position without repl
 test("003 reduced motion keeps the one-shot background still and deferred", async () => {
   const f = fixture(true);
   try {
+    f.runtime.preload();
     f.observers[0].emit(); f.show(); await flush();
     assert.equal(f.video.loads, 0);
     assert.equal(f.video.plays, 0);
     f.hide(); f.show(); await flush();
     assert.equal(f.video.loads, 0);
     assert.equal(f.video.plays, 0);
+  } finally { f.destroy(); }
+});
+
+test("003 cover deadline releases navigation without abandoning a slow video", async () => {
+  const f = fixture();
+  try {
+    let loaded!: () => void;
+    f.playPromises.push(() => new Promise<void>(resolve => { loaded = resolve; }));
+    f.video.readyState = 0;
+    f.show();
+    const cover = f.runtime.prepareCoveredEntry();
+    f.expire(1800);
+    await cover;
+    assert.equal(f.root.dataset.state, "loading");
+    assert.equal(f.video.plays, 1);
+    assert.equal(f.video.paused, false);
+    f.video.readyState = 4;
+    f.video.dispatchEvent(new Event("loadeddata"));
+    f.paint(); f.paint();
+    loaded();
+    await flush();
+    assert.equal(f.root.dataset.state, "playing");
+    assert.equal(f.video.loads, 1, "Late data must reuse the original request");
+  } finally { f.destroy(); }
+});
+
+test("003 late data recovers after a soft fallback, with at most two automatic network retries", async () => {
+  const f = fixture();
+  try {
+    f.playPromises.push(() => new Promise(() => {}));
+    f.show();
+    f.expire(20000);
+    assert.equal(f.root.dataset.state, "ready");
+    f.video.dispatchEvent(new Event("canplay"));
+    await flush();
+    assert.equal(f.video.plays, 2);
+    for (const delay of [1000, 2000]) {
+      f.video.error = { code: 2 };
+      f.video.dispatchEvent(new Event("error"));
+      f.expire(delay);
+      await flush();
+    }
+    assert.equal(f.video.loads, 3);
+    f.video.error = { code: 2 };
+    f.video.dispatchEvent(new Event("error"));
+    assert.equal(f.timers.size, 0);
   } finally { f.destroy(); }
 });
 
@@ -181,7 +236,7 @@ test("003 a stale play promise cannot pause a newer visibility replay", async ()
   } finally { f.destroy(); }
 });
 
-test("003 a stalled play falls back to the final board until explicitly reset", async () => {
+test("003 a stalled play keeps a usable board and retries on reentry without an explicit reset", async () => {
   const f = fixture();
   try {
     f.playPromises.push(() => new Promise(() => {}));
@@ -192,11 +247,11 @@ test("003 a stalled play falls back to the final board until explicitly reset", 
     f.hide();
     f.show();
     await flush();
-    assert.equal(f.video.plays, 1);
+    assert.equal(f.video.plays, 2);
     f.runtime.reset();
     f.show();
     await flush();
-    assert.equal(f.video.plays, 2);
+    assert.equal(f.video.plays, 3);
   } finally { f.destroy(); }
 });
 
@@ -275,7 +330,7 @@ test("003 holds its first image until decoding is ready and clears that state on
   } finally { f.destroy(); }
 });
 
-test("003 autoplay failure reveals a usable still scene and ignores a late playing event", async () => {
+test("003 autoplay failure keeps a usable still, ignores stale playing and can recover on reentry", async () => {
   const f = fixture(false, true);
   try {
     f.playPromises.push(() => Promise.reject(new Error("Autoplay blocked")));
@@ -286,7 +341,7 @@ test("003 autoplay failure reveals a usable still scene and ignores a late playi
     assert.equal(f.root.dataset.state, "ready");
     assert.equal(f.video.paused, true);
     f.hide(); f.show();
-    assert.equal(f.video.plays, 1);
+    assert.equal(f.video.plays, 2);
   } finally { f.destroy(); }
 });
 
