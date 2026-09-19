@@ -1,7 +1,5 @@
 ---
 import KisaraLayout from "../layouts/KisaraLayout.astro";
-import KisaraPageRuntime from "../components/KisaraPageRuntime.astro";
-import worksPageUrl from "../lib/worksPage.js?url";
 import KisaraIngredientSymbols from "../components/KisaraIngredientSymbols.astro";
 import projectsStylesheet from "../styles/projects.css?url";
 import { Icon } from "astro-icon/components";
@@ -430,5 +428,19 @@ const kitchenCatalog = {
     </div>
   </section>
 
-  <KisaraPageRuntime src={worksPageUrl} rootSelector="[data-kisara-works-hero]" entry="bindWorksPage" />
+  <script>
+    document.addEventListener("astro:page-load", () => {
+      const root = document.querySelector<HTMLElement>("[data-kisara-works-hero]");
+      if (!root) return;
+      // Keep dependencies in Vite's module graph, including the terminal still helper.
+      import("../lib/worksPage.js").then(({ bindWorksPage }) => {
+        if (root.isConnected) bindWorksPage();
+      }).catch(error => {
+        if (!root.isConnected) return;
+        root.dataset.introState = "complete";
+        root.dataset.videoState = "fallback";
+        console.error("Kisara page interaction failed to load", error);
+      });
+    });
+  </script>
 </KisaraLayout>
