@@ -193,15 +193,20 @@
     ]
   },
   "/blog-covers/cover-12.webp": {
-    "width": 650,
-    "height": 970,
-    "hash": "367c0018",
+    "width": 900,
+    "height": 1600,
+    "hash": "844b0b59",
     "opaque": true,
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-12-320-367c0018.webp",
-        "bytes": 63172
+        "src": "/blog-covers/responsive/cover-12-320-844b0b59.webp",
+        "bytes": 82176
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-12-640-844b0b59.webp",
+        "bytes": 247478
       }
     ]
   },
