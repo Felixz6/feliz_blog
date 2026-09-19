@@ -89,21 +89,25 @@ test("Comic assets are deferred; 001 no longer downloads or drives its former fo
   assert.match(runtime, /serial !== generation/);
 });
 
-test("comic artwork and captions have separate responsive grid tracks", () => {
+test("comic artwork uses storyboard framing while captions stay on the panel edge", () => {
   assert.match(opening, /<div class="kisara-comic-panel-art">\s*<img data-comic-src/);
   assert.match(opening, /<\/noscript>\s*<\/div>\s*<figcaption>/);
   assert.match(css, /\.kisara-comic-panel figure \{[^}]*grid-template-rows: minmax\(0,1fr\) auto/);
   assert.match(css, /\.kisara-comic-panel-art \{[^}]*min-height: 0;[^}]*overflow: hidden/);
   const caption = css.match(/\.kisara-comic-panel figcaption \{([^}]+)\}/)![1];
   assert.match(caption, /position: relative/);
-  assert.doesNotMatch(caption, /position: absolute/);
-  assert.match(css, /grid-template-columns: minmax\(0,1fr\) 74px/);
-  assert.doesNotMatch(css, /width: calc\(100% - 72px\)/);
+  assert.match(css, /grid-template-columns: minmax\(0,1\.16fr\) minmax\(0,\.86fr\)/);
+  assert.match(css, /\.kisara-comic-panel img \{[^}]*object-fit: cover/);
+  assert.match(css, /--comic-image-scale: 1\.01/);
+  assert.match(css, /grid-column: 1; grid-row: 1\/-1/);
+  assert.match(css, /grid-column: 3\/5; grid-row: 1/);
+  assert.match(css, /grid-column: 2\/4; grid-row: 2/);
+  assert.match(css, /position: absolute;[^}]*background: rgba\(255,255,255,\.94\)/);
   for (const id of ["hero", "quiet", "action", "smile", "candle"]) {
     assert.match(css, new RegExp(`\\.kisara-comic-panel\\.is-${id} \\{[^}]*--comic-focus-x:[^}]*--comic-focus-y:`));
   }
-  assert.match(css, /object-position: var\(--comic-focus-x,50%\) var\(--comic-focus-y,30%\)/);
-  assert.match(css, /transform: scale\(1\.015\)/);
+  assert.match(css, /object-position: var\(--comic-focus-x,50%\) var\(--comic-focus-y,50%\)/);
+  assert.match(css, /scale\(calc\(var\(--comic-image-scale,1\) \* 1\.015\)\)/);
 });
 
 test("the home background and Works portrait use full panels without replacing archived artwork", async () => {
@@ -166,7 +170,7 @@ test("Five comic panels each represent one page and share synchronized accessibl
   const navigation = css.match(/\.kisara-comic-navigation\s*\{([^}]+)\}/)?.[1] ?? "";
   assert.match(navigation, /grid-template-rows/);
   assert.doesNotMatch(navigation, /background:|border-radius:|box-shadow:/);
-  assert.match(css, /grid-template-columns: repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-columns: minmax\(0,1\.16fr\) minmax\(0,\.86fr\)/);
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\); grid-template-rows: repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /kisara-comic-route-details \[hidden\] \{ display: none; \}/);
 });
