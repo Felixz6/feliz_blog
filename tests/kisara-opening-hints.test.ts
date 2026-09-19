@@ -78,7 +78,7 @@ test("001 is opaque and viewport-filling with no old transparent bridge markup",
 
 test("Comic assets are deferred; 001 no longer downloads or drives its former footage", () => {
   for (const id of ["quiet", "action", "smile", "candle"]) assert.match(opening, new RegExp(`id: "${id}"`));
-  assert.match(opening, /hero-panel-v2\.webp/);
+  assert.match(opening, /manga-home-v1\.webp/);
   assert.doesNotMatch(opening, /hero-structure\.svg|kisara-comic-portrait/);
   assert.match(opening, /data-comic-src/);
   assert.match(runtime, /await image\.decode\(\)/);
@@ -89,28 +89,30 @@ test("Comic assets are deferred; 001 no longer downloads or drives its former fo
   assert.match(runtime, /serial !== generation/);
 });
 
-test("comic artwork uses storyboard framing while captions stay on the panel edge", () => {
+test("original manga panels use full-bleed art and compact opaque captions", () => {
   assert.match(opening, /<div class="kisara-comic-panel-art">\s*<img data-comic-src/);
   assert.match(opening, /<\/noscript>\s*<\/div>\s*<figcaption>/);
-  assert.match(css, /\.kisara-comic-panel figure \{[^}]*grid-template-rows: minmax\(0,1fr\) auto/);
+  assert.match(css, /\.kisara-comic-panel figure \{[^}]*position: relative;[^}]*height: 100%/);
   assert.match(css, /\.kisara-comic-panel-art \{[^}]*min-height: 0;[^}]*overflow: hidden/);
   const caption = css.match(/\.kisara-comic-panel figcaption \{([^}]+)\}/)![1];
-  assert.match(caption, /position: relative/);
-  assert.match(css, /grid-template-columns: minmax\(0,1\.16fr\) minmax\(0,\.86fr\)/);
+  assert.match(caption, /position: absolute/);
+  assert.match(caption, /width: max-content/);
+  assert.match(caption, /background: #fff/);
+  assert.doesNotMatch(caption, /rgba|right:/);
+  assert.match(css, /grid-template-columns: repeat\(12,minmax\(0,1fr\)\)/);
   assert.match(css, /\.kisara-comic-panel img \{[^}]*object-fit: cover/);
-  assert.match(css, /--comic-image-scale: 1\.01/);
-  assert.match(css, /grid-column: 1; grid-row: 1\/-1/);
-  assert.match(css, /grid-column: 3\/5; grid-row: 1/);
-  assert.match(css, /grid-column: 2\/4; grid-row: 2/);
-  assert.match(css, /position: absolute;[^}]*background: rgba\(255,255,255,\.94\)/);
+  assert.doesNotMatch(css, /--comic-image-scale|--comic-panel-tilt/);
+  assert.match(css, /grid-column: 1\/4; grid-row: 1\/-1/);
+  assert.match(css, /grid-column: 8\/13; grid-row: 1/);
+  assert.match(css, /grid-column: 4\/9; grid-row: 2/);
   for (const id of ["hero", "quiet", "action", "smile", "candle"]) {
     assert.match(css, new RegExp(`\\.kisara-comic-panel\\.is-${id} \\{[^}]*--comic-focus-x:[^}]*--comic-focus-y:`));
   }
   assert.match(css, /object-position: var\(--comic-focus-x,50%\) var\(--comic-focus-y,50%\)/);
-  assert.match(css, /scale\(calc\(var\(--comic-image-scale,1\) \* 1\.015\)\)/);
+  assert.match(css, /scale\(1\.012\)/);
 });
 
-test("the home background and Works portrait use full panels without replacing archived artwork", async () => {
+test("archived full-panel artwork remains intact after the original-page redesign", async () => {
   const { default: sharp } = await import("sharp");
   const root = "../public/themes/kisara/assets/home-comic/";
   const hero = readFileSync(new URL(`${root}hero-panel-v2.webp`, import.meta.url));
@@ -122,8 +124,7 @@ test("the home background and Works portrait use full panels without replacing a
   const smileMeta = await sharp(smile).metadata();
   assert.deepEqual([smileMeta.width, smileMeta.height], [738, 1244]);
   assert.equal(smileMeta.hasAlpha, false);
-  assert.match(opening, /file: "smile-panel-v2\.webp", width: 738, height: 1244/);
-  assert.doesNotMatch(opening, /file: "smile\.webp"|file: "hero-hybrid\.webp"/);
+  assert.doesNotMatch(opening, /file: "(?:smile|hero-hybrid|hero-panel-v2|smile-panel-v2)\.webp"/);
   let total = hero.length + smile.length;
   for (const name of ["quiet", "action", "candle"]) {
     total += statSync(new URL(`${root}${name}.webp`, import.meta.url)).size;
@@ -170,7 +171,7 @@ test("Five comic panels each represent one page and share synchronized accessibl
   const navigation = css.match(/\.kisara-comic-navigation\s*\{([^}]+)\}/)?.[1] ?? "";
   assert.match(navigation, /grid-template-rows/);
   assert.doesNotMatch(navigation, /background:|border-radius:|box-shadow:/);
-  assert.match(css, /grid-template-columns: minmax\(0,1\.16fr\) minmax\(0,\.86fr\)/);
+  assert.match(css, /grid-template-columns: repeat\(12,minmax\(0,1fr\)\)/);
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\); grid-template-rows: repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /kisara-comic-route-details \[hidden\] \{ display: none; \}/);
 });
