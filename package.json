@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:performance",
+    "build": "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:modules && npm run check:performance",
+    "check:modules": "node --experimental-vm-modules scripts/check-built-modules.mjs",
     "prepare:covers": "node scripts/prepare-responsive-covers.mjs",
     "prune:media": "node scripts/prune-published-media.mjs",
     "check:performance": "node scripts/check-performance-budgets.mjs",
