@@ -4,7 +4,6 @@ import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
 import { createComicTransition, settleWithin } from "../src/themes/kisara/lib/comicTransition.ts";
-import { comicSpreadPoints } from "../src/themes/kisara/lib/comicMotion.ts";
 import { bindComicOpening } from "../src/themes/kisara/lib/comicOpening.ts";
 
 const flush = async () => { for (let i = 0; i < 24; i++) await Promise.resolve(); };
@@ -261,12 +260,14 @@ test("Entry reveals five framed page links over the paper before committing the 
     const paper = f.animations.find(animation => animation.node.className === "kisara-comic-paper")!;
     assert.equal(panels.length, 5);
     assert.equal(paper.options.delay, 0);
-    assert.deepEqual(panels.map(panel => panel.options.delay), [80, 115, 150, 185, 220]);
+    assert.deepEqual(panels.map(panel => panel.options.delay), [0, 25, 50, 75, 100]);
     assert.equal(paper.options.easing, "cubic-bezier(.23,1,.32,1)");
     assert.ok(Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration))) <= 530);
     assert.ok(panels.every(panel => panel.frames.every(frame => frame.clipPath === undefined)));
-    assert.deepEqual(paper.frames.map(frame => frame.opacity), [0, .55, .95, 1]);
-    assert.match(String(paper.frames[0].clipPath), /^polygon\(/);
+    assert.deepEqual(paper.frames.map(frame => frame.opacity), [1, 1]);
+    assert.ok(paper.frames.every(frame => frame.clipPath === "none"));
+    const page = f.animations.find(animation => animation.node.className === "kisara-comic")!;
+    assert.deepEqual(page.frames.map(frame => frame.opacity), [0, 1]);
     f.finish();
     assert.equal(await run, true);
     assert.equal(commits, 1);
@@ -275,7 +276,7 @@ test("Entry reveals five framed page links over the paper before committing the 
   } finally { controller.abort(); f.restore(); }
 });
 
-test("Exit retracts all five panels before paper, then waits for the fridge's fresh frame", async () => {
+test("Exit fades the intact page with its panels, then covers the fridge until a fresh frame", async () => {
   const f = fixture();
   const controller = new AbortController();
   try {
@@ -287,14 +288,18 @@ test("Exit retracts all five panels before paper, then waits for the fridge's fr
     assert.equal(commits, 0, "Do not start opening the fridge under the outgoing comic");
     const panels = f.animations.filter(animation => animation.node.className === "kisara-comic-panel");
     const paper = f.animations.find(animation => animation.node.className === "kisara-comic-paper")!;
-    assert.deepEqual(panels.map(panel => panel.options.delay), [100, 75, 50, 25, 0]);
-    assert.ok(panels.every(panel => Number(panel.options.delay) < Number(paper.options.delay)));
+    assert.deepEqual(panels.map(panel => panel.options.delay), [60, 45, 30, 15, 0]);
+    assert.ok(paper.frames.every(frame => frame.opacity === 1 && frame.clipPath === "none"));
+    const page = f.animations.find(animation => animation.node.className === "kisara-comic")!;
+    assert.equal(page.options.delay, 0, "Paper and content leave together, not as an empty oval");
+    assert.deepEqual(page.frames.map(frame => frame.opacity), [1, 0]);
     const exitDuration = Math.max(...f.animations.map(animation => Number(animation.options.delay) + Number(animation.options.duration)));
     assert.ok(exitDuration <= 480);
     f.finish();
     await flush();
     assert.equal(commits, 1);
-    assert.equal(paper.node.style.opacity, "0");
+    assert.equal(paper.node.style.opacity, "1");
+    assert.equal(page.node.style.opacity, "0");
     assert.ok(panels.every(panel => panel.node.style.opacity === "0"));
     assert.equal(f.nodes.length, 1);
     assert.match(f.nodes[0].className, /is-leave/);
@@ -310,7 +315,7 @@ test("Exit retracts all five panels before paper, then waits for the fridge's fr
   } finally { controller.abort(); f.restore(); }
 });
 
-test("Returning reveals the reset Gate underneath the reverse spread without a black cover", async () => {
+test("Returning reveals the reset Gate underneath the departing intact page", async () => {
   const f = fixture();
   const controller = new AbortController();
   try {
@@ -490,24 +495,19 @@ test("Each of the five framed page links selects only its own route group", () =
   } finally { runtime.destroy(); f.restore(); }
 });
 
-test("The irregular paper contour covers every corner at desktop, mobile, and landscape sizes", () => {
-  const inside = ([x, y]: number[], points: number[][]) => {
-    let result = false;
-    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-      const [a, b] = points[i], [c, d] = points[j];
-      if ((b > y) !== (d > y) && x < (c - a) * (y - b) / (d - b) + a) result = !result;
-    }
-    return result;
-  };
+test("Every viewport keeps the paper rectangular throughout the flight", async () => {
   for (const [width, height] of [[320, 568], [390, 844], [844, 390], [1440, 900], [2560, 1080]]) {
-    for (const origin of [.35, .65, .88]) {
-      const points = comicSpreadPoints(width, height, width * origin, height * .3, 1);
-      for (const corner of [[0, 0], [width, 0], [0, height], [width, height]]) {
-        assert.ok(inside(corner, points), `${width}x${height} must cover ${corner}`);
-      }
-      const seed = comicSpreadPoints(width, height, width * origin, height * .3, 0);
-      assert.ok(seed.every(point => inside(point, points)));
-      assert.ok(points.flat().every(Number.isFinite));
-    }
+    const f = fixture();
+    const controller = new AbortController();
+    try {
+      Object.assign(f.rawScene.rect, { width, height });
+      const transition = createComicTransition(controller.signal, false);
+      const run = transition.run({ scene: f.scene, mode: "enter", commit() {} });
+      await flush();
+      assert.ok(f.animations.every(animation =>
+        animation.frames.every(frame => frame.clipPath === undefined || frame.clipPath === "none")));
+      f.finish();
+      await run;
+    } finally { controller.abort(); f.restore(); }
   }
 });
