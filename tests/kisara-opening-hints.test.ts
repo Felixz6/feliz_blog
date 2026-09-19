@@ -136,7 +136,7 @@ test("archived full-panel artwork remains intact after the original-page redesig
   }
 });
 
-test("Comic entrance and return retain paper spread without a standalone portrait or page sliding", () => {
+test("Comic entrance and return move the intact page without a radial paper mask or standalone portrait", () => {
   const entry = home.slice(home.indexOf("const enterNextPage ="), home.indexOf("const finalizeLovebrainExit ="));
   const back = home.slice(home.indexOf("const returnToGate ="), home.indexOf("const clearHomeGateReturnArm ="));
   assert.match(entry, /runComicHandoff\("opening"/);
@@ -146,7 +146,8 @@ test("Comic entrance and return retain paper spread without a standalone portrai
   assert.match(home, /if \(comicTransition\.active \|\| chapterTransition\.active\) \{ event\.preventDefault\(\); return; \}/);
   assert.match(home, /a\[data-comic-next\]/);
   assert.match(runtime, /await motion\.play\(scene\)/);
-  assert.match(motion, /comicSpreadPoints/);
+  assert.match(motion, /animate\(scene, page/);
+  assert.doesNotMatch(motion, /comicSpreadPoints|clipPath: `polygon/);
   assert.match(css, /\.kisara-comic-flight > \.kisara-comic \{ background: transparent; \}/);
   assert.match(css, /\.kisara-comic\s*\{[^}]*color: var\(--comic-ink\)/);
   assert.doesNotMatch(css + transition, /kisara-comic-curtain|slabs|reveal === "split"/);

@@ -1,5 +1,3 @@
-import { getKisaraLocalRect } from "./displayScale.ts";
-
 export function settleWithin(task: Promise<unknown>, timeout: number, signal: AbortSignal) {
   return new Promise<void>(resolve => {
     const finish = () => {
@@ -11,19 +9,6 @@ export function settleWithin(task: Promise<unknown>, timeout: number, signal: Ab
     signal.addEventListener("abort", finish, { once: true });
     if (signal.aborted) finish();
     void task.then(finish, finish);
-  });
-}
-
-// The paper opens from the center of the five-panel page, using finite keyframes.
-export function comicSpreadPoints(width: number, height: number, x: number, y: number, progress: number) {
-  const radius = Math.hypot(Math.max(x, width - x), Math.max(y, height - y)) * 1.16;
-  return Array.from({ length: 40 }, (_, index) => {
-    const angle = index * Math.PI / 20;
-    const edge = .98 + .02 * Math.sin(angle * 3 + .8);
-    return [
-      x + Math.cos(angle) * radius * edge * (.025 + progress * .975),
-      y + Math.sin(angle) * radius * edge * (.1 + progress * .9),
-    ];
   });
 }
 
@@ -67,14 +52,15 @@ export function createComicMotion(signal: AbortSignal, reducedMotion: boolean) {
     async play(scene: HTMLElement, reverse = false) {
       cancel();
       const serial = generation;
-      const bounds = getKisaraLocalRect(scene);
       const paper = scene.querySelector<HTMLElement>(".kisara-comic-paper");
-      const x = bounds.width * .5;
-      const y = bounds.height * .45;
-      const spread = [0, .28, .68, 1].map((progress, index) => ({
-        clipPath: `polygon(${comicSpreadPoints(bounds.width, bounds.height, x, y, progress).map(([px, py]) => `${px.toFixed(1)}px ${py.toFixed(1)}px`).join(",")})`,
-        opacity: [0, .55, .95, 1][index],
-      }));
+      // Keep the page intact: the paper must not outlive its panels as an empty iris.
+      const page = reverse ? [
+        { opacity: 1, transform: "translate3d(0,0,0)" },
+        { opacity: 0, transform: "translate3d(0,-24px,0)" },
+      ] : [
+        { opacity: 0, transform: "translate3d(0,18px,0)" },
+        { opacity: 1, transform: "translate3d(0,0,0)" },
+      ];
       const reveal = [
         { opacity: 0, transform: "translate3d(0,8px,0)" },
         { opacity: 1, transform: "translate3d(0,0,0) scale(1)" },
@@ -82,14 +68,15 @@ export function createComicMotion(signal: AbortSignal, reducedMotion: boolean) {
       const fade = [{ opacity: 0 }, { opacity: 1 }];
       const ordered = (frames: Keyframe[]) => reverse ? [...frames].reverse() : frames;
       const jobs = [
-        animate(paper, ordered(spread), reverse ? 300 : 400, reverse ? 160 : 0, reverse ? "cubic-bezier(.77,0,.175,1)" : undefined),
+        animate(scene, page, reverse ? 280 : 320),
+        animate(paper, [{ opacity: 1, clipPath: "none" }, { opacity: 1, clipPath: "none" }], reverse ? 280 : 320),
       ];
       const panels = [...scene.querySelectorAll<HTMLElement>(".kisara-comic-panel")];
       panels.forEach((panel, index) => {
-        jobs.push(animate(panel, ordered(reveal), reverse ? 160 : 220, reverse ? (panels.length - 1 - index) * 25 : 80 + index * 35));
+        jobs.push(animate(panel, ordered(reveal), 220, reverse ? (panels.length - 1 - index) * 15 : index * 25));
       });
       scene.querySelectorAll<HTMLElement>("[data-comic-caption]").forEach((caption, index) => {
-        jobs.push(animate(caption, ordered(fade), reverse ? 140 : 180, reverse ? 0 : 160 + Math.min(index, 6) * 25));
+        jobs.push(animate(caption, ordered(fade), reverse ? 180 : 160, reverse ? 0 : 80 + Math.min(index, 6) * 15));
       });
       await Promise.all(jobs);
       if (!reverse && paper && serial === generation && !signal.aborted) paper.style.clipPath = "none";

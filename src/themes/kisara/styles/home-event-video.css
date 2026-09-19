@@ -45,17 +45,17 @@
   visibility: visible;
 }
 
-.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) .kisara-home-board-still {
-  visibility: visible;
+.kisara-home-board-still {
+  z-index: 1;
 }
 
-.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) video,
-.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) .kisara-home-board-first {
-  visibility: hidden;
+.kisara-home-video-stage:is([data-state="ready"], [data-state="error"], [data-state="complete"]) .kisara-home-board-still[data-video-still-ready] {
+  visibility: visible;
 }
 
 .kisara-home-video-media::after {
   position: absolute;
+  z-index: 2;
   inset: 0;
   content: "";
   pointer-events: none;

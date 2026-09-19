@@ -170,6 +170,7 @@ import { getThemePath } from "@/core/themes/registry";
 <script>
   import { getKisaraScale } from "../lib/displayScale";
   import { waitForVideoFrame } from "../lib/videoFrame";
+  import { bindVideoStill } from "../lib/videoStill";
   type FridgeBody = {
     element: HTMLButtonElement;
     kind: string;
@@ -237,6 +238,7 @@ import { getThemePath } from "@/core/themes/registry";
         const copy = this.querySelector<HTMLElement>(".kisara-fridge-copy");
         const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (!video || !stage || bodyElements.length !== 4) return;
+        bindVideoStill(video, this.querySelector<HTMLImageElement>(".kisara-fridge-last-frame"), signal);
 
         let sceneVisible = false;
         let openingStarted = false;
@@ -754,6 +756,10 @@ import { getThemePath } from "@/core/themes/registry";
           }
           if (opened) {
             ensureLoop();
+            return;
+          }
+          if (openingStarted && video.ended) {
+            finishOpening();
             return;
           }
           if (openingStarted && video.paused) {

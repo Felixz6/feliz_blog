@@ -1,9 +1,12 @@
+import { bindVideoStill } from "./videoStill.ts";
+
 export function bindWorksPage() {
   window.__yuimiKisaraInnerCleanup?.();
   const lifecycle = new AbortController();
   const signal = lifecycle.signal;
   const hero = document.querySelector("[data-kisara-works-hero]");
   const heroVideo = hero?.querySelector("[data-works-hero-video]");
+  if (heroVideo) bindVideoStill(heroVideo, hero.querySelector(".kisara-works-intro-last-frame"), signal);
   const sliceField = hero?.querySelector("[data-works-slice-field]");
   const sliceTrails = hero?.querySelector("[data-works-slice-trails]");
   const sliceScore = hero?.querySelector("[data-works-slice-score]");
@@ -333,12 +336,14 @@ export function bindWorksPage() {
         heroIntroDeadline = performance.now() + heroIntroRemaining;
         heroIntroTimer = window.setTimeout(finishHeroIntro, heroIntroRemaining);
       }
-      if (resumeHeroVideo && heroVideo instanceof HTMLVideoElement) {
+      if (resumeHeroVideo && heroVideo instanceof HTMLVideoElement
+        && !heroVideo.ended && hero.dataset.videoState !== "complete") {
         resumeHeroVideo = false;
         const playGeneration = ++heroVideoPlayGeneration;
         heroVideo.muted = true;
         void heroVideo.play().catch(() => {
-          if (!signal.aborted && playGeneration === heroVideoPlayGeneration) {
+          if (!signal.aborted && playGeneration === heroVideoPlayGeneration
+            && !heroVideo.ended && hero.dataset.videoState !== "complete") {
             heroVideoStarted = false;
             hero.dataset.videoState = "fallback";
           }
@@ -407,6 +412,7 @@ export function bindWorksPage() {
     if (!signal.aborted && hero instanceof HTMLElement) {
       hero.dataset.videoState = "complete";
       resumeHeroVideo = false;
+      heroVideoPlayGeneration += 1;
     }
   }, { signal });
   const recoverHeroVideo = () => { retryHeroVideo(); startPreparedHeroVideo(); };

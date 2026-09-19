@@ -173,6 +173,25 @@ test("003 reduced motion keeps the one-shot background still and deferred", asyn
   } finally { f.destroy(); }
 });
 
+test("003 readiness at the end boundary holds the last frame instead of starting another playback", async () => {
+  const f = fixture();
+  try {
+    f.show();
+    await flush();
+    f.video.currentTime = f.video.duration;
+    f.video.paused = true;
+    f.video.ended = true;
+    f.video.dispatchEvent(new Event("canplay"));
+    await flush();
+    assert.equal(f.video.plays, 1);
+    assert.equal(f.root.dataset.state, "complete");
+    assert.equal(f.video.currentTime, f.video.duration);
+    f.video.dispatchEvent(new Event("ended"));
+    f.hide(); f.show();
+    assert.equal(f.video.plays, 1);
+  } finally { f.destroy(); }
+});
+
 test("003 cover deadline releases navigation without abandoning a slow video", async () => {
   const f = fixture();
   try {

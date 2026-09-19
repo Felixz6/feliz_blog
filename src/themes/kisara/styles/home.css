@@ -1517,30 +1517,6 @@ html[data-kisara-gate-media="failed"] .kisara-gate-visual-shell::after {
     linear-gradient(180deg, #dfe5e9 0%, #edf1f4 48%, #d5dee6 100%);
 }
 
-.kisara-fridge-deck::before,
-.kisara-fridge-deck::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.kisara-fridge-deck::before {
-  inset: 0;
-  background:
-    linear-gradient(108deg, transparent 0 43%, rgba(255, 255, 255, 0.48) 43.1% 43.35%, transparent 43.5%),
-    radial-gradient(ellipse 36% 18% at 76% 7%, rgba(255, 255, 255, 0.42), transparent 72%);
-  opacity: 0.72;
-}
-
-.kisara-fridge-deck::after {
-  top: 0;
-  right: 7%;
-  width: min(calc(36vw / var(--kisara-scale, 1)), 520px);
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(111, 143, 162, 0.5), rgba(210, 91, 128, 0.42), transparent);
-}
-
 .kisara-latest {
   display: flex;
   flex-direction: column;
@@ -2342,12 +2318,12 @@ body.kisara-home-page .kisara-latest {
   object-fit: cover;
   object-position: 50% 50%;
   opacity: 0;
-  transition: opacity 160ms ease;
+  transition: none;
   pointer-events: none;
   user-select: none;
 }
 
-.kisara-fridge-scene.is-fridge-open .kisara-fridge-last-frame {
+.kisara-fridge-scene.is-fridge-open .kisara-fridge-last-frame[data-video-still-ready] {
   opacity: 1;
 }
 

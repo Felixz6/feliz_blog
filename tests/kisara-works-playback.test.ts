@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { setMaxListeners } from "node:events";
 import test from "node:test";
 import vm from "node:vm";
+import { bindVideoStill } from "../src/themes/kisara/lib/videoStill.ts";
 
 const source = readFileSync(new URL("../src/themes/kisara/lib/worksPage.js", import.meta.url), "utf8");
 const flush = async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); };
@@ -23,7 +24,12 @@ function fixture(readyState = 0, reduced = false) {
     static HAVE_CURRENT_DATA = 2;
     readyState = readyState;
     networkState = 2;
-    currentTime = 0;
+    position = 0;
+    get currentTime() { return this.position; }
+    set currentTime(value: number) {
+      this.position = value;
+      this.ended = false;
+    }
     error = null;
     paused = true;
     ended = false;
@@ -69,8 +75,9 @@ function fixture(readyState = 0, reduced = false) {
   class Controller extends AbortController {
     constructor() { super(); setMaxListeners(0, this.signal); }
   }
-  const bind = vm.runInNewContext(source.replace("export function", "function") + "\nbindWorksPage", {
+  const bind = vm.runInNewContext(source.replace(/^import .*;\r?\n/gm, "").replace("export function", "function") + "\nbindWorksPage", {
     window, document, HTMLElement: Element, HTMLVideoElement: Video, HTMLMediaElement: Video,
+    bindVideoStill,
     AbortController: Controller, IntersectionObserver, getComputedStyle: () => ({ zoom: "0.9" }),
     cancelAnimationFrame: window.cancelAnimationFrame,
     performance: { now: () => 0 },
@@ -217,4 +224,25 @@ test("Works keeps reduced motion static and ignores late readiness after cleanup
   f.video.dispatchEvent(new Event("canplay"));
   f.frame();
   assert.equal(f.video.plays, 0);
+});
+
+test("Works never resumes an ended video before the queued ended event or reverts on a late play rejection", async () => {
+  const f = fixture(4);
+  try {
+    f.frame();
+    const play = f.video.pending[0];
+    f.video.currentTime = 1.126;
+    f.video.paused = true;
+    f.video.ended = true;
+    f.visible(false);
+    f.visible(true);
+    assert.equal(f.video.plays, 1, "Visibility at the end boundary must not rewind through play()");
+    f.video.dispatchEvent(new Event("ended"));
+    play.reject(new Error("Late interruption"));
+    await flush();
+    assert.equal(f.hero.dataset.videoState, "complete");
+    assert.equal(f.video.currentTime, 1.126);
+    f.video.dispatchEvent(new Event("canplay"));
+    assert.equal(f.video.plays, 1);
+  } finally { f.cleanup(); }
 });

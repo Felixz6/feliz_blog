@@ -356,7 +356,6 @@ export const initKisaraChibiStage = (root: HTMLElement) => {
     nodes.forEach((node) => node.classList.remove("is-apple-focus", "is-apple-throw", "is-apple-hit"));
     if (appleVideo instanceof HTMLVideoElement) {
       appleVideo.pause();
-      if (appleVideo.readyState > 0) appleVideo.currentTime = 0;
     }
     appleFallback?.removeAttribute("src");
   };

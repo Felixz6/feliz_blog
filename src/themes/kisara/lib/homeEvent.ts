@@ -1,5 +1,6 @@
 import { bindHomeEventPortrait } from "./homeEventPortrait.ts";
 import { waitForVideoFrame } from "./videoFrame.ts";
+import { bindVideoStill } from "./videoStill.ts";
 
 export function visibleSceneRatio(rect: Pick<DOMRect, "top" | "bottom" | "height">, viewport: number) {
   const height = Math.max(1, viewport);
@@ -12,6 +13,7 @@ export function bindHomeEvent(root: HTMLElement) {
   const { signal } = controller;
   const video = root.querySelector<HTMLVideoElement>("[data-home-event-video]")!;
   const source = video.querySelector<HTMLSourceElement>("source[data-src]")!;
+  bindVideoStill(video, root.querySelector<HTMLImageElement>(".kisara-home-board-still"), signal);
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const portrait = bindHomeEventPortrait(root);
   let visible = false;
@@ -55,6 +57,7 @@ export function bindHomeEvent(root: HTMLElement) {
   };
   const play = async (restart = false) => {
     if (signal.aborted || suspended || !visible || pending || motion.matches) return;
+    if (!restart && (completed || video.ended)) { showStill("complete", true); return; }
     const attempt = ++generation;
     pending = true;
     hydrate();
@@ -95,6 +98,7 @@ export function bindHomeEvent(root: HTMLElement) {
   };
   const recover = () => {
     if (signal.aborted || suspended || !visible || completed || pending || motion.matches) return;
+    if (video.ended) { showStill("complete", true); return; }
     if (video.readyState >= 2 && video.paused && !video.error) void play(!started);
   };
   const scheduleRetry = () => {
@@ -159,12 +163,7 @@ export function bindHomeEvent(root: HTMLElement) {
     if (!completed && started) state("paused");
   }, { signal });
   video.addEventListener("ended", () => {
-    completed = true;
-    frameController?.abort();
-    pending = false;
-    clearWatchdog();
-    state("complete");
-    portrait.reveal();
+    showStill("complete", true);
   }, { signal });
   video.addEventListener("error", () => {
     showStill("error");
