@@ -1,0 +1,53 @@
+{
+  "source": "Engage Kiss / Bayron City Express / Itachi",
+  "sourceCollection": "User-supplied manga pages; chapter numbers follow the local folder ordering.",
+  "rights": "Third-party artwork, not covered by the repository code or article license. See THIRD_PARTY_ASSETS.md.",
+  "encoding": { "quality": 92, "effort": 6 },
+  "panels": [
+    {
+      "id": "home",
+      "file": "manga-home-v1.webp",
+      "chapter": 25,
+      "page": 54,
+      "sourceSize": [1080, 1536],
+      "sourceSha256": "a50a3813cc483e7a0a687120a5559fee2c6d8d93105695c5eb2f1d2c07c2cf65",
+      "crop": { "left": 0, "top": 0, "width": 1080, "height": 1536 }
+    },
+    {
+      "id": "blog",
+      "file": "manga-blog-v1.webp",
+      "chapter": 6,
+      "page": 5,
+      "sourceSize": [960, 1364],
+      "sourceSha256": "b5f16dc5af04c708307c1716d556d8066d97a9200b59d4fe50b2c8c22d908fca",
+      "crop": { "left": 0, "top": 0, "width": 880, "height": 674 }
+    },
+    {
+      "id": "games",
+      "file": "manga-game-v1.webp",
+      "chapter": 4,
+      "page": 18,
+      "sourceSize": [960, 693],
+      "sourceSha256": "5154bcc92087c3e478612f424212580c602e2335d0cbade0e91eefd6b877fc85",
+      "crop": { "left": 0, "top": 0, "width": 960, "height": 693 }
+    },
+    {
+      "id": "projects",
+      "file": "manga-works-v1.webp",
+      "chapter": 21,
+      "page": 2,
+      "sourceSize": [960, 682],
+      "sourceSha256": "6af860ffa8b0a040129766a8cbdb22866b4b809e778dd1d92056f09781b0d9f2",
+      "crop": { "left": 0, "top": 0, "width": 960, "height": 682 }
+    },
+    {
+      "id": "about",
+      "file": "manga-me-v1.webp",
+      "chapter": 3,
+      "page": 5,
+      "sourceSize": [960, 1364],
+      "sourceSha256": "0c73866c02856f5c9ec3dc850e4c9e2eca0c675f58ccf41a9bcc50dba9e74b6c",
+      "crop": { "left": 0, "top": 0, "width": 960, "height": 688 }
+    }
+  ]
+}
