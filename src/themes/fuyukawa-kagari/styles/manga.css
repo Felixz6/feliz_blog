@@ -38,11 +38,10 @@ body[data-fuyukawa] .scene-divider__rail { display: none; }
 
 /* The contents can be turned sideways without capturing vertical page scrolling. */
 body[data-fuyukawa] .chapter-rail { padding: 32px max(28px, calc((100% - 1200px) / 2)) 60px; overflow: hidden; }
-body[data-fuyukawa] .chapter-track { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(290px, 34%); gap: 24px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #c4d6e5 transparent; padding: 10px 8px 22px 2px; scroll-padding-inline: 2px; }
+body[data-fuyukawa] .chapter-track { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row; gap: 24px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #c4d6e5 transparent; padding: 10px 8px 22px 2px; scroll-padding-inline: 2px; }
 body[data-fuyukawa] .chapter-leaf { --leaf-tint: #e7f0f8; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 350px; padding: 18px; border: 1px solid var(--manga-rule); border-radius: 4px; background: #fff; box-shadow: 5px 6px 0 var(--leaf-tint); scroll-snap-align: start; }
 body[data-fuyukawa] .chapter-leaf:nth-child(2) { --leaf-tint: #f4e2eb; }
-body[data-fuyukawa] .chapter-leaf:nth-child(3) { --leaf-tint: #e4f0e8; }
-body[data-fuyukawa] .chapter-leaf:nth-child(4) { --leaf-tint: #ece8f4; }
+body[data-fuyukawa] .chapter-leaf:nth-child(3) { --leaf-tint: #ece8f4; }
 body[data-fuyukawa] .chapter-number { font-family: Consolas, monospace; color: var(--accent); font-size: .7rem; }
 body[data-fuyukawa] .chapter-picture { height: 184px; margin-top: 14px; padding-right: 18px; }
 body[data-fuyukawa] .chapter-picture img { width: 100%; height: 100%; object-fit: contain; }
@@ -78,7 +77,9 @@ body[data-fuyukawa] .memory-album .manga-section-heading h2 { font-size: 1.3rem;
 @media (max-width: 1100px) {
   body[data-fuyukawa] .hero h1 { font-size: 4rem; }
   body[data-fuyukawa] .hero-copy { width: 41%; }
-  body[data-fuyukawa] .chapter-track { grid-auto-columns: minmax(285px, 44%); }
+}
+@media (max-width: 860px) {
+  body[data-fuyukawa] .chapter-track { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(270px, 80%); }
 }
 @media (max-width: 760px) {
   body[data-fuyukawa] .hero { padding-inline: 24px; }
@@ -91,7 +92,7 @@ body[data-fuyukawa] .memory-album .manga-section-heading h2 { font-size: 1.3rem;
   body[data-fuyukawa] .manga-section-heading { gap: 16px; flex-wrap: wrap; }
   body[data-fuyukawa] .manga-section-heading h2 { font-size: 1.4rem; }
   body[data-fuyukawa] .chapter-rail { padding: 28px 24px 44px; }
-  body[data-fuyukawa] .chapter-track { grid-auto-columns: minmax(270px, 80%); gap: 20px; }
+  body[data-fuyukawa] .chapter-track { gap: 20px; }
   body[data-fuyukawa] .chapter-leaf { min-height: 335px; }
   body[data-fuyukawa] .chapter-picture { height: 175px; }
   body[data-fuyukawa] .blog-title-copy > .manga-handwritten { font-size: .72rem; }
