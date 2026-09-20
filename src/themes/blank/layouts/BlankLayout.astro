@@ -7,7 +7,7 @@ import ThemeLongPressMenu from "@/core/themes/ThemeLongPressMenu.astro";
 import ConsoleEasterEgg from "@/core/ConsoleEasterEgg.astro";
 import PerformanceProfile from "@/core/PerformanceProfile.astro";
 import SeoMeta from "@/core/SeoMeta.astro";
-import { getCanonicalPath, getThemePath, themes } from "@/core/themes/registry";
+import { getCanonicalPath, getThemePath, selectableThemes } from "@/core/themes/registry";
 import { profileIdentity } from "@/core/data/profile";
 import { site } from "@/lib/site";
 
@@ -87,14 +87,14 @@ const navItems = site.nav.map((item, index) => ({
       </div>
       <noscript>
         <div class="blank-noscript-themes">
-          {themes.map((theme) => <a href={getThemePath(theme.id, canonicalPath)}>{theme.label}</a>)}
+          {selectableThemes.map((theme) => <a href={getThemePath(theme.id, canonicalPath)}>{theme.label}</a>)}
         </div>
       </noscript>
     </footer>
 
     <nav id="blank-theme-menu" class="blank-context-menu" data-blank-context-menu hidden aria-label="主题与页面">
       <p class="blank-kicker">APPEARANCE / 主题</p>
-      {themes.map((theme, index) => (
+      {selectableThemes.map((theme, index) => (
         <button type="button" data-theme-select={theme.id} aria-pressed={theme.id === "blank"}>
           <span class="blank-menu-index">{String(index + 1).padStart(2, "0")}</span>
           <span>{theme.label}</span>

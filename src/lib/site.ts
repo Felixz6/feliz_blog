@@ -1,6 +1,6 @@
 export const site = {
-  name: "kisariz",
-  title: "Felisara Lab",
+  name: "kanade",
+  title: "Feliz Lab",
   description: "音無結弦の時 躍動天使の心 立於浮華の世 奏響天籟の音",
   author: "Feliz",
   keywords: ["个人博客", "CTF", "Web Security", "开源", "开发工具", "AI"],

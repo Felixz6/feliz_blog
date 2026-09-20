@@ -5,7 +5,8 @@ import {
   DEFAULT_THEME_ID,
   getCanonicalPath,
   getThemePath,
-  isThemeId
+  isThemeId,
+  selectableThemes
 } from "../src/core/themes/registry.ts";
 
 test("theme registry uses Fuyukawa Kagari as the default", () => {
@@ -14,6 +15,22 @@ test("theme registry uses Fuyukawa Kagari as the default", () => {
   assert.equal(isThemeId("blank"), true);
   assert.equal(isThemeId("kisara"), true);
   assert.equal(isThemeId("removed-theme"), false);
+  assert.deepEqual(selectableThemes.map((theme) => theme.id), ["fuyukawa-kagari"]);
+});
+
+test("theme selectors offer only Fuyukawa while alternate route registrations remain intact", () => {
+  const fuyukawa = readFileSync(new URL("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro", import.meta.url), "utf8");
+  const kisara = readFileSync(new URL("../src/themes/kisara/layouts/KisaraLayout.astro", import.meta.url), "utf8");
+  const blank = readFileSync(new URL("../src/themes/blank/layouts/BlankLayout.astro", import.meta.url), "utf8");
+  const preferenceGate = readFileSync(new URL("../src/core/themes/ThemePreferenceGate.astro", import.meta.url), "utf8");
+
+  assert.match(fuyukawa, /data-theme-select="fuyukawa-kagari"/);
+  assert.doesNotMatch(fuyukawa, /data-theme-select="(?:blank|kisara)"/);
+  assert.match(kisara, /selectableThemes\.map/);
+  assert.match(blank, /selectableThemes\.map/);
+  assert.match(preferenceGate, /selectableThemeIds: selectableThemes\.map/);
+  assert.equal(isThemeId("blank"), true);
+  assert.equal(isThemeId("kisara"), true);
 });
 
 test("canonical paths strip alternate theme prefixes", () => {

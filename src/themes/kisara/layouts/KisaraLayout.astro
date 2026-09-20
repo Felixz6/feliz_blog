@@ -11,7 +11,7 @@ import ConsoleEasterEgg from "@/core/ConsoleEasterEgg.astro";
 import PerformanceProfile from "@/core/PerformanceProfile.astro";
 import SeoMeta from "@/core/SeoMeta.astro";
 import { profileIdentity } from "@/core/data/profile";
-import { getCanonicalPath, getThemePath, themes } from "@/core/themes/registry";
+import { getCanonicalPath, getThemePath, selectableThemes } from "@/core/themes/registry";
 import { site } from "@/lib/site";
 import KisaraAudioControl from "../components/KisaraAudioControl.astro";
 import KisaraChibiStage from "../components/KisaraChibiStage.astro";
@@ -66,7 +66,7 @@ const navItems = site.nav.map((item) => {
     warmup: import.meta.env.PROD && !active ? (homeExitRoute || reciprocalGameRoute ? "load" : "hover") : undefined
   };
 });
-const themeOptions = themes.map((theme) => ({
+const themeOptions = selectableThemes.map((theme) => ({
   ...theme,
   href: getThemePath(theme.id, canonicalPath)
 }));
