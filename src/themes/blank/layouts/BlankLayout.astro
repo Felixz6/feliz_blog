@@ -7,6 +7,7 @@ import ThemeLongPressMenu from "@/core/themes/ThemeLongPressMenu.astro";
 import ConsoleEasterEgg from "@/core/ConsoleEasterEgg.astro";
 import PerformanceProfile from "@/core/PerformanceProfile.astro";
 import SeoMeta from "@/core/SeoMeta.astro";
+import Analytics from "@vercel/analytics/astro";
 import { getCanonicalPath, getThemePath, selectableThemes } from "@/core/themes/registry";
 import { profileIdentity } from "@/core/data/profile";
 import { site } from "@/lib/site";
@@ -41,6 +42,7 @@ const navItems = site.nav.map((item, index) => ({
     <link rel="canonical" href={canonical} />
     <ThemePreferenceGate currentTheme="blank" />
     <ConsoleEasterEgg />
+    <Analytics />
     <title>{title}</title>
   </head>
   <body data-blank data-pagefind-ignore data-yuimi-article-page={isArticlePage ? "true" : undefined}>

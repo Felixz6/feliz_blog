@@ -10,6 +10,7 @@ import ThemeLongPressMenu from "@/core/themes/ThemeLongPressMenu.astro";
 import ConsoleEasterEgg from "@/core/ConsoleEasterEgg.astro";
 import PerformanceProfile from "@/core/PerformanceProfile.astro";
 import SeoMeta from "@/core/SeoMeta.astro";
+import Analytics from "@vercel/analytics/astro";
 import { profileIdentity } from "@/core/data/profile";
 import { getCanonicalPath, getThemePath, selectableThemes } from "@/core/themes/registry";
 import { site } from "@/lib/site";
@@ -115,6 +116,7 @@ const themedNotFoundRedirectScript = `(() => {
     <ThemePreferenceGate currentTheme="kisara" honorPreference={honorThemePreference} />
     <ClientRouter fallback="swap" />
     <ConsoleEasterEgg />
+    <Analytics />
     <script>
       import { initKisaraRouteWarmup } from "../lib/routeWarmup";
 
