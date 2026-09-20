@@ -8,6 +8,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExpressiveCode from "rehype-expressive-code";
 import * as pagefind from "pagefind";
 import { fileURLToPath } from "node:url";
+import vercel from "@astrojs/vercel";
 
 const expressiveCodeOptions = {
   themes: ["github-dark"],
@@ -86,6 +87,11 @@ const pagefindIntegration = () => ({
 export default defineConfig({
   site: "https://yuimi-chaya.github.io",
   output: "static",
+  adapter: vercel({
+    webAnalytics: {
+      enabled: true
+    }
+  }),
   prefetch: {
     prefetchAll: false,
     defaultStrategy: "tap"
