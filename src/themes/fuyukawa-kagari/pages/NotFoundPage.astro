@@ -2,11 +2,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getThemePath } from "@/core/themes/registry";
 import MangaArt from "../components/MangaArt.astro";
+import { site } from "@/lib/site";
 ---
 
 <BaseLayout
-  title="404 | Yuimi Lab"
-  description="这个页面迷路了。"
+  title={`404 | ${site.name}`}
+  description={site.description}
   honorThemePreference={false}
   redirectThemedNotFound={true}
 >

@@ -4,12 +4,13 @@ import { gamePicks as sharedGamePicks } from "@/core/data/games";
 import { Icon } from "astro-icon/components";
 import GameCover from "../components/GameCover.astro";
 import MangaArt from "../components/MangaArt.astro";
+import { site } from "@/lib/site";
 
 const gameIcons = { "2048": "◆", hextris: "⬡", "clumsy-bird": "♪" } as const;
 const gamePicks = sharedGamePicks.map((game) => ({ ...game, icon: gameIcons[game.id] }));
 ---
 
-<BaseLayout title="Game | Yuimi Lab" description="小游戏、互动实验和博客彩蛋入口。">
+<BaseLayout title={`Games | ${site.name}`} description={site.description}>
   <section class="page-title game-hero-card">
     <MangaArt image="playroom-strip" class="playroom-opening-panel" eager />
     <div class="playroom-heading">
@@ -57,6 +58,6 @@ const gamePicks = sharedGamePicks.map((game) => ({ ...game, icon: gameIcons[game
   <section class="game-note">
     <MangaArt image="haruto-thinking" class="game-note-character" />
     <strong>收藏说明</strong>
-    <p>这些小游戏仍属于各自原作者与开源许可证。Yuimi Lab 只做个人兴趣展示、介绍与外链，不对小游戏本体进行商业使用。</p>
+    <p>这些小游戏仍属于各自原作者并遵循对应许可证。本页仅作个人兴趣展示、介绍与外链，不对小游戏本体进行商业使用。</p>
   </section>
 </BaseLayout>

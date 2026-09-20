@@ -464,6 +464,6 @@ Vibe Coding 给人最大的错觉是: 模型已经能自己读代码、自己改
 
 所以你仍然要决定项目中线程的分工、工作目录在哪里、哪些素材不能碰、什么时候该停下来确认,以及什么结果才算真的修好.Vibe Coding 远没有“一句话生成项目”那么酷,但背后由你进行管理决策的东西才是让长线程更加稳定的重要因素.
 
-我把更完整的项目规则和开发笔记参考放在这里：[Yuimi-chaya/codex-development-guidelines](https://github.com/Yuimi-chaya/codex-development-guidelines)
+更完整的项目规则和开发笔记另见对应的项目资料仓库。
 
 既然短时间内改变不了客户端,那至少可以先把自己的目录、线程和上下文管明白.

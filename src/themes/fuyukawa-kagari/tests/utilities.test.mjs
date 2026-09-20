@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import test from "node:test";
 import postcss from "postcss";
 import sharp from "sharp";
-import { clampWaifuPosition, mountWaifuAnchor } from "../lib/waifu-anchor.mjs";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const layout = read("layouts/BaseLayout.astro");
@@ -84,7 +83,7 @@ test("drawer pin, second-click close, hover reentry and Escape agree with aria-e
   doc.querySelector = () => dock;
   win.setTimeout = (fn) => { timers.set(++id, fn); return id; };
   win.clearTimeout = (key) => timers.delete(key);
-  vm.runInNewContext(section("let toyDockCloseTimer", 'const live2dBase ='), {
+  vm.runInNewContext(section("let toyDockCloseTimer", 'const musicCacheKey ='), {
     document: doc, window: win, Node: Element, Element, queueMicrotask
   });
   dock.hovered = true;
@@ -160,155 +159,16 @@ test("sakura uses small notched artwork and compositor-only nested animations", 
   assert.ok(visible > 4000 && transparent > 1000);
 });
 
-test("Live2D position and visibility remain defined without any CDN stylesheet", () => {
-  const waifu = declarations(css, "body[data-fuyukawa] #waifu");
-  assert.equal(waifu.position, "fixed");
-  assert.equal(waifu.top, "auto");
-  assert.match(waifu.bottom, /safe-area-inset-bottom/);
-  assert.match(waifu["--waifu-size"], /100dvh/);
-  assert.equal(declarations(css, "body[data-fuyukawa] #waifu.waifu-active").opacity, "1");
-  assert.equal(declarations(css, "body[data-fuyukawa] #waifu.waifu-hidden").display, "none");
-  assert.match(layout, /drag: false/);
-  assert.match(layout, /anchorWaifu\(waifu\)/);
-  assert.match(layout, /astro:before-swap", hideLive2dForRoute/);
-});
-
-test("drag bounds do not depend on document scroll or page height", () => {
-  for (const [viewportWidth, viewportHeight, size] of [[1440, 900, 280], [390, 844, 220], [320, 240, 176]]) {
-    for (const left of [-5000, 0, 100, 99999]) {
-      for (const top of [-5000, 0, 100, 99999]) {
-        const result = clampWaifuPosition(left, top, size, size, viewportWidth, viewportHeight);
-        assert.ok(result.left >= 8 && result.top >= 8);
-        assert.ok(result.left + size <= viewportWidth - 8);
-        assert.ok(result.top + size <= viewportHeight - 8);
-      }
-    }
+test("Fuyukawa layout removes Live2D while retaining the music-only utility dock", () => {
+  assert.doesNotMatch(layout, /live2d|waifu/i);
+  assert.match(layout, /aria-label="Music controls"/);
+  assert.match(layout, /aria-label="打开音乐工具"/);
+  assert.match(layout, /tabler:player-play/);
+  assert.match(layout, /class="music-widget"/);
+  for (const file of ["styles/theme.css", "styles/refresh.css", "pages/AboutPage.astro", "pages/ProjectsPage.astro"]) {
+    assert.doesNotMatch(read(file), /live2d|waifu/i, file);
   }
-  assert.doesNotMatch(read("lib/waifu-anchor.mjs"), /scrollY|scrollHeight|pageY|requestAnimationFrame|setInterval/);
-});
-
-test("Live2D drag is clamped, reflows after resize, and releases captures/listeners on cleanup", () => {
-  const root = new Element(), doc = new Element(), win = new Element();
-  win.innerWidth = 1000;
-  win.innerHeight = 700;
-  doc.visibilityState = "visible";
-  doc.body = { appendChild: (node) => { node.parentElement = doc.body; } };
-  root.ownerDocument = doc;
-  root.style.top = "10000px";
-  root.getBoundingClientRect = () => {
-    const [x = 0, y = 0] = (root.style.translate ?? "").split(" ").map(parseFloat);
-    return { left: 14 + (x || 0), top: win.innerHeight - 288 + (y || 0), width: 280, height: 280 };
-  };
-  let captured = null;
-  root.setPointerCapture = (id) => { captured = id; };
-  root.hasPointerCapture = (id) => captured === id;
-  root.releasePointerCapture = (id) => { captured = null; root.dispatch("lostpointercapture", { pointerId: id }); };
-  const cleanup = mountWaifuAnchor(root, win);
-  assert.equal(root.parentElement, doc.body);
-  assert.equal(root.style.top, undefined);
-  root.dispatch("pointerdown", { button: 0, isPrimary: true, target: { id: "live2d" }, pointerId: 1, clientX: 24, clientY: 430 });
-  root.dispatch("pointermove", { pointerId: 1, clientX: 5000, clientY: 8000 });
-  let rect = root.getBoundingClientRect();
-  assert.equal(rect.left + rect.width, 992);
-  assert.equal(rect.top + rect.height, 692);
-  root.dispatch("pointerup", { pointerId: 1 });
-  assert.equal(captured, null);
-  win.innerWidth = 480;
-  win.innerHeight = 400;
-  win.dispatch("resize");
-  rect = root.getBoundingClientRect();
-  assert.ok(rect.left >= 8 && rect.left + rect.width <= 472);
-  assert.ok(rect.top >= 8 && rect.top + rect.height <= 392);
-  root.classList.add("waifu-hidden");
-  const lastTranslation = root.style.translate;
-  win.dispatch("resize");
-  assert.equal(root.style.translate, lastTranslation);
-  root.classList.remove("waifu-hidden");
-  root.dispatch("pointerdown", { button: 0, isPrimary: true, target: { id: "live2d" }, pointerId: 2, clientX: 24, clientY: 140 });
-  cleanup();
-  assert.equal(captured, null);
-  for (const node of [root, doc, win]) {
-    for (const handlers of node.events.values()) assert.equal(handlers.size, 0);
-  }
-});
-
-test("resource loading deduplicates requests but recreates styles removed by a head swap", async () => {
-  const nodes = [];
-  const doc = {
-    head: {
-      querySelectorAll: () => nodes,
-      appendChild: (node) => nodes.push(node)
-    },
-    createElement: () => ({ remove() { const index = nodes.indexOf(this); if (index >= 0) nodes.splice(index, 1); } })
-  };
-  const context = vm.createContext({ document: doc });
-  vm.runInContext(`const live2dResources = new Map(); ${section("const loadExternalResource =", "const setWaifuVisibility =")} globalThis.load = loadExternalResource;`, context);
-  const url = "https://example.test/waifu.css";
-  const first = context.load(url, "css");
-  assert.equal(context.load(url, "css"), first);
-  assert.equal(nodes.length, 1);
-  nodes[0].onload();
-  await first;
-  nodes[0].remove();
-  const second = context.load(url, "css");
-  assert.notEqual(first, second);
-  assert.equal(nodes.length, 1);
-  nodes[0].onerror();
-  await assert.rejects(second);
-  assert.equal(nodes.length, 0);
-  const third = context.load(url, "css");
-  nodes[0].onload();
-  await third;
-});
-
-test("rapid hide/show cancels stale Live2D hiding without changing its viewport anchor", () => {
-  const waifu = new Element(), toggle = new Element(), timers = new Map();
-  let nextTimer = 0, anchors = 0;
-  const context = vm.createContext({
-    document: { getElementById: () => waifu },
-    window: {
-      setTimeout(fn) { timers.set(++nextTimer, fn); return nextTimer; },
-      clearTimeout(id) { timers.delete(id); }
-    },
-    localStorage: { setItem() {}, removeItem() {} },
-    anchorWaifu: () => { anchors++; },
-    live2dToggle: toggle,
-    setLive2dStatus() {}
-  });
-  vm.runInContext("let live2dVisible = true, live2dVisibilityTimer = 0;" +
-    section("const setWaifuVisibility =", "const showWaifuMessage =") +
-    "globalThis.show = setWaifuVisibility;", context);
-  context.show(false);
-  assert.equal(timers.size, 1);
-  context.show(true);
-  assert.equal(timers.size, 0);
-  assert.equal(waifu.classList.contains("waifu-active"), true);
-  assert.equal(waifu.classList.contains("waifu-hidden"), false);
-  assert.equal(anchors, 1);
-  context.show(false);
-  for (const fn of timers.values()) fn();
-  assert.equal(waifu.classList.contains("waifu-hidden"), true);
-});
-
-test("late widget polling cannot revive Live2D after the route generation changes", () => {
-  const timers = [], waifu = new Element();
-  let found = false, callbacks = 0;
-  const context = vm.createContext({
-    document: { getElementById: () => found ? waifu : null },
-    window: { setTimeout: (fn) => timers.push(fn) },
-    isHomeRoute: () => true
-  });
-  vm.runInContext("let live2dGeneration = 1;" +
-    section("const waitForWaifu =", "const ensureLocalWaifuFallback =") +
-    "globalThis.wait = waitForWaifu;", context);
-  context.wait(() => { callbacks++; });
-  assert.equal(timers.length, 1);
-  found = true;
-  vm.runInContext("live2dGeneration++;", context);
-  timers.shift()();
-  assert.equal(callbacks, 0);
-  context.wait(() => { callbacks++; });
-  assert.equal(callbacks, 1);
+  assert.equal(existsSync(new URL("../lib/waifu-anchor.mjs", import.meta.url)), false);
 });
 
 test("music UI preserves zero volume, icon children, seek fill and live playback state", async () => {
@@ -336,7 +196,7 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
     document: doc, window: win, localStorage, sessionStorage: storage(), Audio,
     URL, AbortController, fetch: async () => ({ json: async () => [{ id: "1", title: "A track", src: "/track.mp3" }] })
   });
-  vm.runInContext(section("const musicCacheKey =", "window.__yuimiRadio ??=") + "globalThis.player = createYuimiRadio();", context);
+  vm.runInContext(section("const musicCacheKey =", "window.__yuimiRadio ??=") + "globalThis.player = createMusicPlayer();", context);
   const player = context.player;
   const toggle = nodes.get("[data-music-toggle]");
   toggle.textContent = "existing icon children";

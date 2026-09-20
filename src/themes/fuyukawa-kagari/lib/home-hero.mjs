@@ -21,7 +21,7 @@ export function mountHomeHero() {
       "npm run scrapbook",
       "echo \"做自己想做，想自己所想\""
     ];
-    const nameLines = ["喝益胃", "Yuimi-chaya"];
+    const nameLines = JSON.parse(nameTarget?.dataset.nameLines || "[]").filter(Boolean);
 
     let pull = 0;
     let state = "idle";
@@ -134,7 +134,6 @@ export function mountHomeHero() {
 
     const handleHeroWheel = (event) => {
       if (!stage || !hero) return;
-      if (document.documentElement.classList.contains("is-notice-open")) return;
 
       const atHeroTop = window.scrollY <= 2 && stage.getBoundingClientRect().top >= -2;
       if (!atHeroTop) {

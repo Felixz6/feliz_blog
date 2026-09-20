@@ -1,13 +1,12 @@
 export const site = {
-  name: "Yuimi Lab",
-  title: "Yuimi Lab | Anime x Code",
-  description: "一个混合二次元审美与技术开发记录的个人博客。",
-  author: "喝益胃 / Yuimi-chaya",
-  keywords: ["喝益胃", "Yuimi-chaya", "Yuimi Lab", "个人博客", "二次元", "技术开发", "Astro"],
+  name: "kisariz",
+  title: "Felisara Lab",
+  description: "音無結弦の時 躍動天使の心 立於浮華の世 奏響天籟の音",
+  author: "Feliz",
+  keywords: ["个人博客", "CTF", "Web Security", "开源", "开发工具", "AI"],
   nav: [
     { href: "/", label: "HOME", icon: "tabler:home-heart", hint: "front page" },
     { href: "/blog/", label: "BLOG", icon: "tabler:book-2", hint: "notes" },
-    { href: "/games/", label: "GAME", icon: "tabler:device-gamepad-2", hint: "playroom" },
     { href: "/projects/", label: "WORKS", icon: "tabler:code", hint: "projects" },
     { href: "/about/", label: "ME", icon: "tabler:user-heart", hint: "profile" }
   ]

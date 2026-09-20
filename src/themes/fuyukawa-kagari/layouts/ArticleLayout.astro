@@ -4,9 +4,10 @@ import { categoryLabel } from "@/lib/site";
 import { getThemePath } from "@/core/themes/registry";
 import { Icon } from "astro-icon/components";
 import MangaArt from "../components/MangaArt.astro";
+import { site } from "@/lib/site";
 
 const { frontmatter } = Astro.props;
-const title = `${frontmatter.seoTitle ?? frontmatter.title} | Yuimi Lab`;
+const title = `${frontmatter.seoTitle ?? frontmatter.title} | ${site.name}`;
 const description = frontmatter.seoDescription ?? frontmatter.description;
 const date = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",

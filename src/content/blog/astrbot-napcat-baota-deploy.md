@@ -12,9 +12,6 @@ category: "tech"
 ---
 从云服务器准备到 QQ 收发消息测试,小白也能照着做
 
-作者：**喝益胃 / Yuimi-chaya**  
-Bilibili 主页：<https://space.bilibili.com/494350222>
-
 > 创作声明：本文由作者提供实践经验与截图,并使用 AI 辅助整理、改写和排版.教程内容会尽量保持清晰准确,但 AstrBot、NapCat、宝塔面板和各云厂商界面可能随版本变化,请以实际页面和官方文档为准
 
 ## 这篇教程能做什么
@@ -405,5 +402,3 @@ ws://astrbot:6199/ws
 
 - AstrBot 文档：<https://docs.astrbot.app/>
 - AstrBot OneBot v11 接入文档：<https://docs.astrbot.app/platform/aiocqhttp.html>
-- Bilibili 主页：<https://space.bilibili.com/494350222>
-

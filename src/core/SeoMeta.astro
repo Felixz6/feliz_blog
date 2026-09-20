@@ -2,6 +2,7 @@
 import { profileIdentity } from "@/core/data/profile";
 import type { BlogPost } from "@/core/content/blog";
 import { site } from "@/lib/site";
+import { kagariAssets } from "@/themes/fuyukawa-kagari/assets";
 
 interface Props {
   title: string;
@@ -20,7 +21,7 @@ const personUrl = new URL("/about/", siteRoot).toString();
 const personId = new URL("/#person", siteRoot).toString();
 const websiteId = new URL("/#website", siteRoot).toString();
 const pageId = `${canonicalUrl}#webpage`;
-const profileImage = new URL("/themes/kisara/assets/profile.webp", siteRoot).toString();
+const profileImage = new URL(kagariAssets.profile, siteRoot).toString();
 const isHome = canonicalPath === "/";
 const isProfile = canonicalPath === "/about";
 const openGraphType = isArticlePage ? "article" : isProfile ? "profile" : "website";
@@ -30,6 +31,8 @@ const articleKeywords = article
   ? Array.from(new Set([...(article.seoKeywords ?? []), ...article.tags]))
   : [];
 const keywords = Array.from(new Set([...site.keywords, ...articleKeywords]));
+const sameAs = [profileIdentity.github, profileIdentity.bilibili]
+  .filter((url) => url.startsWith("https://"));
 
 const personNode = {
   "@type": "Person",
@@ -39,7 +42,7 @@ const personNode = {
   url: personUrl,
   image: profileImage,
   description: profileIdentity.bio,
-  sameAs: [profileIdentity.github, profileIdentity.bilibili]
+  ...(sameAs.length ? { sameAs } : {})
 };
 
 const pageNode = isProfile

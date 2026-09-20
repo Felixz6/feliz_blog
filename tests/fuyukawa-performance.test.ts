@@ -11,14 +11,10 @@ const readSource = (relativePath: string) => readFileSync(
 const layoutSource = readSource("src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
 const homeSource = readSource("src/themes/fuyukawa-kagari/pages/HomePage.astro");
 
-test("Fuyukawa defers external Live2D work to idle or explicit intent", () => {
-  assert.match(layoutSource, /const scheduleLive2dWidget =/);
-  assert.match(layoutSource, /canAutoInitLive2d/);
-  assert.match(layoutSource, /requestIdleCallback\(start, \{ timeout: 3200 \}\)/);
-  assert.match(layoutSource, /scheduleLive2dWidget\(\);/);
-  assert.match(layoutSource, /live2dToggle\?\.addEventListener\("click"/);
-  assert.match(layoutSource, /initLive2dWidget\(\);/);
-  assert.match(layoutSource, /const live2dResources = new Map\(\)/);
+test("Fuyukawa has no Live2D widget or external loader and retains the music dock", () => {
+  assert.doesNotMatch(layoutSource, /live.?2d|waifu|initWidget|cubismcore/i);
+  assert.match(layoutSource, /class="toy-widget music-widget"/);
+  assert.match(layoutSource, /tabler:player-play/);
 });
 
 test("Fuyukawa bounds and defers location and weather requests", () => {

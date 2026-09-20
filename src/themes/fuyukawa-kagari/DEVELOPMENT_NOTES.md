@@ -8,6 +8,9 @@ Kisara history remain authoritative in the repository note, which is not edited.
 
 ## Current State
 
+- September 20 follow-up: the public Fuyukawa layout no longer includes the
+  Live2D widget, CDN loader, fallback display, controls, styles, or drag anchor;
+  the music-only utility dock remains.
 - September 9 follow-up: the user approves the overall manga direction and asks
   for five localized corrections: clipped utility drawer/player, sakura petals,
   Live2D leaving the viewport after scrolling, oversized About game thumbnails,
@@ -72,7 +75,7 @@ Kisara history remain authoritative in the repository note, which is not edited.
 - Existing preview: `http://127.0.0.1:4321/themes/fuyukawa-kagari/`.
 - Presentation uses a theme body attribute and a final stylesheet so legacy
   interaction styles remain available. No shared configuration or assets changed.
-- Preserve the homepage reveal state machine, tag canvas, music and Live2D.
+- Preserve the homepage reveal state machine, tag canvas and music.
 - Blog search now rejects stale async results and reinitializes after navigation;
   project filters reinitialize after navigation and expose pressed states.
 - Revised implementation and non-browser verification are complete; visual

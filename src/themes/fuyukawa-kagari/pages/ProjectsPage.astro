@@ -3,22 +3,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { Icon } from "astro-icon/components";
 import { projectEntries, projectTechLines } from "@/core/data/projects";
 import MangaArt from "../components/MangaArt.astro";
+import { site } from "@/lib/site";
 
 const techIcons = {
-  unity: "simple-icons:unity",
-  blender: "simple-icons:blender",
-  ue5: "simple-icons:unrealengine",
-  mmd: "tabler:sparkles",
-  astrbot: "tabler:terminal-2"
+  "web-security": "tabler:shield-lock",
+  ctf: "tabler:flag-3",
+  php: "simple-icons:php",
+  "open-source": "simple-icons:github",
+  "web-development": "tabler:code",
+  ai: "tabler:sparkles"
 } as const;
 const techLines = projectTechLines.map((item) => ({ ...item, icon: techIcons[item.key] }));
 const projectPresentation = {
-  "astrbot-lab": { icon: "tabler:terminal-2", accent: "mint" },
-  "unity-toys": { icon: "simple-icons:unity", accent: "blue" },
-  "blender-props": { icon: "simple-icons:blender", accent: "orange" },
-  "ue5-room": { icon: "simple-icons:unrealengine", accent: "ink" },
-  "mmd-camera": { icon: "tabler:sparkles", accent: "pink" },
-  "yuimi-web-lab": { icon: "tabler:flower", accent: "lavender" }
+  "security-research": { icon: "tabler:shield-lock", accent: "blue" },
+  "ctf-notes": { icon: "tabler:flag-3", accent: "pink" },
+  "recon-tools": { icon: "simple-icons:php", accent: "orange" },
+  "open-source": { icon: "simple-icons:github", accent: "mint" },
+  "personal-blog": { icon: "tabler:code", accent: "lavender" },
+  "ai-experiments": { icon: "tabler:sparkles", accent: "ink" }
 } as const;
 const projectCards = projectEntries.map((project) => ({
   ...project,
@@ -27,7 +29,7 @@ const projectCards = projectEntries.map((project) => ({
 
 ---
 
-<BaseLayout title="Projects | Yuimi Lab" description="Yuimi Lab 的项目、技术线和个人实验收藏架。">
+<BaseLayout title={`Projects | ${site.name}`} description={site.description}>
   <section class="works-shell" aria-labelledby="works-title">
     <div class="works-hero">
       <div>
@@ -143,27 +145,6 @@ const projectCards = projectEntries.map((project) => ({
     .works-shell {
       margin: 0 auto;
       display: grid;
-    }
-
-    :global(.waifu-local-fallback) {
-      left: 6px !important;
-      width: 112px !important;
-      opacity: 0.72 !important;
-    }
-
-    :global(.waifu-local-bubble) {
-      display: none !important;
-    }
-
-    :global(.waifu-local-character) {
-      width: 92px !important;
-      height: 92px !important;
-      margin-left: 0 !important;
-    }
-
-    :global(.waifu-local-character img) {
-      width: 72px !important;
-      height: 72px !important;
     }
 
     .works-hero {

@@ -45,7 +45,7 @@ const expressiveCodeOptions = {
 };
 
 const pagefindIntegration = () => ({
-  name: "yuimi-pagefind",
+  name: "site-pagefind",
   hooks: {
     "astro:build:done": async ({ dir, logger }) => {
       const { index, errors } = await pagefind.createIndex({
@@ -84,7 +84,7 @@ const pagefindIntegration = () => ({
 });
 
 export default defineConfig({
-  site: "https://yuimi-chaya.github.io",
+  site: "https://felizx.vercel.app/",
   output: "static",
   prefetch: {
     prefetchAll: false,
@@ -144,7 +144,9 @@ export default defineConfig({
           "hand-finger",
           "hand-grab",
           "tools-kitchen-2",
-          "trash"
+          "trash",
+          "shield-lock",
+          "flag-3"
         ],
         "simple-icons": [
           "unity",
@@ -153,7 +155,10 @@ export default defineConfig({
           "github",
           "bilibili",
           "steam",
-          "thefinals"
+          "thefinals",
+          "php",
+          "linux",
+          "git"
         ]
       }
     }),
