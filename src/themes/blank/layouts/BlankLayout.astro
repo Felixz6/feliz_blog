@@ -10,6 +10,7 @@ import SeoMeta from "@/core/SeoMeta.astro";
 import { getCanonicalPath, getThemePath, themes } from "@/core/themes/registry";
 import { profileIdentity } from "@/core/data/profile";
 import { site } from "@/lib/site";
+import SpeedInsights from "@vercel/speed-insights/astro";
 
 interface Props {
   title?: string;
@@ -110,5 +111,6 @@ const navItems = site.nav.map((item, index) => ({
       import { mountBlank } from "../lib/runtime.mjs";
       mountBlank(document, window);
     </script>
+    <SpeedInsights />
   </body>
 </html>

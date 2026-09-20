@@ -13,6 +13,7 @@ import SeoMeta from "@/core/SeoMeta.astro";
 import { profileIdentity } from "@/core/data/profile";
 import { getCanonicalPath, getThemePath, themes } from "@/core/themes/registry";
 import { site } from "@/lib/site";
+import SpeedInsights from "@vercel/speed-insights/astro";
 import KisaraAudioControl from "../components/KisaraAudioControl.astro";
 import KisaraChibiStage from "../components/KisaraChibiStage.astro";
 import KisaraRouteRelay from "../components/KisaraRouteRelay.astro";
@@ -654,5 +655,6 @@ const themedNotFoundRedirectScript = `(() => {
     <script>
       import "../lib/layoutRuntime.js";
     </script>
+    <SpeedInsights />
   </body>
 </html>
