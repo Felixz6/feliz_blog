@@ -4,7 +4,7 @@ setlocal
 
 cd /d "%~dp0"
 
-echo [1/2] Building Yuimi Lab...
+echo [1/2] Building Feliz Lab...
 call npm run build
 if errorlevel 1 (
   echo.
@@ -16,7 +16,6 @@ if errorlevel 1 (
 echo.
 echo [2/2] Starting the local development server...
 echo Home:   http://127.0.0.1:4321/
-echo Kisara: http://127.0.0.1:4321/themes/kisara/
 echo Press Ctrl+C to stop the server.
 echo.
 

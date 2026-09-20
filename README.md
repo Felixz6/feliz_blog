@@ -1,6 +1,6 @@
 # Feliz Lab
 
-Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用 Fuyukawa Kagari 主题，包含文章、项目、个人资料与游戏展示页面。
+Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用 Fuyukawa Kagari 主题，包含文章、项目展示与个人资料页面。
 
 - 网站配置地址：<https://felizx.vercel.app/>
 - GitHub 仓库：<https://github.com/Felixz6/feliz_blog>
@@ -14,10 +14,11 @@ Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用
 | /blog/ | 文章归档、搜索与文章详情 | Fuyukawa Kagari |
 | /projects/ | 项目展示 | Fuyukawa Kagari |
 | /about/ | 个人资料 | Fuyukawa Kagari |
-| /games/ | 游戏展示 | Fuyukawa Kagari；页面保留，但不在顶栏导航中显示 |
 | /friends/ | 旧入口 | 重定向到 /about/ |
+| /games/ | 游戏页面 | 主站路由已移除 |
+| /themes/fuyukawa-kagari/games/ | 游戏页面 | 保留的主题前缀兼容路由 |
 
-主站路由由 Fuyukawa Kagari 渲染，主题选择器也只提供 Fuyukawa Kagari。仓库仍保留 Blank 和 Kisara 的主题源码及兼容页面路由，但它们不会作为主站主题选项出现。
+根路径主站统一使用 Fuyukawa Kagari，顶栏不显示 Games。`/games/` 主站路由已移除；主题前缀兼容路径 `/themes/fuyukawa-kagari/games/` 仍会构建。Blank 与 Kisara 主题源码、专属页面路由及其公开资源已从当前工作区删除，仓库仅保留 Fuyukawa Kagari 主题。
 
 ## 当前功能
 
@@ -45,6 +46,7 @@ Astro 默认会在终端显示本地访问地址，通常是 http://localhost:43
 ~~~bash
 npm run dev       # 启动开发服务器
 npm test          # 运行仓库测试
+node --test src/themes/fuyukawa-kagari/tests/*.test.mjs  # 运行 Fuyukawa 主题专项测试
 npm run build     # 生成资源并构建 dist/
 npm run preview   # 本地预览构建产物
 ~~~
@@ -98,11 +100,9 @@ npm run build
 src/
 ├── content/blog/                 博客文章 Markdown / MDX
 ├── core/                         主题注册、共享数据与内容能力
-├── pages/                        主站路由与主题兼容路由
+├── pages/                        主站路由与主题前缀兼容路由
 ├── themes/
-│   ├── fuyukawa-kagari/          当前主站主题
-│   ├── blank/                    保留的主题源码
-│   └── kisara/                   保留的主题源码
+│   └── fuyukawa-kagari/          当前主站主题
 ├── lib/site.ts                   站点配置
 └── content.config.ts             文章数据 schema
 

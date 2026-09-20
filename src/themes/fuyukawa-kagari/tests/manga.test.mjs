@@ -34,7 +34,20 @@ test("artwork derivatives have correct dimensions, transparent stickers and boun
   assert.ok(manifest.outputs.every((output) => output.sources.every((source) => !source.endsWith(".mp4"))));
 });
 
-test("all 55 source artworks remain byte-identical", async () => {
+const availableSourceFiles = await Promise.all(manifest.sourceFiles.map(async (source) => {
+  try {
+    await fs.access(path.join(root, source.file));
+    return true;
+  } catch (error) {
+    if (error.code === "ENOENT" || error.code === "ENOTDIR") return false;
+    throw error;
+  }
+}));
+const sourceArtworkSkipReason = availableSourceFiles.every((available) => !available)
+  ? "Original source artwork is not included in this checkout; generated derivatives are verified separately"
+  : false;
+
+test("all 55 source artworks remain byte-identical", { skip: sourceArtworkSkipReason }, async () => {
   for (const source of manifest.sourceFiles) {
     const bytes = await fs.readFile(path.join(root, source.file));
     assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), source.sha256, source.file);

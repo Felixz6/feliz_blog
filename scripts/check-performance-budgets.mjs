@@ -1,4 +1,4 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { excludedPublicMedia } from "./lib/media-publish-policy.mjs";
 
 const distDir = new URL("../dist/", import.meta.url);
@@ -8,37 +8,15 @@ const failures = [];
 const fileBudgets = [
   ["Fuyukawa Home HTML", "index.html", 100_000],
   ["Fuyukawa Blog HTML", "blog/index.html", 155_000],
-  ["Fuyukawa Games HTML", "games/index.html", 166_000],
   ["Fuyukawa Projects HTML", "projects/index.html", 198_000],
-  ["Fuyukawa About HTML", "about/index.html", 149_000],
-  ["Kisara Home HTML", "themes/kisara/index.html", 210_000],
-  ["Kisara Blog HTML", "themes/kisara/blog/index.html", 155_000],
-  ["Kisara Games HTML", "themes/kisara/games/index.html", 166_000],
-  ["Kisara Works HTML", "themes/kisara/projects/index.html", 198_000],
-  ["Kisara About HTML", "themes/kisara/about/index.html", 149_000],
-  ["Kisara chain material atlas", "themes/kisara/assets/title-chain-steel.webp", 110_000]
+  ["Fuyukawa About HTML", "about/index.html", 149_000]
 ];
 
 const stylesheetBudgets = [
   ["Fuyukawa Home CSS", "index.html", 112_000],
   ["Fuyukawa Blog CSS", "blog/index.html", 220_000],
-  ["Fuyukawa Games CSS", "games/index.html", 240_000],
   ["Fuyukawa Projects CSS", "projects/index.html", 255_000],
-  ["Fuyukawa About CSS", "about/index.html", 260_000],
-  ["Kisara Home CSS", "themes/kisara/index.html", 315_000],
-  ["Kisara Blog CSS", "themes/kisara/blog/index.html", 220_000],
-  ["Kisara Games CSS", "themes/kisara/games/index.html", 240_000],
-  ["Kisara Works CSS", "themes/kisara/projects/index.html", 255_000],
-  ["Kisara About CSS", "themes/kisara/about/index.html", 260_000]
-];
-
-const bundleBudgets = [
-  ["Kisara shared layout runtime", "KisaraLayout.astro_astro_type_script_index_1_lang.", 9_000],
-  ["Kisara Home primary module", "HomePage.astro_astro_type_script_index_", 225_000],
-  ["Kisara stage loader", "KisaraChibiStage.astro_astro_type_script_index_", 3_500],
-  ["Kisara deferred stage runtime", "chibiStage.", 20_000],
-  ["Kisara Blog page runtime", "blogPage.", 20_000],
-  ["Kisara Works page runtime", "worksPage.", 72_000]
+  ["Fuyukawa About CSS", "about/index.html", 260_000]
 ];
 
 const formatBytes = (value) => `${(value / 1024).toFixed(1)} KiB`;
@@ -72,70 +50,12 @@ for (const [label, relativePath, limit] of stylesheetBudgets) {
   }
 }
 
-let astroFiles = [];
-try {
-  astroFiles = await readdir(astroDir);
-} catch {
-  failures.push("dist/_astro is missing");
-}
-
-for (const [label, prefix, limit] of bundleBudgets) {
-  const matches = astroFiles.filter((name) => name.startsWith(prefix) && name.endsWith(".js"));
-  if (matches.length !== 1) {
-    failures.push(`${label} expected one emitted bundle, found ${matches.length}`);
-    continue;
-  }
-  const details = await stat(new URL(matches[0], astroDir));
-  recordBudget(label, details.size, limit);
-}
-
-try {
-  const homeHtml = await readFile(new URL("themes/kisara/index.html", distDir), "utf8");
-  if (/kisara-title-gloss|memory-attack|memory-clash/.test(homeHtml)) {
-    failures.push("Kisara Home restored a retired blade stage or superseded memory shot");
-  }
-  if (/kisara-title-cross|kisara-screen-impact|kisara-burst-canvas/.test(homeHtml)) {
-    failures.push("Kisara Home restored a retired black-hole or warning pass");
-  }
-  if (!homeHtml.includes("kisara-gate-background-fight-wash")) {
-    failures.push("Kisara Home lost its original clear reconstruction wash");
-  }
-  const manifestText = homeHtml.match(/<script\b[^>]*data-kisara-scene-manifest[^>]*>([^]*?)<\/script>/)?.[1];
-  const scenes = JSON.parse(manifestText ?? "[]");
-  if (scenes.filter(scene => scene.kind === "memory").length !== 9
-    || scenes.filter(scene => scene.kind === "transformation").length !== 3) {
-    failures.push("Kisara Gate lost its nine memory and three smoke shots");
-  }
-  const storySizes = await Promise.all(scenes.map(scene => stat(new URL(scene.image.replace(/^\//, ""), distDir))));
-  const finalShot = await stat(new URL("themes/kisara/assets/fight.webp", distDir));
-  recordBudget("Kisara complete story images", storySizes.reduce((sum, file) => sum + file.size, finalShot.size), 850_000);
-  recordBudget("Kisara first two story images", storySizes.slice(0, 2).reduce((sum, file) => sum + file.size, 0), 140_000);
-  if (!/<link\s+rel="preload"\s+as="image"\s+href="\/themes\/kisara\/assets\/gate-background\.webp"\s+fetchpriority="high"\s*\/?>/i.test(homeHtml)) {
-    failures.push("Kisara Home lost its high-priority Gate background preload");
-  }
-  const homeEventVideoPath = "/themes/kisara/assets/home-event-003-new.mp4";
-  if (!homeHtml.includes(`data-src="${homeEventVideoPath}"`)) {
-    failures.push("Kisara Home 003 video lost its deferred data-src");
-  }
-  if (new RegExp(`<source\\b[^>]*\\ssrc=["']${homeEventVideoPath.replaceAll("/", "\\/")}["']`, "i").test(homeHtml)) {
-    failures.push("Kisara Home 003 video regressed to an eager source request");
-  }
-  const fridgeVideo = homeHtml.match(/<video\b[^>]*data-fridge-video[^>]*>/i)?.[0];
-  if (!fridgeVideo || !/\sdata-src=["'][^"']*fridge-opening-002\.mp4/i.test(fridgeVideo)
-    || /\ssrc=/i.test(fridgeVideo) || !/\spreload=["']none["']/i.test(fridgeVideo)) {
-    failures.push("Kisara Home 002 video lost its deferred loading contract");
-  }
-} catch {
-  failures.push("Kisara themed Home HTML is missing for critical-image validation");
-}
-
 try {
   for (const relativePath of [
     "index.html",
     "blog/index.html",
     "about/index.html",
-    "projects/index.html",
-    "games/index.html"
+    "projects/index.html"
   ]) {
     const html = await readFile(new URL(relativePath, distDir), "utf8");
     if (!/<body\b[^>]*\bdata-fuyukawa(?:\s|=|>)/i.test(html)) {

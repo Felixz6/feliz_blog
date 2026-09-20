@@ -107,7 +107,7 @@ test("homepage journal and custom game artwork stay in the Fuyukawa boundary", (
   assert.match(home, /recentPosts = \(await getPublishedPosts\(\)\)\.slice\(0, 3\)/);
   assert.match(home, /class="journal-entry" href=\{getThemePath\("fuyukawa-kagari"/);
   assert.match(read("pages/GamesPage.astro"), /<GameCover game=\{game.id\}/);
-  assert.doesNotMatch(css + read("components/GameCover.astro"), /themes\/kisara|https?:\/\//);
+  assert.doesNotMatch(css + read("components/GameCover.astro"), /https?:\/\//);
 });
 
 function node(dataset = {}) {
