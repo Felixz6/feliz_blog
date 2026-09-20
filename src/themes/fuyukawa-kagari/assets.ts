@@ -5,7 +5,7 @@ export function kagariAsset(path: string) {
 }
 
 export const kagariAssets = {
-  favicon: kagariAsset("kanade2.jpg"),
+  favicon: kagariAsset("kanade_c.png"),
   appleTouchIcon: kagariAsset("avatar-sigil.png"),
   profile: kagariAsset("profile.png"),
   heroWallpaper: kagariAsset("hero-wallpaper.webp"),
