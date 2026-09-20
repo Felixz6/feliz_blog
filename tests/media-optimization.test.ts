@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -73,15 +73,16 @@ test("publish exclusions only affect reviewed originals and cannot target public
 
 test("the entire exclusion plan is checked for path traversal and references before any file removal", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "media-publish-test-"));
+  const resolvedDirectory = await realpath(directory);
   try {
     await writeFile(path.join(directory, "old.png"), "original");
-    const plan = await planMediaExclusions(directory, [], ["old.png", "absent.png"]);
+    const plan = await planMediaExclusions(resolvedDirectory, [], ["old.png", "absent.png"]);
     assert.equal(plan.length, 1);
     assert.equal(plan[0].bytes, 8);
-    await assert.rejects(() => planMediaExclusions(directory, [], ["../escape.png"]), /Unsafe media path/);
-    await assert.rejects(() => planMediaExclusions(directory, [], [path.parse(directory).root]), /Unsafe media path/);
-    await assert.rejects(() => planMediaExclusions(directory, [["page.html", '<img src="/old.png">']], ["old.png"]), /still referenced/);
-    await assert.rejects(() => planMediaExclusions(directory, [["runtime.js", 'const root="/"; root+"old.png"']], ["old.png"]), /still referenced/);
+    await assert.rejects(() => planMediaExclusions(resolvedDirectory, [], ["../escape.png"]), /Unsafe media path/);
+    await assert.rejects(() => planMediaExclusions(resolvedDirectory, [], [path.parse(resolvedDirectory).root]), /Unsafe media path/);
+    await assert.rejects(() => planMediaExclusions(resolvedDirectory, [["page.html", '<img src="/old.png">']], ["old.png"]), /still referenced/);
+    await assert.rejects(() => planMediaExclusions(resolvedDirectory, [["runtime.js", 'const root="/"; root+"old.png"']], ["old.png"]), /still referenced/);
     assert.equal((await stat(path.join(directory, "old.png"))).size, 8, "Planning never modifies originals");
   } finally {
     // mkdtemp owns this exact leaf directory; remove only the file created above.

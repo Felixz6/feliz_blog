@@ -3,8 +3,9 @@ import { Icon } from "astro-icon/components";
 import BlankLayout from "../layouts/BlankLayout.astro";
 import PageHead from "../components/PageHead.astro";
 import { gamePicks } from "@/core/data/games";
+import { site } from "@/lib/site";
 ---
-<BlankLayout title="Play | Yuimi Lab Blank" description="收藏的开源小游戏。暂时放下正事，玩一会儿。">
+<BlankLayout title={`Games | ${site.name}`} description={site.description}>
   <PageHead index="03" title="Play" label="闲暇收藏" description="不妨留一点无所事事的时间。这里有几款喜欢的开源小游戏。" count={String(gamePicks.length).padStart(2, "0")} unit="款收藏" />
   <section class="blank-games" aria-label="开源游戏">
     {gamePicks.map((game, index) => (

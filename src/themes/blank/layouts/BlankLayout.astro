@@ -18,7 +18,7 @@ interface Props {
   article?: BlogPost["data"];
 }
 
-const { title = "Yuimi Lab | Blank", description = site.description, isArticlePage = false, article } = Astro.props;
+const { title = `${site.name} | Blank`, description = site.description, isArticlePage = false, article } = Astro.props;
 const canonicalPath = getCanonicalPath(Astro.url.pathname);
 const canonical = new URL(canonicalPath, Astro.site ?? Astro.url);
 const navItems = site.nav.map((item, index) => ({
@@ -47,8 +47,8 @@ const navItems = site.nav.map((item, index) => ({
     <a class="blank-skip-link" href="#blank-main">跳到正文</a>
     <header class="blank-header">
       <div class="blank-header-inner">
-        <a class="blank-wordmark" href={getThemePath("blank", "/")} aria-label="Yuimi Lab 首页">
-          <strong>yuimi<span aria-hidden="true">.</span></strong>
+        <a class="blank-wordmark" href={getThemePath("blank", "/")} aria-label={`${site.name} 首页`}>
+          <strong>{site.name}<span aria-hidden="true">.</span></strong>
           <span class="blank-edition">BLANK / 02</span>
         </a>
         <nav class="blank-nav" aria-label="主导航">
@@ -73,15 +73,15 @@ const navItems = site.nav.map((item, index) => ({
 
     <footer class="blank-footer">
       <div class="blank-footer-top">
-        <a class="blank-footer-brand" href={getThemePath("blank", "/")}>Yuimi Lab<span aria-hidden="true">.</span></a>
+        <a class="blank-footer-brand" href={getThemePath("blank", "/")}>{site.name}<span aria-hidden="true">.</span></a>
         <div class="blank-footer-links">
-          <a href={profileIdentity.github} target="_blank" rel="noopener noreferrer">GitHub <Icon name="tabler:external-link" size={14} /></a>
-          <a href={profileIdentity.bilibili} target="_blank" rel="noopener noreferrer">Bilibili <Icon name="tabler:external-link" size={14} /></a>
+          {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noopener noreferrer">GitHub <Icon name="tabler:external-link" size={14} /></a>}
+          {profileIdentity.bilibili.startsWith("https://") && <a href={profileIdentity.bilibili} target="_blank" rel="noopener noreferrer">Bilibili <Icon name="tabler:external-link" size={14} /></a>}
           <a href={getThemePath("blank", "/about/")}>关于我 <Icon name="tabler:arrow-right" size={15} /></a>
         </div>
       </div>
       <div class="blank-footer-bottom">
-        <span>© 2026 喝益胃 / Yuimi-chaya</span>
+        <span>© 2026 {profileIdentity.displayName} / {site.name}</span>
         <span>记录、创造，以及生活。</span>
         <a href="#blank-main" class="blank-back-top">回到顶部 <Icon name="tabler:arrow-up" size={14} /></a>
       </div>

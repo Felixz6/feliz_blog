@@ -6,17 +6,17 @@ import { getPublishedPosts } from "@/core/content/blog";
 import { profileIdentity, profileTech, currentSignals } from "@/core/data/profile";
 import { projectEntries } from "@/core/data/projects";
 import { getThemePath } from "@/core/themes/registry";
-import { categoryLabel } from "@/lib/site";
+import { categoryLabel, site } from "@/lib/site";
 
 const posts = await getPublishedPosts();
 const [featured, ...remaining] = posts;
 const date = featured && (featured.data.updatedDate ?? featured.data.pubDate);
 ---
 
-<BlankLayout title="Yuimi Lab | Blank" description="喝益胃的个人记录。关于开发、创作，和日常里的有趣之事。">
+<BlankLayout title={`${site.name} | Blank`} description={site.description}>
   <section class="blank-home-hero" aria-labelledby="blank-home-title">
-    <div class="blank-home-topline"><p class="blank-kicker">PERSONAL JOURNAL / 个人记录</p><span class="blank-kicker">BY YUIMI-CHAYA</span></div>
-    <h1 id="blank-home-title">Yuimi Lab<span aria-hidden="true">.</span></h1>
+    <div class="blank-home-topline"><p class="blank-kicker">PERSONAL JOURNAL / 个人记录</p><span class="blank-kicker">BY {profileIdentity.displayName}</span></div>
+    <h1 id="blank-home-title">{site.name}<span aria-hidden="true">.</span></h1>
     <div class="blank-home-bottom">
       <p class="blank-home-statement">把想法写下来。<br />把喜欢的事做出来。</p>
       <div class="blank-home-intro">

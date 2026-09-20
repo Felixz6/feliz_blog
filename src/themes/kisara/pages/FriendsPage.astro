@@ -2,6 +2,7 @@
 import KisaraLayout from "../layouts/KisaraLayout.astro";
 import friendsStylesheet from "../styles/friends.css?url";
 import { Icon } from "astro-icon/components";
+import { site } from "@/lib/site";
 
 const friendSlots = [
   { code: "01", label: "OPEN ROUTE", note: "留给下一条互相发现的链接" },
@@ -13,7 +14,7 @@ const friendSlots = [
 
 <KisaraLayout
   title="Friends | Kisara"
-  description="Yuimi Lab 的友联页面，留给正在互相发现的小站。"
+  description={site.description}
   stylesheets={[friendsStylesheet]}
 >
   <section class="kisara-friends" data-kisara-friends aria-labelledby="kisara-friends-title">
@@ -37,7 +38,7 @@ const friendSlots = [
 
     <div class="kisara-friends-stage" data-friends-stage>
       <div class="kisara-friends-stage-head">
-        <span>YUIMI LAB / FRIENDS</span>
+        <span>PERSONAL BLOG / FRIENDS</span>
         <strong>LINKS THAT STAY</strong>
       </div>
       <div class="kisara-friends-stage-core" aria-hidden="true">

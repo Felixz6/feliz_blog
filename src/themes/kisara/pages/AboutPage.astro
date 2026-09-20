@@ -11,13 +11,16 @@ import {
   xpFavorites
 } from "@/core/data/profile";
 import { getThemePath } from "@/core/themes/registry";
+import { site } from "@/lib/site";
 
 const techPresentation = {
-  unity: { icon: "simple-icons:unity", code: "U3D" },
-  blender: { icon: "simple-icons:blender", code: "BLD" },
-  ue5: { icon: "simple-icons:unrealengine", code: "UE5" },
-  mmd: { icon: "tabler:movie", code: "MMD" },
-  astrbot: { icon: "tabler:terminal-2", code: "BOT" }
+  "web-security": { icon: "tabler:shield-lock", code: "WEB" },
+  ctf: { icon: "tabler:flag-3", code: "CTF" },
+  php: { icon: "simple-icons:php", code: "PHP" },
+  linux: { icon: "simple-icons:linux", code: "LIN" },
+  git: { icon: "simple-icons:git", code: "GIT" },
+  "open-source": { icon: "simple-icons:github", code: "OSS" },
+  ai: { icon: "tabler:sparkles", code: "AI" }
 } as const;
 
 const scenes = [
@@ -33,8 +36,8 @@ const scenes = [
 const railScenes = scenes.slice(0, -1);
 ---
 
-<KisaraLayout title="Me | Kisara" description="关于喝益胃与 Yuimi Lab。" stylesheets={[aboutStylesheet]}>
-  <section class="kisara-me" data-kisara-me data-active-scene="0" aria-label="Yuimi-chaya 个人档案">
+<KisaraLayout title={`About | ${site.name}`} description={profileIdentity.bio} stylesheets={[aboutStylesheet]}>
+  <section class="kisara-me" data-kisara-me data-active-scene="0" aria-label="个人档案">
     <div class="kisara-me-ambient" aria-hidden="true">
       <i></i><i></i><i></i>
     </div>
@@ -61,7 +64,7 @@ const railScenes = scenes.slice(0, -1);
         <div class="kisara-me-profile-intro">
           <figure class="kisara-me-profile-portrait">
             <div class="kisara-me-profile-portrait-media">
-              <img src="/themes/kisara/assets/profile.webp" alt="喝益胃 / Yuimi-chaya 的头像" width="640" height="640" decoding="async" />
+              <img src="/themes/kisara/assets/profile.webp" alt={`${profileIdentity.displayName} 的头像`} width="640" height="640" decoding="async" />
               <span aria-hidden="true"><i></i><i></i></span>
             </div>
             <figcaption>
@@ -75,13 +78,13 @@ const railScenes = scenes.slice(0, -1);
             <p class="kisara-me-profile-kicker"><span>00</span> PERSONAL SIGNAL / ME</p>
             <h2>先有一个想做的东西，<br /><em>再去补齐让它成立的技术。</em></h2>
             <p class="kisara-me-profile-lead">动画、交互、模型、工具，以及那些没必要但很好玩的点子，最后都会在这里留下痕迹。比起把它们写成技能清单，我更想让页面本身说明我喜欢什么。</p>
-            <nav class="kisara-me-profile-links" aria-label="Yuimi 社交链接">
-              <a href={profileIdentity.github} target="_blank" rel="noreferrer">
+            <nav class="kisara-me-profile-links" aria-label="社交链接">
+              {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noreferrer">
                 <Icon name="tabler:brand-github" aria-hidden="true" /><span>GITHUB</span><i>↗</i>
-              </a>
-              <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer">
+              </a>}
+              {profileIdentity.bilibili.startsWith("https://") && <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer">
                 <Icon name="tabler:brand-bilibili" aria-hidden="true" /><span>BILIBILI</span><i>↗</i>
-              </a>
+              </a>}
             </nav>
             <a class="kisara-me-profile-friends-link" href={getThemePath("kisara", "/friends/")}>
               <span class="kisara-me-profile-friends-mark" aria-hidden="true"><Icon name="tabler:heart" /></span>
@@ -89,7 +92,7 @@ const railScenes = scenes.slice(0, -1);
               <i aria-hidden="true">↗</i>
             </a>
             <div class="kisara-me-profile-signature" aria-hidden="true">
-              <span>YUIMI-CHAYA</span><i></i><small>ANIME / CODE / INTERACTION</small>
+              <span>{profileIdentity.displayName}</span><i></i><small>TECH / SECURITY / INTERACTION</small>
             </div>
           </div>
         </div>
@@ -360,7 +363,7 @@ const railScenes = scenes.slice(0, -1);
           </button>
           <footer>
             <span>CONDITION REWRITTEN / CHANNEL 03</span>
-            <p>--- Yuimi-chaya/GPT in Codex</p>
+            <p>--- THEME ATTRIBUTION / README</p>
           </footer>
         </div>
       </article>

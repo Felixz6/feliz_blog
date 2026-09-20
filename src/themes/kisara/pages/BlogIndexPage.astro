@@ -9,6 +9,7 @@ import { getCoverSources, hasTransparentCover } from "@/core/content/coverSource
 import { getThemePath } from "@/core/themes/registry";
 import { categoryLabel } from "@/lib/site";
 import { getKisaraCoverPresentation } from "../lib/coverPresentation";
+import { site } from "@/lib/site";
 
 const posts = await getPublishedPosts();
 const categories = Array.from(new Set(posts.map((post) => post.data.category)));
@@ -32,7 +33,7 @@ const coverPresentation = await getKisaraCoverPresentation(posts);
 const archiveCoverSizes = "(max-width: 760px) 112px, (max-width: 1100px) 45vw, 380px";
 ---
 
-<KisaraLayout title="Blog | Kisara" description="Yuimi Lab 的文章记录。" stylesheets={[blogStylesheet]}>
+<KisaraLayout title={`Blog | ${site.name}`} description={site.description} stylesheets={[blogStylesheet]}>
   <section class="kisara-blog-hero" data-kisara-blog-hero data-intro-state="idle" data-cast-focus="all" aria-labelledby="kisara-blog-hero-title">
     <div class="kisara-blog-scene" aria-hidden="true">
       <img

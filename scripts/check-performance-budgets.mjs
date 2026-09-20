@@ -6,22 +6,30 @@ const astroDir = new URL("_astro/", distDir);
 const failures = [];
 
 const fileBudgets = [
-  ["Kisara Home HTML", "index.html", 210_000],
-  ["Kisara Blog HTML", "blog/index.html", 155_000],
-  ["Kisara Games HTML", "games/index.html", 166_000],
-  ["Kisara Works HTML", "projects/index.html", 198_000],
-  ["Kisara About HTML", "about/index.html", 149_000],
-  ["Fuyukawa Home HTML", "themes/fuyukawa-kagari/index.html", 100_000],
+  ["Fuyukawa Home HTML", "index.html", 100_000],
+  ["Fuyukawa Blog HTML", "blog/index.html", 155_000],
+  ["Fuyukawa Games HTML", "games/index.html", 166_000],
+  ["Fuyukawa Projects HTML", "projects/index.html", 198_000],
+  ["Fuyukawa About HTML", "about/index.html", 149_000],
+  ["Kisara Home HTML", "themes/kisara/index.html", 210_000],
+  ["Kisara Blog HTML", "themes/kisara/blog/index.html", 155_000],
+  ["Kisara Games HTML", "themes/kisara/games/index.html", 166_000],
+  ["Kisara Works HTML", "themes/kisara/projects/index.html", 198_000],
+  ["Kisara About HTML", "themes/kisara/about/index.html", 149_000],
   ["Kisara chain material atlas", "themes/kisara/assets/title-chain-steel.webp", 110_000]
 ];
 
 const stylesheetBudgets = [
-  ["Kisara Home CSS", "index.html", 315_000],
-  ["Kisara Blog CSS", "blog/index.html", 220_000],
-  ["Kisara Games CSS", "games/index.html", 240_000],
-  ["Kisara Works CSS", "projects/index.html", 255_000],
-  ["Kisara About CSS", "about/index.html", 260_000],
-  ["Fuyukawa Home CSS", "themes/fuyukawa-kagari/index.html", 112_000]
+  ["Fuyukawa Home CSS", "index.html", 112_000],
+  ["Fuyukawa Blog CSS", "blog/index.html", 220_000],
+  ["Fuyukawa Games CSS", "games/index.html", 240_000],
+  ["Fuyukawa Projects CSS", "projects/index.html", 255_000],
+  ["Fuyukawa About CSS", "about/index.html", 260_000],
+  ["Kisara Home CSS", "themes/kisara/index.html", 315_000],
+  ["Kisara Blog CSS", "themes/kisara/blog/index.html", 220_000],
+  ["Kisara Games CSS", "themes/kisara/games/index.html", 240_000],
+  ["Kisara Works CSS", "themes/kisara/projects/index.html", 255_000],
+  ["Kisara About CSS", "themes/kisara/about/index.html", 260_000]
 ];
 
 const bundleBudgets = [
@@ -82,7 +90,7 @@ for (const [label, prefix, limit] of bundleBudgets) {
 }
 
 try {
-  const homeHtml = await readFile(new URL("index.html", distDir), "utf8");
+  const homeHtml = await readFile(new URL("themes/kisara/index.html", distDir), "utf8");
   if (/kisara-title-gloss|memory-attack|memory-clash/.test(homeHtml)) {
     failures.push("Kisara Home restored a retired blade stage or superseded memory shot");
   }
@@ -118,7 +126,27 @@ try {
     failures.push("Kisara Home 002 video lost its deferred loading contract");
   }
 } catch {
-  failures.push("Kisara Home HTML is missing for critical-image validation");
+  failures.push("Kisara themed Home HTML is missing for critical-image validation");
+}
+
+try {
+  for (const relativePath of [
+    "index.html",
+    "blog/index.html",
+    "about/index.html",
+    "projects/index.html",
+    "games/index.html"
+  ]) {
+    const html = await readFile(new URL(relativePath, distDir), "utf8");
+    if (!/<body\b[^>]*\bdata-fuyukawa(?:\s|=|>)/i.test(html)) {
+      failures.push(`Primary route is not rendered with Fuyukawa Kagari: ${relativePath}`);
+    }
+    if (/yuimi-chaya\.github\.io|494350222|喝益胃|Yuimi-chaya|Yuimi Lab/i.test(html)) {
+      failures.push(`Primary route exposes the previous site identity: ${relativePath}`);
+    }
+  }
+} catch (error) {
+  failures.push(`Primary route verification failed: ${error.message}`);
 }
 
 try {

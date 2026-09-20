@@ -14,6 +14,7 @@ import { Icon } from "astro-icon/components";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { memoryScenes, transformationScenes } from "../lib/gateStory";
+import { site } from "@/lib/site";
 
 const backgroundExtensions = ["webp", "png", "jpg", "jpeg"];
 const findThemeAsset = (baseName: string) => {
@@ -61,8 +62,8 @@ const gateStyle = [
 ---
 
 <KisaraLayout
-  title="Kisara | Yuimi Lab"
-  description="Yuimi Lab 的 Kisara 视觉交互主题。"
+  title={`Kisara | ${site.name}`}
+  description={site.description}
   stylesheets={[homeStylesheet, homeEventVideoStylesheet, homeComicStylesheet, homeTransitionsStylesheet]}
   priorityImages={activeBackgroundUrl ? [activeBackgroundUrl] : []}
 >
@@ -259,7 +260,7 @@ const gateStyle = [
       <canvas class="kisara-energy-canvas" data-kisara-energy width="640" height="64"></canvas>
     </div>
     <p class="kisara-contract-state" data-kisara-state>SEAL CHAINS / DORMANT</p>
-    <p class="kisara-scroll-cue" data-kisara-cue><span class="kisara-credit-author">Yuimi-chaya</span> / <span>GPT in Codex</span></p>
+    <p class="kisara-scroll-cue" data-kisara-cue><span class="kisara-credit-author">THEME SOURCE</span> / <span>README</span></p>
     <button class="kisara-motion-toggle" type="button" data-kisara-motion-toggle hidden aria-pressed="false">
       <Icon name="tabler:activity-heartbeat" aria-hidden="true" />
       <span>体感视差</span>

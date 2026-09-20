@@ -4,6 +4,7 @@ import KisaraIngredientSymbols from "../components/KisaraIngredientSymbols.astro
 import projectsStylesheet from "../styles/projects.css?url";
 import { Icon } from "astro-icon/components";
 import { projectEntries } from "@/core/data/projects";
+import { site } from "@/lib/site";
 
 const getProject = (id: string) => projectEntries.find((project) => project.id === id)!;
 
@@ -18,7 +19,7 @@ const kitchenIngredients = [
     color: "#625e71",
     soft: "#dedbe6",
     note: "交互手感 / 状态机",
-    project: getProject("unity-toys")
+    project: getProject("ctf-notes")
   },
   {
     id: "ue5",
@@ -30,7 +31,7 @@ const kitchenIngredients = [
     color: "#665b91",
     soft: "#ded9ef",
     note: "蓝图 / 光照 / 材质",
-    project: getProject("ue5-room")
+    project: getProject("open-source")
   },
   {
     id: "blender",
@@ -42,7 +43,7 @@ const kitchenIngredients = [
     color: "#e48039",
     soft: "#f8dfc4",
     note: "建模 / 材质 / 小道具",
-    project: getProject("blender-props")
+    project: getProject("recon-tools")
   },
   {
     id: "astrbot",
@@ -54,7 +55,7 @@ const kitchenIngredients = [
     color: "#d95e9b",
     soft: "#f5d7e7",
     note: "插件 / 部署 / Bot",
-    project: getProject("astrbot-lab")
+    project: getProject("security-research")
   },
   {
     id: "blog",
@@ -66,7 +67,7 @@ const kitchenIngredients = [
     color: "#57a48d",
     soft: "#d6eee7",
     note: "设计 / 页面 / 小机关",
-    project: getProject("yuimi-web-lab")
+    project: getProject("personal-blog")
   },
   {
     id: "mmd",
@@ -78,7 +79,7 @@ const kitchenIngredients = [
     color: "#cf587b",
     soft: "#f4d7df",
     note: "动作 / 镜头 / 舞台",
-    project: getProject("mmd-camera")
+    project: getProject("ai-experiments")
   }
 ] as const;
 
@@ -141,8 +142,8 @@ const kitchenRecipes = [
   },
   {
     ingredients: ["astrbot", "blender", "blog", "mmd", "ue5", "unity"],
-    title: "Yuimi Lab 厨房核心",
-    english: "YUIMI LAB CORE FLOAT",
+    title: "Personal Blog 厨房核心",
+    english: "PERSONAL BLOG CORE FLOAT",
     description: "把交互、模型、镜头、机器人和页面设计全部压进同一杯。入口像刚过构建，后味像凌晨才发现依赖装错版本。",
     effect: "副作用：会在脑内自动新建三个没做完的项目。"
   }
@@ -163,7 +164,7 @@ const kitchenCatalog = {
 };
 ---
 
-<KisaraLayout title="Works | Kisara" description="Yuimi Lab 的项目与实验记录。" stylesheets={[projectsStylesheet]}>
+<KisaraLayout title={`Projects | ${site.name}`} description={site.description} stylesheets={[projectsStylesheet]}>
   <KisaraIngredientSymbols />
   <section class="kisara-works-intro" data-kisara-works-hero data-intro-state="idle" data-video-state="idle" data-prep-focus="idle" aria-labelledby="kisara-works-title">
     <div class="kisara-works-intro-media">

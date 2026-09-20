@@ -514,7 +514,7 @@ const themedNotFoundRedirectScript = `(() => {
     <header class:list={["kisara-header", isHome ? "is-home-header" : "is-inner-header"]} transition:name="kisara-header">
       <a class="kisara-brand" href={getThemePath("kisara", "/")} aria-label="Kisara 主题首页">
         <span class="kisara-brand-mark" aria-hidden="true"></span>
-        <span><strong>YUIMI LAB</strong><small>KISARA / 03</small></span>
+        <span><strong>{site.name}</strong><small>KISARA / 03</small></span>
       </a>
       <nav class="kisara-nav" aria-label="Kisara theme navigation">
         {navItems.map((item) => (
@@ -559,12 +559,12 @@ const themedNotFoundRedirectScript = `(() => {
     <footer class="kisara-footer">
       <KisaraChibiStage />
       <div class="kisara-footer-meta">
-        <span class="kisara-footer-signal">YUIMI LAB / KISARA</span>
+        <span class="kisara-footer-signal">KISARA / INTERACTIVE THEME</span>
         <div>
-          <a href={profileIdentity.github} target="_blank" rel="noreferrer"><Icon name="tabler:brand-github" aria-hidden="true" />GITHUB</a>
-          <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer"><Icon name="tabler:brand-bilibili" aria-hidden="true" />BILIBILI</a>
+          {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noreferrer"><Icon name="tabler:brand-github" aria-hidden="true" />GITHUB</a>}
+          {profileIdentity.bilibili.startsWith("https://") && <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer"><Icon name="tabler:brand-bilibili" aria-hidden="true" />BILIBILI</a>}
         </div>
-        <span>© 2026 喝益胃 / YUIMI LAB</span>
+        <span>© 2026 {profileIdentity.displayName} / {profileIdentity.siteName}</span>
       </div>
     </footer>
 
@@ -589,7 +589,7 @@ const themedNotFoundRedirectScript = `(() => {
         <span class="kisara-context-emblem" aria-hidden="true"><Icon name="tabler:heart" /></span>
         <span class="kisara-context-identity">
           <strong>KISARA</strong>
-          <small>{navItems.find(item => item.active)?.label ?? "YUIMI LAB"}</small>
+          <small>{navItems.find(item => item.active)?.label ?? site.name}</small>
         </span>
         <button class="kisara-context-close" type="button" data-kisara-action="close" aria-label="关闭快捷菜单" title="关闭">
           <Icon name="tabler:x" aria-hidden="true" />

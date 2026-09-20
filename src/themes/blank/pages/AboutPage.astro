@@ -3,8 +3,9 @@ import { Icon } from "astro-icon/components";
 import BlankLayout from "../layouts/BlankLayout.astro";
 import PageHead from "../components/PageHead.astro";
 import { animeFavorites, currentSignals, favoriteGames, profileIdentity, profileStatus, profileTech, xpFavorites } from "@/core/data/profile";
+import { site } from "@/lib/site";
 ---
-<BlankLayout title="About | Yuimi Lab Blank" description="关于喝益胃 / Yuimi-chaya。兴趣、近况，与一些喜欢的事。">
+<BlankLayout title={`About | ${site.name}`} description={profileIdentity.bio}>
   <PageHead index="04" title="About" label="关于我" description="一个兴趣驱动的人，一份仍在续写的自我介绍。" />
   <section class="blank-profile">
     <div class="blank-profile-name"><p class="blank-kicker">{profileIdentity.handle}</p><h2>{profileIdentity.displayName}<span aria-hidden="true">。</span></h2><p>DEVELOPER / HOBBYIST</p></div>
@@ -12,8 +13,8 @@ import { animeFavorites, currentSignals, favoriteGames, profileIdentity, profile
       <p class="blank-profile-lead">{profileIdentity.bio}</p>
       <ul class="blank-status-list">{profileStatus.map((item) => <li>{item}</li>)}</ul>
       <div class="blank-contact-links">
-        <a class="blank-text-link" href={profileIdentity.github} target="_blank" rel="noopener noreferrer">GitHub <Icon name="tabler:external-link" size={17} /></a>
-        <a class="blank-text-link" href={profileIdentity.bilibili} target="_blank" rel="noopener noreferrer">Bilibili <Icon name="tabler:external-link" size={17} /></a>
+        {profileIdentity.github.startsWith("https://") && <a class="blank-text-link" href={profileIdentity.github} target="_blank" rel="noopener noreferrer">GitHub <Icon name="tabler:external-link" size={17} /></a>}
+        {profileIdentity.bilibili.startsWith("https://") && <a class="blank-text-link" href={profileIdentity.bilibili} target="_blank" rel="noopener noreferrer">Bilibili <Icon name="tabler:external-link" size={17} /></a>}
       </div>
     </div>
   </section>

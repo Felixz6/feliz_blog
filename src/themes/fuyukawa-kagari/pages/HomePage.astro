@@ -1,45 +1,20 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { noticeContent } from "../data/noticeContent";
 import { kagariAssets } from "../assets";
 import { Icon } from "astro-icon/components";
 import { getPublishedPosts } from "@/core/content/blog";
 import { getCoverSources } from "@/core/content/coverSources";
 import { getThemePath } from "@/core/themes/registry";
+import { profileIdentity } from "@/core/data/profile";
+import { site } from "@/lib/site";
 import LayeredHero from "../components/LayeredHero.astro";
 import ChapterRail from "../components/ChapterRail.astro";
 import MangaArt from "../components/MangaArt.astro";
 import HomeHeroRuntime from "../components/HomeHeroRuntime.astro";
 
-const noticeContentPayload = JSON.stringify(noticeContent);
 const recentPosts = (await getPublishedPosts()).slice(0, 3);
 
-const fallingTags = [
-  "Unity3D",
-  "Blender",
-  "UE5",
-  "MMD",
-  "AstrBot",
-  "猫娘",
-  "粉毛",
-  "病娇",
-  "重女",
-  "契约之吻",
-  "青春猪头少年",
-  "无职转生",
-  "夏洛特",
-  "Summer Pockets",
-  "埃罗芒阿老师",
-  "游戏人生",
-  "超电磁炮",
-  "Cyberpunk 2077",
-  "THE FINALS",
-  "KovaaK's",
-  "Aimlabs",
-  "Yuimi Radio",
-  "Live2D",
-  "小游戏"
-];
+const fallingTags: string[] = [];
 ---
 
 <BaseLayout>
@@ -47,13 +22,9 @@ const fallingTags = [
     <div class="hero">
       <LayeredHero />
       <div class="hero-overlay"></div>
-      <button class="home-notice-trigger" type="button" data-notice-open aria-haspopup="dialog">
-        <span aria-hidden="true">💌</span>
-        今日公告
-      </button>
       <div class="hero-copy" data-hero-copy>
         <p class="eyebrow">Fuyukawa Kagari · Personal diary</p>
-        <h1 data-title="Yuimi Lab">Yuimi Lab</h1>
+        <h1 data-title={site.name}>{site.name}</h1>
         <p class="hero-diary-line">把喜欢的事，写进每一个平凡日子。</p>
         <p class="hero-text terminal-line" aria-label="typing subtitle">
           <span class="hero-terminal-badge" aria-hidden="true"></span>
@@ -74,10 +45,7 @@ const fallingTags = [
 
       <div class="hero-profile identity-card" data-hero-profile aria-label="Profile">
         <div class="identity-avatar" data-poke-avatar>
-          <span class="avatar-flower" aria-hidden="true">
-            <span class="avatar-flower__bloom"></span>
-          </span>
-          <img src={kagariAssets.profile} alt="Yuimi Lab avatar" width="168" height="168" />
+          <img src={kagariAssets.profile} alt={`${profileIdentity.displayName} avatar`} width="168" height="168" />
           <span class="avatar-poke-bubble" data-poke-bubble>&#x64CD;&#x4F5C;&#x592A;&#x5FEB;&#x5566;&#xFF0C;&#x4F11;&#x606F;&#x4E00;&#x4E0B;&#x5427;</span>
         </div>
         <div class="identity-terminal" aria-label="identity terminal card">
@@ -87,28 +55,28 @@ const fallingTags = [
               <span></span>
               <span></span>
             </div>
-            <span class="terminal-title">yuimi-profile.exe</span>
+            <span class="terminal-title">profile.exe</span>
           </div>
-          <p class="identity-path">C:\Users\Yuimi\profile</p>
+          <p class="identity-path">~/profile</p>
           <p class="identity-command">
-            <span class="terminal-prefix">profile@yuimi:~$</span>
-            <span data-name-typing></span>
+            <span class="terminal-prefix">user@blog:~$</span>
+            <span data-name-typing data-name-lines={JSON.stringify([profileIdentity.displayName, profileIdentity.handle])}></span>
             <span class="terminal-cursor" aria-hidden="true"></span>
           </p>
-          <p class="identity-caption">喝益胃 / Yuimi-chaya</p>
+          <p class="identity-caption">{profileIdentity.displayName} / {profileIdentity.handle}</p>
           <div class="social-links" aria-label="Social links">
-            <a href="https://github.com/Yuimi-chaya" target="_blank" rel="noreferrer" aria-label="GitHub profile">
+            {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noreferrer" aria-label="GitHub profile">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2.16c-3.2.7-3.87-1.38-3.87-1.38-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.16 1.18A10.9 10.9 0 0 1 12 5.98c.98 0 1.96.13 2.88.39 2.19-1.49 3.15-1.18 3.15-1.18.63 1.59.24 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.41-5.27 5.7.41.36.77 1.06.77 2.14v3.18c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
               </svg>
               GitHub
-            </a>
-            <a href="https://space.bilibili.com/494350222" target="_blank" rel="noreferrer" aria-label="Bilibili profile">
+            </a>}
+            {profileIdentity.bilibili.startsWith("https://") && <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer" aria-label="Bilibili profile">
               <svg viewBox="0 0 32 32" aria-hidden="true">
                 <path d="M11.1 6.4 8.5 3.8a1.4 1.4 0 0 0-2 2l2.7 2.7h-.7A5.5 5.5 0 0 0 3 14v7.2A5.5 5.5 0 0 0 8.5 26h15A5.5 5.5 0 0 0 29 21.2V14a5.5 5.5 0 0 0-5.5-5.5h-.7l2.7-2.7a1.4 1.4 0 0 0-2-2l-2.6 2.6H11.1Zm-2.6 5h15A2.6 2.6 0 0 1 26.1 14v7.2a2.6 2.6 0 0 1-2.6 2.6h-15a2.6 2.6 0 0 1-2.6-2.6V14a2.6 2.6 0 0 1 2.6-2.6Zm2.7 5.1a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Zm9.6 0a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z" />
               </svg>
               Bilibili
-            </a>
+            </a>}
           </div>
         </div>
       </div>
@@ -123,31 +91,6 @@ const fallingTags = [
       </a>
     </div>
   </section>
-
-  <div class="home-notice-backdrop" data-notice-backdrop hidden>
-    <section class="home-notice-modal" role="dialog" aria-modal="true" aria-labelledby="home-notice-title" data-notice-modal>
-      <div class="home-notice-scroll-area" data-notice-scroll-area>
-        <button class="home-notice-close" type="button" data-notice-close aria-label="关闭公告">×</button>
-        <div class="home-notice-head">
-          <span class="home-notice-icon" data-notice-icon aria-hidden="true">💗</span>
-          <div>
-            <p data-notice-date>Today</p>
-            <h2 id="home-notice-title" data-notice-title>Yuimi Lab 今日公告</h2>
-          </div>
-        </div>
-        <div class="home-notice-body" data-notice-body></div>
-        <label class="home-notice-skip">
-          <input type="checkbox" data-notice-skip />
-          <span>今日不再弹出</span>
-        </label>
-      </div>
-      <div class="home-notice-scrollbar" data-notice-scrollbar aria-hidden="true">
-        <span data-notice-scroll-thumb></span>
-      </div>
-    </section>
-  </div>
-
-  <script type="application/json" id="notice-content-data" set:html={noticeContentPayload}></script>
 
   <div class="scene-divider" aria-hidden="true">
     <div class="scene-divider__rail">
@@ -165,9 +108,9 @@ const fallingTags = [
   <ChapterRail />
 
   <div class="home-content-bg">
-    <section class="tag-rain-stage" id="main-content" data-tag-rain data-tags={JSON.stringify(fallingTags)} aria-label="Yuimi tag rain">
-      <div class="home-art-word" aria-label="Yuimi Lab">
-        <span>Yuimi Lab</span>
+    <section class="tag-rain-stage" id="main-content" data-tag-rain data-tags={JSON.stringify(fallingTags)} aria-label="Blog topic tags">
+      <div class="home-art-word" aria-label={site.name}>
+        <span>{site.name}</span>
         <small>anime notes / tiny toys / dev memo</small>
       </div>
       <div class="home-signal-card" aria-label="Local signal">
@@ -209,222 +152,6 @@ const fallingTags = [
     </div>
   </section>
 
-  <script data-astro-rerun>
-    (() => {
-      window.__yuimiNoticeCleanup?.();
-      const noticeCleanupTasks = [];
-      window.__yuimiNoticeCleanup = () => {
-        noticeCleanupTasks.splice(0).forEach((cleanup) => cleanup());
-        document.documentElement.classList.remove("is-notice-open");
-        document.body.classList.remove("is-notice-open");
-        document.body.style.top = "";
-      };
-
-      const trigger = document.querySelector("[data-notice-open]");
-      const backdrop = document.querySelector("[data-notice-backdrop]");
-      const modal = document.querySelector("[data-notice-modal]");
-      const scrollArea = document.querySelector("[data-notice-scroll-area]");
-      const closeButton = document.querySelector("[data-notice-close]");
-      const skipInput = document.querySelector("[data-notice-skip]");
-      const titleTarget = document.querySelector("[data-notice-title]");
-      const dateTarget = document.querySelector("[data-notice-date]");
-      const iconTarget = document.querySelector("[data-notice-icon]");
-      const bodyTarget = document.querySelector("[data-notice-body]");
-      const scrollBar = document.querySelector("[data-notice-scrollbar]");
-      const scrollThumb = document.querySelector("[data-notice-scroll-thumb]");
-      if (!trigger || !backdrop || !modal || !scrollArea || !closeButton || !skipInput || !titleTarget || !dateTarget || !iconTarget || !bodyTarget) return;
-
-      const noticeData = JSON.parse(document.getElementById("notice-content-data")?.textContent || "{}");
-      const formatKey = (date) => `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const formatStorageKey = (date) => `${date.getFullYear()}-${formatKey(date)}`;
-      const pickFrom = (items, index) => items[index % items.length];
-      const today = new Date();
-      const todayKey = formatKey(today);
-      const storageKey = `yuimi-notice-hidden-${formatStorageKey(today)}`;
-      const sessionStorageKey = `yuimi-notice-opened-session-${formatStorageKey(today)}`;
-      let lockedScrollY = 0;
-
-      const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-      const weekSeed = Math.floor(dayOfYear / 7) + today.getFullYear() * 53;
-      const solarTermEntries = (noticeData.solarTerms2026 || []).map(([date, title, text]) => ({
-        date,
-        icon: "🌿",
-        title,
-        tone: "solar",
-        lines: [text]
-      }));
-      const historyEntries = (noticeData.histories || []).map(([date, icon, text]) => ({
-        date,
-        icon,
-        title: "今天的趣味历史",
-        tone: "history",
-        lines: [text]
-      }));
-      const createFallbackEntry = () => {
-        const themes = noticeData.fallbackThemes || [["💌", "今日小公告", "今天没有撞上特别节日，那就把普通日子当成隐藏关卡。"]];
-        const actions = noticeData.fallbackActions || ["领取一份随机精神补丁。"];
-        const theme = themes[(dayOfYear - 1) % themes.length];
-        return {
-          icon: theme[0],
-          title: `第 ${dayOfYear} 号历史趣味胶囊`,
-          tone: "history",
-          lines: [theme[2], `今天的随机行动：${actions[(dayOfYear - 1) % actions.length]}`],
-          footnote: "没有撞上固定节日时，Yuimi Lab 会按日期投递不同的冷知识胶囊。"
-        };
-      };
-      const createThursdayV50Entry = () => {
-        const pool = noticeData.v50;
-        if (!pool || today.getDay() !== 4) return null;
-        const opener = pickFrom(pool.openers, weekSeed);
-        const plot = pickFrom(pool.plots, weekSeed * 3 + dayOfYear);
-        const ask = pickFrom(pool.asks, weekSeed * 5 + today.getMonth());
-        const ending = pickFrom(pool.endings, weekSeed * 7 + today.getDate());
-        return {
-          icon: "🍗",
-          title: "星期四 V50 电波",
-          tone: "fun",
-          lines: [`${opener}${plot}。${ask}`, ending],
-          footnote: "V50 文案由素材池按周组合生成，版本数很多，但钱包仍有最终解释权。"
-        };
-      };
-
-      const todayEntries = [
-        ...(noticeData.festivals || []).filter((item) => item.date === todayKey),
-        ...solarTermEntries.filter((item) => item.date === todayKey),
-        ...historyEntries.filter((item) => item.date === todayKey)
-      ];
-      const thursdayV50 = createThursdayV50Entry();
-      if (thursdayV50) todayEntries.push(thursdayV50);
-
-      const entries = todayEntries.length > 0 ? todayEntries : [createFallbackEntry()];
-
-      const primary = entries[0];
-      iconTarget.textContent = primary.icon;
-      titleTarget.textContent = primary.title;
-      dateTarget.textContent = new Intl.DateTimeFormat("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        weekday: "long"
-      }).format(today);
-      modal.dataset.tone = primary.tone || "soft";
-
-      bodyTarget.innerHTML = entries.map((entry, index) => `
-        <article class="home-notice-entry ${index === 0 ? "is-primary" : ""}">
-          <div class="home-notice-entry-title">
-            <span aria-hidden="true">${entry.icon}</span>
-            <strong>${entry.title}</strong>
-          </div>
-          ${entry.lines.map((line) => `<p>${line}</p>`).join("")}
-          ${entry.list ? `<ol>${entry.list.map((item) => `<li>${item}</li>`).join("")}</ol>` : ""}
-          ${entry.footnote ? `<small>${entry.footnote}</small>` : ""}
-        </article>
-      `).join("");
-
-      const updateNoticeScrollbar = () => {
-        if (!scrollBar || !scrollThumb) return;
-        const scrollable = scrollArea.scrollHeight - scrollArea.clientHeight;
-        if (scrollable <= 2) {
-          scrollBar.classList.add("is-hidden");
-          scrollThumb.style.setProperty("--notice-thumb-y", "0px");
-          scrollThumb.style.setProperty("--notice-thumb-height", "100%");
-          return;
-        }
-
-        scrollBar.classList.remove("is-hidden");
-        const trackHeight = scrollBar.clientHeight;
-        const thumbHeight = Math.max(42, Math.round((scrollArea.clientHeight / scrollArea.scrollHeight) * trackHeight));
-        const maxThumbY = Math.max(0, trackHeight - thumbHeight);
-        const thumbY = Math.round((scrollArea.scrollTop / scrollable) * maxThumbY);
-        scrollThumb.style.setProperty("--notice-thumb-height", `${thumbHeight}px`);
-        scrollThumb.style.setProperty("--notice-thumb-y", `${thumbY}px`);
-      };
-
-      const openNotice = () => {
-        lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-        document.documentElement.classList.add("is-notice-open");
-        document.body.classList.add("is-notice-open");
-        document.body.style.top = `-${lockedScrollY}px`;
-        backdrop.hidden = false;
-        backdrop.classList.add("is-open");
-        closeButton.focus({ preventScroll: true });
-        requestAnimationFrame(updateNoticeScrollbar);
-      };
-
-      const closeNotice = () => {
-        if (skipInput.checked) {
-          try {
-            localStorage.setItem(storageKey, "1");
-          } catch {
-            // Ignore storage failures; the modal can still close normally.
-          }
-        }
-        backdrop.classList.remove("is-open");
-        document.documentElement.classList.remove("is-notice-open");
-        document.body.classList.remove("is-notice-open");
-        document.body.style.top = "";
-        window.scrollTo({ top: lockedScrollY, left: 0, behavior: "instant" });
-        window.setTimeout(() => {
-          backdrop.hidden = true;
-        }, 180);
-      };
-
-      const openNoticeAutomatically = () => {
-        try {
-          if (sessionStorage.getItem(sessionStorageKey) === "1") return;
-          sessionStorage.setItem(sessionStorageKey, "1");
-        } catch {
-          // Session storage may be blocked, but the page should still work.
-        }
-        openNotice();
-      };
-
-      const stopNoticeWheel = (event) => {
-        if (!backdrop.classList.contains("is-open")) return;
-        event.stopPropagation();
-        if (!scrollArea.contains(event.target)) {
-          event.preventDefault();
-        }
-      };
-
-      trigger.addEventListener("click", openNotice);
-      closeButton.addEventListener("click", closeNotice);
-      scrollArea.addEventListener("scroll", updateNoticeScrollbar, { passive: true });
-      modal.addEventListener("wheel", stopNoticeWheel, { passive: false });
-      backdrop.addEventListener("wheel", stopNoticeWheel, { passive: false });
-      window.addEventListener("resize", updateNoticeScrollbar);
-      const onBackdropClick = (event) => {
-        if (event.target === backdrop) closeNotice();
-      };
-      const onNoticeKeydown = (event) => {
-        if (event.key === "Escape" && !backdrop.hidden) closeNotice();
-      };
-      backdrop.addEventListener("click", onBackdropClick);
-      document.addEventListener("keydown", onNoticeKeydown);
-      noticeCleanupTasks.push(() => {
-        trigger.removeEventListener("click", openNotice);
-        closeButton.removeEventListener("click", closeNotice);
-        scrollArea.removeEventListener("scroll", updateNoticeScrollbar);
-        modal.removeEventListener("wheel", stopNoticeWheel);
-        backdrop.removeEventListener("wheel", stopNoticeWheel);
-        window.removeEventListener("resize", updateNoticeScrollbar);
-        backdrop.removeEventListener("click", onBackdropClick);
-        document.removeEventListener("keydown", onNoticeKeydown);
-      });
-
-      let hiddenToday = false;
-      try {
-        hiddenToday = localStorage.getItem(storageKey) === "1";
-      } catch {
-        hiddenToday = false;
-      }
-
-      if (!hiddenToday) {
-        const autoOpenTimer = window.setTimeout(openNoticeAutomatically, 520);
-        noticeCleanupTasks.push(() => window.clearTimeout(autoOpenTimer));
-      }
-    })();
-  </script>
 
   <script data-astro-rerun>
     (() => {
@@ -457,8 +184,6 @@ const fallingTags = [
       const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
       const effectiveType = String(connection?.effectiveType || "").toLowerCase();
       const constrainedNetwork = Boolean(connection?.saveData) || /(^|-)2g$/.test(effectiveType);
-      const pigImage = new Image();
-      pigImage.src = "/themes/fuyukawa-kagari/assets/mini-pig-scroll.webp";
       const dateTarget = document.querySelector("[data-home-date]");
       const timeTarget = document.querySelector("[data-home-time]");
       const weatherTarget = document.querySelector("[data-home-weather]");
@@ -816,25 +541,6 @@ const fallingTags = [
         };
       };
 
-      const makePig = (index) => {
-        const size = random(42, 58);
-        const radius = size * 0.52;
-        return {
-          type: "pig",
-          width: size,
-          height: size * 0.78,
-          radius,
-          x: random(radius + 14, state.width - radius - 14),
-          y: -random(80, 320),
-          vx: random(-1.5, 1.5),
-          vy: random(0.4, 1.6),
-          angle: random(-0.35, 0.35),
-          spin: random(-0.02, 0.02),
-          alpha: 1,
-          index
-        };
-      };
-
       const resize = () => {
         const rect = stage.getBoundingClientRect();
         const dprCeiling = litePerformance ? 1 : mobilePerformance ? 1.15 : 2;
@@ -850,10 +556,7 @@ const fallingTags = [
       };
 
       const prepareQueue = () => {
-        const tagBodies = labels.map(makeTag);
-        const pigCount = Math.max(3, Math.min(6, Math.round(labels.length / 6)));
-        const pigBodies = Array.from({ length: pigCount }, (_, index) => makePig(index));
-        state.queue = [...tagBodies, ...pigBodies].sort(() => Math.random() - 0.5);
+        state.queue = labels.map(makeTag);
       };
 
       const startRain = () => {
@@ -908,30 +611,6 @@ const fallingTags = [
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(body.label, 0, 1, body.width - 34);
-        ctx.restore();
-      };
-
-      const drawPig = (body) => {
-        ctx.save();
-        ctx.globalAlpha = body.alpha;
-        ctx.translate(body.x, body.y);
-        ctx.rotate(body.angle);
-        if (pigImage.complete && pigImage.naturalWidth > 0) {
-          ctx.drawImage(pigImage, -body.width / 2, -body.height / 2, body.width, body.height);
-        } else {
-          ctx.fillStyle = "#ffd5df";
-          ctx.strokeStyle = "#ef9db3";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.roundRect(-body.width / 2, -body.height / 2, body.width, body.height, 18);
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#6f5160";
-          ctx.font = "900 14px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("pig", 0, 1);
-        }
         ctx.restore();
       };
 
@@ -1063,10 +742,7 @@ const fallingTags = [
           }
         }
 
-        state.bodies.forEach((body) => {
-          if (body.type === "pig") drawPig(body);
-          else drawCapsule(body);
-        });
+        state.bodies.forEach(drawCapsule);
 
         maybeFade(now);
         state.raf = window.requestAnimationFrame(tick);

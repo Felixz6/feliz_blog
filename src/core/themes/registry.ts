@@ -1,5 +1,5 @@
 export const THEME_STORAGE_KEY = "yuimi-theme-id-v2";
-export const DEFAULT_THEME_ID = "kisara";
+export const DEFAULT_THEME_ID = "fuyukawa-kagari";
 
 export const themes = [
   {

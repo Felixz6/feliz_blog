@@ -17,7 +17,6 @@
   document.addEventListener("astro:page-load", start);
   document.addEventListener("astro:before-swap", () => {
     dispose();
-    window.__yuimiNoticeCleanup?.();
     window.__yuimiHomeRainCleanup?.();
   });
 </script>

@@ -17,8 +17,9 @@ const homeEventSource = readSource("src/themes/kisara/components/KisaraHomeEvent
 const homeEventStyles = readSource("src/themes/kisara/styles/home-event-video.css");
 const homeStyles = readSource("src/themes/kisara/styles/home.css");
 
-test("Gate attribution keeps its text as a quiet serif credit without cue decoration", () => {
-  assert.match(homeSource, /kisara-credit-author">Yuimi-chaya<\/span> \/ <span>GPT in Codex<\/span>/);
+test("Gate credit points to the retained README attribution without exposing the author in the UI", () => {
+  assert.match(homeSource, /kisara-credit-author">THEME SOURCE<\/span> \/ <span>README<\/span>/);
+  assert.doesNotMatch(homeSource, /Yuimi-chaya|喝益胃|Yuimi Lab/);
   const credit = homeStyles.match(/\.kisara-scroll-cue \{([^}]+)\}/)?.[1] ?? "";
   assert.match(credit, /font: 400 14px\/1\.6 Georgia/);
   assert.match(credit, /right: max\(8%, 24px\)/);

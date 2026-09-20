@@ -1,26 +1,25 @@
 <div align="center">
 
 <h1>
-  <img src="./public/themes/kisara/favicon.ico" width="32" height="32" alt="Kisara" />
-  Yuimi Lab
   <img src="./public/themes/fuyukawa-kagari/assets/pig-favicon.png" width="32" height="32" alt="Fuyukawa Kagari" />
+  YOUR_BLOG_NAME
 </h1>
 
 **一个将二次元叙事、可玩交互与技术记录放进同一处的 Astro 个人博客。**
 
-[在线访问](https://yuimi-chaya.github.io) · [Kisara](https://yuimi-chaya.github.io) · [Fuyukawa Kagari](https://yuimi-chaya.github.io/themes/fuyukawa-kagari/)
+[在线访问](https://YOUR_USERNAME.github.io) · [Fuyukawa Kagari](https://YOUR_USERNAME.github.io) · [Kisara](https://YOUR_USERNAME.github.io/themes/kisara/)
 
 `Astro` `GitHub Pages` `Multi-theme` `Interactive Storytelling`
 
 </div>
 
-> 这里既是博客，也是持续生长的前端实验场。文章、角色、声音、场景和小游戏不必互相让路，它们一起构成 Yuimi Lab。
+> 这里既是博客，也是持续生长的前端实验场。文章、角色、声音、场景和小游戏不必互相让路，它们一起构成 YOUR_BLOG_NAME。
 
 ## 目录
 
 - [主题一览](#主题一览)
-- [Kisara：当前主舞台](#kisara当前主舞台)
-- [Fuyukawa Kagari：保留完整的手账宇宙](#fuyukawa-kagari保留完整的手账宇宙)
+- [Kisara：可选主题](#kisara可选主题)
+- [Fuyukawa Kagari：当前主主题](#fuyukawa-kagari当前主主题)
 - [二次开发建议](#二次开发建议)
 - [内容与架构](#内容与架构)
 - [本地开发](#本地开发)
@@ -32,17 +31,19 @@
 
 ## 主题一览
 
-Yuimi Lab 不是简单换一层颜色的主题站点。每套主题都有自己的布局、样式、运行时与页面表达；它们共享文章内容，但不共享彼此的视觉逻辑。
+YOUR_BLOG_NAME 不是简单换一层颜色的主题站点。每套主题都有自己的布局、样式、运行时与页面表达；它们共享文章内容，但不共享彼此的视觉逻辑。
 
 | 主题 | 定位 | 入口 |
 | --- | --- | --- |
-| **Kisara** | 以木更为中心的高密度视觉交互与叙事实验。当前默认主题，承载根路由。 | [`/`](https://yuimi-chaya.github.io) |
-| **Fuyukawa Kagari** | 轻盈的二次元手账与个人日记空间，保留完整的独立浏览体验。 | [`/themes/fuyukawa-kagari/`](https://yuimi-chaya.github.io/themes/fuyukawa-kagari/) |
-| **Blank** | 用于保持内容与页面能力可拆分的极简主题基线。 | [`/themes/blank/`](https://yuimi-chaya.github.io/themes/blank/) |
+| **Kisara** | 以木更为中心的高密度视觉交互与叙事实验，作为独立的可选主题保留。 | [`/themes/kisara/`](https://YOUR_USERNAME.github.io/themes/kisara/) |
+| **Fuyukawa Kagari** | 轻盈的二次元手账与个人日记空间，是当前默认主题并承载主站路由。 | [`/`](https://YOUR_USERNAME.github.io) |
+| **Blank** | 用于保持内容与页面能力可拆分的极简主题基线。 | [`/themes/blank/`](https://YOUR_USERNAME.github.io/themes/blank/) |
 
 主题间跳转采用完整页面导航，避免客户端路由、全局监听或主题样式互相残留。Kisara 的历史前缀路由仍被保留为兼容入口，而正式内容地址始终保持稳定。
 
-## Kisara：当前主舞台
+Kisara 是上游主题内容，原页面署名为 **Yuimi-chaya / GPT in Codex**。为避免把上游作者身份混入当前博客界面，署名保留在此处，运行时页面使用通用来源提示；主题代码和历史路由仍单独保留。
+
+## Kisara：可选主题
 
 Kisara 是这个博客最具角色感的一面。它不把首页当作静态封面，而是把访问过程设计成可推进、可发现、可返回的场景序列：深靛蓝的底色、粉红和蓝色的能量、Canvas 与 WebGL 的画面层，以及围绕角色展开的路线和记忆。
 
@@ -74,15 +75,15 @@ Works 页面把标题切开、分离和重组成短暂的 Canvas 动画，并让
 
 ![Kisara Profile 记忆片段](./public/readme/kisara-me.gif)
 
-## Fuyukawa Kagari：保留完整的手账宇宙
+## Fuyukawa Kagari：当前主主题
 
-Fuyukawa Kagari 不是 Kisara 之前的残留版本，而是一套仍然完整、独立维护的主题。它位于 `/themes/fuyukawa-kagari/`，拥有自己的页面布局、主题资源、导航、SEO 与交互脚本。进入这个入口，就像翻开另一册个人手账：温和、轻松，也更适合慢慢浏览。
+Fuyukawa Kagari 是当前主主题，承载 `/`、`/blog/`、`/about/`、`/projects/` 与 `/games/`，同时保留 `/themes/fuyukawa-kagari/` 作为兼容入口。它拥有独立的页面布局、主题资源、导航、SEO 与交互脚本。
 
 ![Fuyukawa Kagari 首页手账场景](./public/readme/fuyukawa-home.gif)
 
 ### 从手账开始，而不是从舞台开始
 
-首页用大图 Hero、终端式打字副标题、头像和身份卡建立第一印象。日期、时间、本地信号、公告和 Tag Rain 让信息有了细微的生活感；Live2D 控制台、Yuimi Radio、樱花雨和小猪滚动条则把“个人主页”做得更像一个可停留的房间。
+首页用大图 Hero、终端式打字副标题、头像和身份卡建立第一印象。日期、时间、本地信号、公告和 Tag Rain 让信息有了细微的生活感；Live2D 控制台、Music player、樱花雨和小猪滚动条则把“个人主页”做得更像一个可停留的房间。
 
 它的视觉语言偏向纸张与收藏：浅色手账背景上有粉色和浅蓝色的点缀，组件清晰而不过分侵占内容。和 Kisara 的强节奏叙事不同，Fuyukawa Kagari 更重视阅读、归档和日常更新的舒展感。
 
@@ -98,7 +99,7 @@ Games 页面则以展示和介绍为主，保留游戏原作者、仓库与许�
 
 - 想要二次元、手账和个人主页气质，但希望文章阅读始终是中心。
 - 需要时间线归档、全文搜索、项目筛选和丰富的个人资料页。
-- 希望主题独立存在，并与当前默认主题共享文章而不共享实现包袱。
+- 希望主题独立存在，并与其他主题共享文章而不共享实现包袱。
 
 ## 二次开发建议
 
@@ -127,8 +128,8 @@ Fuyukawa Kagari 的动效多数不依赖某一张角色图片才能成立。Hero
 
 ```text
 共享文章内容
-    ├─ Kisara：根路由 /、/blog/、/games/、/projects/、/about/
-    ├─ Fuyukawa Kagari：/themes/fuyukawa-kagari/...
+    ├─ Fuyukawa Kagari：根路由 /、/blog/、/games/、/projects/、/about/
+    ├─ Kisara：/themes/kisara/...
     └─ Blank：/themes/blank/...
 ```
 
@@ -237,6 +238,6 @@ tests/                           静态回归测试
 
 <div align="center">
 
-**Yuimi Lab** · 让记录有内容，也让页面有自己的情绪和玩法。
+**YOUR_BLOG_NAME** · 让记录有内容，也让页面有自己的情绪和玩法。
 
 </div>

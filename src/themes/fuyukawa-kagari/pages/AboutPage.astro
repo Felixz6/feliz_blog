@@ -13,14 +13,25 @@ import {
   profileTech,
   xpFavorites
 } from "@/core/data/profile";
+import { site } from "@/lib/site";
 
 const statusItems = profileStatus;
+const bioBreakBefore = "立於";
+const bioBreakIndex = profileIdentity.bio.indexOf(bioBreakBefore);
+const bioFirstLine = bioBreakIndex >= 0
+  ? profileIdentity.bio.slice(0, bioBreakIndex).trimEnd()
+  : profileIdentity.bio;
+const bioSecondLine = bioBreakIndex >= 0
+  ? profileIdentity.bio.slice(bioBreakIndex)
+  : "";
 const techPresentation = {
-  unity: { icon: "simple-icons:unity", tone: "blue" },
-  blender: { icon: "simple-icons:blender", tone: "orange" },
-  ue5: { icon: "simple-icons:unrealengine", tone: "ink" },
-  mmd: { icon: "tabler:sparkles", tone: "pink" },
-  astrbot: { icon: "tabler:terminal-2", tone: "mint" }
+  "web-security": { icon: "tabler:shield-lock", tone: "blue" },
+  ctf: { icon: "tabler:flag-3", tone: "pink" },
+  php: { icon: "simple-icons:php", tone: "orange" },
+  linux: { icon: "simple-icons:linux", tone: "ink" },
+  git: { icon: "simple-icons:git", tone: "mint" },
+  "open-source": { icon: "simple-icons:github", tone: "lavender" },
+  ai: { icon: "tabler:sparkles", tone: "pink" }
 } as const;
 const techStack = profileTech.map((tech) => ({ ...tech, ...techPresentation[tech.key] }));
 const animeShelf = animeFavorites.map((item) => ({
@@ -45,12 +56,12 @@ const gameShelf = favoriteGames.map((item) => ({
 const nowDoing = currentSignals;
 ---
 
-<BaseLayout title="About | Yuimi Lab" description="关于喝益胃 / Yuimi-chaya 的技术线、二次元兴趣与个人资料。">
+<BaseLayout title={`About | ${site.name}`} description={profileIdentity.bio}>
   <section class="about-profile-shell" aria-labelledby="about-title">
-    <aside class="about-sidebar" aria-label="Yuimi profile card">
+    <aside class="about-sidebar" aria-label="Profile card">
       <div class="about-avatar-card">
         <span class="about-tape about-tape--left" aria-hidden="true"></span>
-        <img src={kagariAssets.profile} alt="喝益胃 / Yuimi-chaya 的头像" width="220" height="220" />
+        <img src={kagariAssets.profile} alt={`${profileIdentity.displayName} avatar`} width="220" height="220" />
         <span class="about-avatar-flower" aria-hidden="true">✦</span>
       </div>
 
@@ -58,17 +69,17 @@ const nowDoing = currentSignals;
         <p class="about-kicker">Behind the notebook</p>
         <h1 id="about-title">{profileIdentity.displayName}</h1>
         <p class="about-handle">{profileIdentity.handle} · {profileIdentity.siteName}</p>
-        <p class="about-bio">{profileIdentity.bio}</p>
+        <p class="about-bio">{bioFirstLine}{bioSecondLine && <br />}{bioSecondLine}</p>
 
         <div class="about-link-row" aria-label="profile links">
-          <a href={profileIdentity.github} target="_blank" rel="noreferrer">
+          {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noreferrer">
             <Icon name="simple-icons:github" aria-hidden="true" />
             GitHub
-          </a>
-          <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer">
+          </a>}
+          {profileIdentity.bilibili.startsWith("https://") && <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer">
             <Icon name="simple-icons:bilibili" aria-hidden="true" />
             Bilibili
-          </a>
+          </a>}
         </div>
       </div>
 
@@ -86,14 +97,13 @@ const nowDoing = currentSignals;
       <MangaArt image="kagari-tea" class="about-side-character" />
     </aside>
 
-    <section class="about-readme" aria-label="Yuimi README">
+    <section class="about-readme" aria-label={`${site.name} profile`}>
       <div class="about-readme-hero">
         <div>
           <p class="section-kicker">04 / Dear reader</p>
           <h2>很高兴，在这里遇见你。</h2>
           <p>
-            这里是一间把技术笔记、二次元兴趣、小游戏和看板娘机关放在一起的小房间。
-            我会记录 AstrBot、插件开发、部署踩坑，也会把喜欢的番剧、游戏和角色审美认真摆上架。
+            这里整理计算机、网络安全、CTF、开源与开发工具相关记录，也会留出位置写下 AI、二次元兴趣和个人生活。
           </p>
         </div>
         <MangaArt image="letter-page" class="about-letter-art" eager />
@@ -141,6 +151,7 @@ const nowDoing = currentSignals;
         </div>
 
         <div class="about-media-grid about-media-grid--anime">
+          {animeShelf.length === 0 && <p class="about-empty-state">喜欢的作品待补充。</p>}
           {animeShelf.map((item) => (
             <article class="about-media-card">
               <img src={item.image} alt={`${item.title} 官方视觉缩略图`} loading="lazy" width="900" height="506" />
@@ -164,6 +175,7 @@ const nowDoing = currentSignals;
           </div>
 
           <div class="about-xp-grid">
+            {xpTags.length === 0 && <p class="about-empty-state">兴趣标签待补充。</p>}
             {xpTags.map((item) => (
               <article class="about-xp-card">
                 <img src={item.image} alt={`${item.title} 泛化视觉贴纸`} loading="lazy" width="900" height="506" />
@@ -186,6 +198,7 @@ const nowDoing = currentSignals;
           </div>
 
           <div class="about-game-list">
+            {gameShelf.length === 0 && <p class="about-empty-state">喜欢的游戏待补充。</p>}
             {gameShelf.map((item) => (
               <article class="about-game-card">
                 <img src={item.image} alt={`${item.title} 官方视觉缩略图`} loading="lazy" width="900" height="506" />
@@ -228,27 +241,6 @@ const nowDoing = currentSignals;
       margin: 0 auto;
       display: grid;
       align-items: start;
-    }
-
-    :global(.waifu-local-fallback) {
-      left: 6px;
-      width: 112px;
-      opacity: 0.72;
-    }
-
-    :global(.waifu-local-bubble) {
-      display: none;
-    }
-
-    :global(.waifu-local-character) {
-      width: 92px;
-      height: 92px;
-      margin-left: 0;
-    }
-
-    :global(.waifu-local-character img) {
-      width: 72px;
-      height: 72px;
     }
 
     .about-sidebar {

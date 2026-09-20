@@ -26,7 +26,7 @@ category: "tech"
 
 ## 人设仍然重要,但不是全部
 
-在[上一篇关于 AstrBot 人设提示词的文章](https://github.com/Yuimi-chaya/Yuimi-chaya.github.io/blob/main/src/content/blog/astrbot-roleplay-persona-notes.md)里,我主要讨论了怎样描述一个角色,以及怎样区分提示词、模型和平台的问题.
+在上一篇关于 AstrBot 人设提示词的文章里,我主要讨论了怎样描述一个角色,以及怎样区分提示词、模型和平台的问题.
 
 其中一些方法仍然值得保留.人格不能只是一串“温柔、活泼、傲娇”的标签；角色为什么在意一件事,怎样保护自己的自尊,想从这段关系中得到什么,这些内容比堆叠形容词更能指导表达.平台没有提供的时间、工具和记忆,也不能靠提示词假装存在.
 
@@ -307,8 +307,6 @@ category: "tech"
 
 本文对应仓库的 `2.0.0-draft.6`,规范修订 `2026-09-07.2`.该草稿已进入公开仓库的 `main`,仍不代表稳定版发布或通用效果认证.
 
-- [Role Prompt Authoring 项目仓库](https://github.com/Yuimi-chaya/llm-rp-role-prompt-authoring)
-- [本文对应的 README 快照](https://github.com/Yuimi-chaya/llm-rp-role-prompt-authoring/blob/e031d7ebc5fa5826fbe0707479a593711e331a0a/README.md)
-- [本文对应的中文 Skill 快照](https://github.com/Yuimi-chaya/llm-rp-role-prompt-authoring/blob/e031d7ebc5fa5826fbe0707479a593711e331a0a/skills/role-prompt-authoring/role-prompt-authoring-skill.zh-CN.md)
+- Role Prompt Authoring 项目仓库与配套文档（原个人链接已移除）
 
 仓库提供双语 Skill、使用说明、架构与边界文档、验收用例以及历史归档.历史材料用于理解方法的来路,不应与当前 Skill 叠加使用.私有角色全文、真实聊天与平台配置不在公开交付范围内.

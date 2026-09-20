@@ -5,6 +5,7 @@ import gamesStylesheet from "../styles/games.css?url";
 import gameInvestigationStylesheet from "../styles/game-investigation.css?url";
 import { Icon } from "astro-icon/components";
 import { gamePicks } from "@/core/data/games";
+import { site } from "@/lib/site";
 
 const gamePresentation = {
   "2048": {
@@ -38,7 +39,7 @@ const gamePresentation = {
 
 ---
 
-<KisaraLayout title="Games | Kisara" description="Yuimi Lab 的小游戏收藏。" stylesheets={[gamesStylesheet, gameInvestigationStylesheet]}>
+<KisaraLayout title={`Games | ${site.name}`} description={site.description} stylesheets={[gamesStylesheet, gameInvestigationStylesheet]}>
   <div class="kisara-games" data-kisara-games data-active-scene="0">
     <KisaraGameClueScene />
 
@@ -100,7 +101,7 @@ const gamePresentation = {
         <div class="kisara-arcade-machine" data-game-machine>
           <div class="kisara-arcade-machine-body">
             <header class="kisara-arcade-machine-marquee">
-              <span>YUIMI NIGHT ARCADE</span>
+              <span>NIGHT ARCADE</span>
               <strong data-game-machine-title>{gamePicks[0].name}</strong>
               <output data-game-status>{gamePresentation[gamePicks[0].id].status}</output>
             </header>
@@ -193,7 +194,7 @@ const gamePresentation = {
 
             <div class="kisara-arcade-machine-base" aria-hidden="true">
               <div class="kisara-arcade-speaker"><i></i><span>STEREO</span></div>
-              <div class="kisara-arcade-coin-bay"><i></i><strong>YUIMI COIN</strong><span>READY</span></div>
+              <div class="kisara-arcade-coin-bay"><i></i><strong>ARCADE COIN</strong><span>READY</span></div>
               <div class="kisara-arcade-service-plate"><span>03</span><strong>REMOTE PLAY UNIT</strong><i></i></div>
             </div>
           </div>
