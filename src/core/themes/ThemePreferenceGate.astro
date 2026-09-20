@@ -2,6 +2,7 @@
 import {
   DEFAULT_THEME_ID,
   THEME_STORAGE_KEY,
+  selectableThemes,
   themes,
   type ThemeId
 } from "./registry";
@@ -17,13 +18,14 @@ const config = {
   honorPreference,
   defaultTheme: DEFAULT_THEME_ID,
   storageKey: THEME_STORAGE_KEY,
-  themes: themes.map(({ id, label, routePrefix }) => ({ id, label, routePrefix }))
+  themes: themes.map(({ id, label, routePrefix }) => ({ id, label, routePrefix })),
+  selectableThemeIds: selectableThemes.map(({ id }) => id)
 };
 ---
 
 <script is:inline define:vars={{ config }}>
   (() => {
-    const themeIds = config.themes.map((theme) => theme.id);
+    const themeIds = config.selectableThemeIds;
 
     const readPreference = () => {
       try {
@@ -90,7 +92,8 @@ const config = {
 
     const isExplicitThemeRoute = config.currentTheme !== config.defaultTheme;
     if (isExplicitThemeRoute) {
-      writePreference(config.currentTheme);
+      if (themeIds.includes(config.currentTheme)) writePreference(config.currentTheme);
+      else clearPreference();
     } else if (isHistoryTraversal) {
       writePreference(config.currentTheme);
     } else if (config.honorPreference && storedTheme && storedTheme !== config.currentTheme) {
@@ -106,7 +109,7 @@ const config = {
     document.documentElement.dataset.theme = config.currentTheme;
     window.__yuimiTheme = {
       current: config.currentTheme,
-      themes: config.themes,
+      themes: config.themes.filter((theme) => themeIds.includes(theme.id)),
       pathFor: (themeId, pathname = window.location.pathname) => pathForTheme(themeId, pathname),
       select: (themeId) => {
         const targetTheme = themeIds.includes(themeId) ? themeId : config.defaultTheme;

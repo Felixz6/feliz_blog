@@ -22,6 +22,10 @@ export const themes = [
   }
 ] as const;
 
+// Keep all themes registered for legacy routes, while exposing only the primary
+// theme in user-facing theme selectors.
+export const selectableThemes = themes.filter((theme) => theme.id === DEFAULT_THEME_ID);
+
 export type ThemeId = (typeof themes)[number]["id"];
 
 export function isThemeId(value: unknown): value is ThemeId {
