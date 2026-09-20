@@ -27,7 +27,7 @@ Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用
 - About 页面从共享资料配置读取个人信息与技术方向。
 - 页面保留樱花雨效果和音乐播放器；播放器标题为 Music / Playlist。
 - Live2D、公告卡片和猪形滚动挂件已从当前界面移除。
-- 浏览器图标使用 public/themes/fuyukawa-kagari/assets/kanade_c.png。
+- 浏览器图标资源路径由 src/themes/fuyukawa-kagari/assets.ts 中的 favicon 配置指向 public/themes/fuyukawa-kagari/assets/。
 
 ## 本地开发
 
