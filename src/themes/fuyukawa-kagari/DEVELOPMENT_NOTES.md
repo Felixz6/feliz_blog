@@ -4,7 +4,7 @@
 
 Theme-local supplement to the repository's `DEVELOPMENT_NOTES.md`. This file owns
 only the September 2026 Fuyukawa presentation refresh; shared architecture and
-Kisara history remain authoritative in the repository note, which is not edited.
+repository-wide history remain in the root note.
 
 ## Current State
 
@@ -113,8 +113,9 @@ Kisara history remain authoritative in the repository note, which is not edited.
   150 Fuyukawa links checked, no missing local resources or script syntax errors.
 - Original 4321 preview returns HTTP 200 for Home, Blog, Game, Works, About and a
   sample article. The themed 404 correctly responds with status 404.
-- `public/`, shared data/configuration/routes, Kisara and Blank have no task diff.
-  The root development note's pre-existing changes are untouched.
+- This note tracks only the Fuyukawa presentation refresh. Repository-wide route,
+  configuration, and asset changes are tracked separately; pre-existing root
+  development-note changes remain untouched.
 - Test/build logs: `%TEMP%/fuyukawa-refresh-{focused-final,tests-final,build-final}.log`.
   Test and build processes exited normally. No browser or subagent was used.
 - Visual acceptance is still pending. Subsequent cover/header feedback and its

@@ -164,7 +164,7 @@ test("Fuyukawa layout removes Live2D while retaining the music-only utility dock
   assert.match(layout, /aria-label="Music controls"/);
   assert.match(layout, /aria-label="打开音乐工具"/);
   assert.match(layout, /tabler:player-play/);
-  assert.match(layout, /class="music-widget"/);
+  assert.match(layout, /class="[^"]*\bmusic-widget\b[^"]*"/);
   for (const file of ["styles/theme.css", "styles/refresh.css", "pages/AboutPage.astro", "pages/ProjectsPage.astro"]) {
     assert.doesNotMatch(read(file), /live2d|waifu/i, file);
   }

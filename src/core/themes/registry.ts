@@ -7,23 +7,10 @@ export const themes = [
     label: "Fuyukawa Kagari",
     description: "现有的 Fuyukawa Kagari 二次元手账主题",
     routePrefix: "/themes/fuyukawa-kagari"
-  },
-  {
-    id: "blank",
-    label: "Blank",
-    description: "独立、轻量的空白主题骨架",
-    routePrefix: "/themes/blank"
-  },
-  {
-    id: "kisara",
-    label: "Kisara",
-    description: "以木更为角色核心的视觉交互实验主题",
-    routePrefix: "/themes/kisara"
   }
 ] as const;
 
-// Keep all themes registered for legacy routes, while exposing only the primary
-// theme in user-facing theme selectors.
+// Only the primary theme is registered and exposed to site routing.
 export const selectableThemes = themes.filter((theme) => theme.id === DEFAULT_THEME_ID);
 
 export type ThemeId = (typeof themes)[number]["id"];

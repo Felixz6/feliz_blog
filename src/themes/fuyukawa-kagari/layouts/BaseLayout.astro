@@ -44,7 +44,7 @@ const navItems = site.nav.map((item) => ({
 }));
 const isAlternateThemeRoute = Astro.url.pathname.startsWith("/themes/");
 const themedNotFoundRedirectScript = `(() => {
-  const themeMatch = window.location.pathname.match(/^\\/themes\\/(blank|kisara|fuyukawa-kagari)(?:\\/|$)/);
+  const themeMatch = window.location.pathname.match(/^\\/themes\\/(fuyukawa-kagari)(?:\\/|$)/);
   if (!themeMatch) return;
   const themeId = themeMatch[1];
   const notFoundPath = "/themes/" + themeId + "/404/";

@@ -91,10 +91,8 @@ test("the entire exclusion plan is checked for path traversal and references bef
   }
 });
 
-test("both illustrated themes use cover candidates without eager CSS background requests", async () => {
+test("Fuyukawa blog and home use responsive cover candidates with lazy image loading", async () => {
   const paths = [
-    "src/themes/kisara/pages/BlogIndexPage.astro",
-    "src/themes/kisara/components/KisaraLatestNotes.astro",
     "src/themes/fuyukawa-kagari/pages/BlogIndexPage.astro",
     "src/themes/fuyukawa-kagari/pages/HomePage.astro"
   ];
@@ -104,7 +102,6 @@ test("both illustrated themes use cover candidates without eager CSS background 
     assert.match(content, /loading="lazy"/);
   }
   const archive = await readFile(new URL(`../${paths[0]}`, import.meta.url), "utf8");
-  assert.doesNotMatch(archive, /--archive-cover:/);
-  assert.match(archive, /hasTransparentCover\(post.data.cover\)/);
-  assert.match(archive, /class="kisara-blog-cover-ambient"[^]*loading="lazy"/);
+  assert.match(archive, /post-cover-frame/);
+  assert.match(archive, /getCoverSources\(post\.cover/);
 });

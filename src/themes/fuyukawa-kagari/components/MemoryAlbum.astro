@@ -8,7 +8,7 @@ const pages = [
 ---
 <section class="memory-album" data-manga-album aria-labelledby="memory-album-title">
   <header class="manga-section-heading">
-    <div><p class="section-kicker">Between the pages</p><h2 id="memory-album-title">夹在书里的片刻</h2></div>
+    <div><p class="section-kicker">FRAGMENTS OF MEMORY</p><h2 id="memory-album-title">藏在时光里的物语</h2></div>
     <div class="album-tabs" role="group" aria-label="选择彩页">
       {pages.map((page, i) => <button type="button" data-album-tab={i} aria-pressed={i === 0 ? "true" : "false"} aria-controls={`memory-page-${i}`} title={page.title}>{String(i + 1).padStart(2, "0")}</button>)}
     </div>
