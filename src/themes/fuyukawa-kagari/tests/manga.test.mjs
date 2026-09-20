@@ -231,10 +231,10 @@ test("archive filters include empty categories and restore every entry", () => {
 });
 
 test("chapter controls target real leaf positions and account for track ends", () => {
-  assert.equal(nearestRailIndex([0, 324, 648, 972], 600), 2);
+  assert.equal(nearestRailIndex([0, 324, 648], 600), 2);
   const root = element(), previous = element(), next = element(), label = element();
-  const track = Object.assign(element(), { scrollLeft: 0, scrollWidth: 1296, clientWidth: 400, scrollTo(value) { this.scrollLeft = Math.min(value.left, this.scrollWidth - this.clientWidth); } });
-  const items = [0, 324, 648, 972].map((offsetLeft) => ({ offsetLeft }));
+  const track = Object.assign(element(), { scrollLeft: 0, scrollWidth: 972, clientWidth: 400, scrollTo(value) { this.scrollLeft = Math.min(value.left, this.scrollWidth - this.clientWidth); } });
+  const items = [0, 324, 648].map((offsetLeft) => ({ offsetLeft }));
   root.querySelectorAll = () => items;
   root.querySelector = (selector) => ({ "[data-rail-track]": track, "[data-rail-prev]": previous, "[data-rail-next]": next, "[data-rail-position]": label })[selector];
   const frames = [];
@@ -244,11 +244,19 @@ test("chapter controls target real leaf positions and account for track ends", (
   next.dispatch("click");
   assert.equal(track.scrollLeft, 324);
   track.dispatch("scroll"); frames.pop()();
-  assert.equal(label.textContent, "02 / 04");
+  assert.equal(label.textContent, "02 / 03");
   next.dispatch("click"); next.dispatch("click");
   track.dispatch("scroll"); frames.pop()();
   assert.equal(next.disabled, true);
   cleanup();
+});
+
+test("home chapter rail omits Games and numbers About as the third chapter", async () => {
+  const source = await read("components/ChapterRail.astro");
+  const routes = [...source.matchAll(/route: "([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(routes, ["/blog/", "/projects/", "/about/"]);
+  assert.match(source, /route: "\/about\/", label: "03 \/ Dear reader"/);
+  assert.match(source, /data-rail-position[^>]*>01 \/ 03</);
 });
 
 test("manga CSS stays theme-local, responsive, and never crops article covers", async () => {
@@ -263,6 +271,8 @@ test("manga CSS stays theme-local, responsive, and never crops article covers", 
   assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: contain/);
   assert.match(source, /height: calc\(100% - 64px\)/);
   assert.match(source, /body\[data-fuyukawa\] :where\(\.manga-art\)/);
+  assert.match(source, /\.chapter-track\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(source, /@media \(max-width: 860px\)[\s\S]*?\.chapter-track\s*\{[^}]*grid-auto-flow:\s*column/);
   assert.match(source, /max-width: 480px/);
   assert.match(source, /prefers-reduced-motion: reduce/);
   assert.doesNotMatch(await read("lib/manga-runtime.mjs"), /preventDefault|deviceorientation|setInterval/);
