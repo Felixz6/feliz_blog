@@ -17,6 +17,7 @@ import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
 import MangaRuntime from "../components/MangaRuntime.astro";
 import SakuraRain from "../components/SakuraRain.astro";
+import Analytics from "@vercel/analytics/astro";
 
 interface Props {
   title?: string;
@@ -77,6 +78,7 @@ const themedNotFoundRedirectScript = `(() => {
     {canonicalPath !== "/" && <link rel="stylesheet" href={mangaPagesHref} />}
     <ClientRouter />
     <ConsoleEasterEgg />
+    <Analytics />
   </head>
   <body
     data-fuyukawa
