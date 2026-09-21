@@ -17,6 +17,7 @@ import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
 import MangaRuntime from "../components/MangaRuntime.astro";
 import SakuraRain from "../components/SakuraRain.astro";
+import SpeedInsights from "@vercel/speed-insights/astro";
 
 interface Props {
   title?: string;
@@ -814,5 +815,6 @@ const themedNotFoundRedirectScript = `(() => {
       window.addEventListener("load", enhanceCodeBlocks);
       document.addEventListener("astro:page-load", enhanceCodeBlocks);
     </script>
+    <SpeedInsights />
   </body>
 </html>
