@@ -1,56 +1,56 @@
 [
   {
     "id": "track-1",
-    "title": "愛♡スクリ～ム！",
-    "file": "愛♡スクリ～ム！.mp3",
-    "src": "/themes/fuyukawa-kagari/music/%E6%84%9B%E2%99%A1%E3%82%B9%E3%82%AF%E3%83%AA%EF%BD%9E%E3%83%A0%EF%BC%81.mp3"
+    "title": "高橋優 - ヤキモチ",
+    "file": "高橋優 - ヤキモチ.mp3",
+    "src": "/themes/fuyukawa-kagari/music/%E9%AB%98%E6%A9%8B%E5%84%AA%20-%20%E3%83%A4%E3%82%AD%E3%83%A2%E3%83%81.mp3"
   },
   {
     "id": "track-2",
-    "title": "花の塔",
-    "file": "花の塔.mp3",
-    "src": "/themes/fuyukawa-kagari/music/%E8%8A%B1%E3%81%AE%E5%A1%94.mp3"
+    "title": "Kalafina - oblivious",
+    "file": "Kalafina - oblivious.mp3",
+    "src": "/themes/fuyukawa-kagari/music/Kalafina%20-%20oblivious.mp3"
   },
   {
     "id": "track-3",
-    "title": "恋爱循环",
-    "file": "恋爱循环.mp3",
-    "src": "/themes/fuyukawa-kagari/music/%E6%81%8B%E7%88%B1%E5%BE%AA%E7%8E%AF.mp3"
+    "title": "Lia - 時を刻む唄",
+    "file": "Lia - 時を刻む唄.mp3",
+    "src": "/themes/fuyukawa-kagari/music/Lia%20-%20%E6%99%82%E3%82%92%E5%88%BB%E3%82%80%E5%94%84.mp3"
   },
   {
     "id": "track-4",
-    "title": "恋のうた",
-    "file": "恋のうた.mp3",
-    "src": "/themes/fuyukawa-kagari/music/%E6%81%8B%E3%81%AE%E3%81%86%E3%81%9F.mp3"
+    "title": "Lia - My Soul, Your Beats!",
+    "file": "Lia - My Soul, Your Beats!.mp3",
+    "src": "/themes/fuyukawa-kagari/music/Lia%20-%20My%20Soul%2C%20Your%20Beats!.mp3"
   },
   {
     "id": "track-5",
-    "title": "Duvet",
-    "file": "Duvet.mp3",
-    "src": "/themes/fuyukawa-kagari/music/Duvet.mp3"
+    "title": "LONGMAN - spiral",
+    "file": "LONGMAN - spiral.mp3",
+    "src": "/themes/fuyukawa-kagari/music/LONGMAN%20-%20spiral.mp3"
   },
   {
     "id": "track-6",
-    "title": "I Really Want to Stay at Your House",
-    "file": "I Really Want to Stay at Your House.mp3",
-    "src": "/themes/fuyukawa-kagari/music/I%20Really%20Want%20to%20Stay%20at%20Your%20House.mp3"
+    "title": "MYTH & ROID - STYX HELIX",
+    "file": "MYTH & ROID - STYX HELIX.mp3",
+    "src": "/themes/fuyukawa-kagari/music/MYTH%20%26%20ROID%20-%20STYX%20HELIX.mp3"
   },
   {
     "id": "track-7",
-    "title": "JANE DOE",
-    "file": "JANE DOE.mp3",
-    "src": "/themes/fuyukawa-kagari/music/JANE%20DOE.mp3"
+    "title": "SawanoHiroyuki[nZk]、瑞葵(mizuki) - Avid",
+    "file": "SawanoHiroyuki[nZk]、瑞葵(mizuki) - Avid.mp3",
+    "src": "/themes/fuyukawa-kagari/music/SawanoHiroyuki%5BnZk%5D%E3%80%81%E7%91%9E%E8%91%B5(mizuki)%20-%20Avid.mp3"
   },
   {
     "id": "track-8",
-    "title": "Lightning moment",
-    "file": "Lightning moment.mp3",
-    "src": "/themes/fuyukawa-kagari/music/Lightning%20moment.mp3"
+    "title": "ステレオポニー - ツキアカリのミチシルベ",
+    "file": "ステレオポニー - ツキアカリのミチシルベ.mp3",
+    "src": "/themes/fuyukawa-kagari/music/%E3%82%B9%E3%83%86%E3%83%AC%E3%82%AA%E3%83%9B%E3%82%9A%E3%83%8B%E3%83%BC%20-%20%E3%83%84%E3%82%AD%E3%82%A2%E3%82%AB%E3%83%AA%E3%81%AE%E3%83%9F%E3%83%81%E3%82%B7%E3%83%AB%E3%83%98%E3%82%99.mp3"
   },
   {
     "id": "track-9",
-    "title": "キサラ",
-    "file": "キサラ.mp3",
-    "src": "/themes/fuyukawa-kagari/music/%E3%82%AD%E3%82%B5%E3%83%A9.mp3"
+    "title": "やなぎなぎ - ユキトキ",
+    "file": "やなぎなぎ - ユキトキ.mp3",
+    "src": "/themes/fuyukawa-kagari/music/%E3%82%84%E3%81%AA%E3%81%8D%E3%82%99%E3%81%AA%E3%81%8D%E3%82%99%20-%20%E3%83%A6%E3%82%AD%E3%83%88%E3%82%AD.mp3"
   }
 ]
