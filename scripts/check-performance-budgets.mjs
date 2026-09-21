@@ -83,7 +83,7 @@ try {
       bytes += published.size;
     }
   }
-  recordBudget("Responsive cover derivatives", bytes, 5_000_000);
+  recordBudget("Responsive cover derivatives", bytes, 6_500_000);
   recordBudget("Small covers versus originals", smallBytes, Math.floor(originalBytes * 0.4));
   for (const relative of excludedPublicMedia) {
     try {

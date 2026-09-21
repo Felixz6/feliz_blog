@@ -33,6 +33,14 @@ const formatter = new Intl.DateTimeFormat("zh-CN", {
 });
 
 const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "");
+const blogCoverSizes = [
+  "(max-width: 480px) calc(100vw - 84px)",
+  "(max-width: 561px) 160px",
+  "(max-width: 760px) calc(35.14vw - 37px)",
+  "(max-width: 773px) 160px",
+  "(max-width: 1224px) calc(35.14vw - 111.7px)",
+  "318px"
+].join(", ");
 ---
 
 <BaseLayout title={`Blog | ${site.name}`} description={site.description}>
@@ -87,7 +95,7 @@ const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "")
           </div>
           <a class="post-row blog-post-row" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
             <div class="post-cover-frame">
-              <img src={post.cover} {...getCoverSources(post.cover, "(max-width: 480px) calc(100vw - 100px), 360px")} alt="" loading="lazy" decoding="async" />
+              <img src={post.cover} {...getCoverSources(post.cover, blogCoverSizes)} alt="" loading="lazy" decoding="async" />
             </div>
             <div class="blog-post-copy">
               <div class="meta-row">

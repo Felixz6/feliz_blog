@@ -7,13 +7,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-01-320-c815abc0.webp",
-        "bytes": 54196
+        "src": "/blog-covers/responsive/cover-01-320-0f098a5d.webp",
+        "bytes": 30752
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-01-480-0f098a5d.webp",
+        "bytes": 55952
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-01-640-c815abc0.webp",
-        "bytes": 159564
+        "src": "/blog-covers/responsive/cover-01-640-0f098a5d.webp",
+        "bytes": 84950
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-01-768-0f098a5d.webp",
+        "bytes": 105470
       }
     ]
   },
@@ -25,8 +35,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-02-320-f38ec5a8.webp",
-        "bytes": 60718
+        "src": "/blog-covers/responsive/cover-02-320-6d2e9a97.webp",
+        "bytes": 34730
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-02-480-6d2e9a97.webp",
+        "bytes": 62522
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-02-640-6d2e9a97.webp",
+        "bytes": 90392
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-02-768-6d2e9a97.webp",
+        "bytes": 111314
       }
     ]
   },
@@ -38,13 +63,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-03-320-01d0dd10.webp",
-        "bytes": 62644
+        "src": "/blog-covers/responsive/cover-03-320-f7bc1624.webp",
+        "bytes": 37776
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-03-480-f7bc1624.webp",
+        "bytes": 70712
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-03-640-01d0dd10.webp",
-        "bytes": 181150
+        "src": "/blog-covers/responsive/cover-03-640-f7bc1624.webp",
+        "bytes": 106732
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-03-768-f7bc1624.webp",
+        "bytes": 137186
       }
     ]
   },
@@ -56,13 +91,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-04-320-15586acb.webp",
-        "bytes": 39938
+        "src": "/blog-covers/responsive/cover-04-320-23ba54a2.webp",
+        "bytes": 22772
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-04-480-23ba54a2.webp",
+        "bytes": 41000
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-04-640-15586acb.webp",
-        "bytes": 113306
+        "src": "/blog-covers/responsive/cover-04-640-23ba54a2.webp",
+        "bytes": 59800
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-04-768-23ba54a2.webp",
+        "bytes": 75718
       }
     ]
   },
@@ -74,13 +119,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-05-320-a382fe8c.webp",
-        "bytes": 65442
+        "src": "/blog-covers/responsive/cover-05-320-26c71e9b.webp",
+        "bytes": 38950
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-05-480-26c71e9b.webp",
+        "bytes": 70480
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-05-640-a382fe8c.webp",
-        "bytes": 193976
+        "src": "/blog-covers/responsive/cover-05-640-26c71e9b.webp",
+        "bytes": 104476
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-05-768-26c71e9b.webp",
+        "bytes": 131080
       }
     ]
   },
@@ -92,13 +147,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-06-320-9afe6236.webp",
-        "bytes": 72630
+        "src": "/blog-covers/responsive/cover-06-320-c6fc6e1d.webp",
+        "bytes": 44272
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-06-480-c6fc6e1d.webp",
+        "bytes": 83410
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-06-640-9afe6236.webp",
-        "bytes": 235882
+        "src": "/blog-covers/responsive/cover-06-640-c6fc6e1d.webp",
+        "bytes": 131948
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-06-768-c6fc6e1d.webp",
+        "bytes": 170624
       }
     ]
   },
@@ -110,13 +175,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-07-320-957d669a.webp",
-        "bytes": 33650
+        "src": "/blog-covers/responsive/cover-07-320-80b99d42.webp",
+        "bytes": 19014
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-07-480-80b99d42.webp",
+        "bytes": 33756
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-07-640-957d669a.webp",
-        "bytes": 92050
+        "src": "/blog-covers/responsive/cover-07-640-80b99d42.webp",
+        "bytes": 50434
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-07-768-80b99d42.webp",
+        "bytes": 62910
       }
     ]
   },
@@ -128,13 +203,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-08-320-f353c6b2.webp",
-        "bytes": 42566
+        "src": "/blog-covers/responsive/cover-08-320-84475b29.webp",
+        "bytes": 25198
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-08-480-84475b29.webp",
+        "bytes": 46276
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-08-640-f353c6b2.webp",
-        "bytes": 128326
+        "src": "/blog-covers/responsive/cover-08-640-84475b29.webp",
+        "bytes": 70912
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-08-768-84475b29.webp",
+        "bytes": 92406
       }
     ]
   },
@@ -146,13 +231,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-09-320-64af346c.webp",
-        "bytes": 43734
+        "src": "/blog-covers/responsive/cover-09-320-3ab02fff.webp",
+        "bytes": 22898
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-09-480-3ab02fff.webp",
+        "bytes": 40732
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-09-640-64af346c.webp",
-        "bytes": 122720
+        "src": "/blog-covers/responsive/cover-09-640-3ab02fff.webp",
+        "bytes": 61590
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-09-768-3ab02fff.webp",
+        "bytes": 78706
       }
     ]
   },
@@ -164,13 +259,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-10-320-1e78f9d5.webp",
-        "bytes": 36230
+        "src": "/blog-covers/responsive/cover-10-320-5488d0ad.webp",
+        "bytes": 18418
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-10-480-5488d0ad.webp",
+        "bytes": 33482
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-10-640-1e78f9d5.webp",
-        "bytes": 106842
+        "src": "/blog-covers/responsive/cover-10-640-5488d0ad.webp",
+        "bytes": 50686
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-10-768-5488d0ad.webp",
+        "bytes": 63892
       }
     ]
   },
@@ -182,13 +287,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-11-320-03e60f8c.webp",
-        "bytes": 56966
+        "src": "/blog-covers/responsive/cover-11-320-26ab6059.webp",
+        "bytes": 35780
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-11-480-26ab6059.webp",
+        "bytes": 62842
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-11-640-03e60f8c.webp",
-        "bytes": 160216
+        "src": "/blog-covers/responsive/cover-11-640-26ab6059.webp",
+        "bytes": 92336
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-11-768-26ab6059.webp",
+        "bytes": 115024
       }
     ]
   },
@@ -200,13 +315,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-12-320-844b0b59.webp",
-        "bytes": 82176
+        "src": "/blog-covers/responsive/cover-12-320-f2885830.webp",
+        "bytes": 47754
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-12-480-f2885830.webp",
+        "bytes": 88530
       },
       {
         "width": 640,
-        "src": "/blog-covers/responsive/cover-12-640-844b0b59.webp",
-        "bytes": 247478
+        "src": "/blog-covers/responsive/cover-12-640-f2885830.webp",
+        "bytes": 134336
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-12-768-f2885830.webp",
+        "bytes": 167666
       }
     ]
   },
@@ -285,8 +410,23 @@
     "variants": [
       {
         "width": 320,
-        "src": "/blog-covers/responsive/cover-17-320-a2b6ad73.webp",
-        "bytes": 41512
+        "src": "/blog-covers/responsive/cover-17-320-4e39f3d2.webp",
+        "bytes": 22234
+      },
+      {
+        "width": 480,
+        "src": "/blog-covers/responsive/cover-17-480-4e39f3d2.webp",
+        "bytes": 39650
+      },
+      {
+        "width": 640,
+        "src": "/blog-covers/responsive/cover-17-640-4e39f3d2.webp",
+        "bytes": 56052
+      },
+      {
+        "width": 768,
+        "src": "/blog-covers/responsive/cover-17-768-4e39f3d2.webp",
+        "bytes": 71372
       }
     ]
   },
