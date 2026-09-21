@@ -176,7 +176,7 @@ const themedNotFoundRedirectScript = `(() => {
         <nav class="nav-links" aria-label="Main navigation">
           {
             navItems.map((item) => (
-              <a href={item.href} aria-label={`${item.label}: ${item.hint}`} aria-current={(item.href === themeHomePath ? Astro.url.pathname === item.href : Astro.url.pathname.startsWith(item.href)) ? "page" : undefined}>
+              <a href={item.href} data-astro-prefetch="hover" aria-label={`${item.label}: ${item.hint}`} aria-current={(item.href === themeHomePath ? Astro.url.pathname === item.href : Astro.url.pathname.startsWith(item.href)) ? "page" : undefined}>
                 <span class="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
                 <span class="nav-label">{item.label}</span>
                 <span class="nav-hint">{item.hint}</span>
