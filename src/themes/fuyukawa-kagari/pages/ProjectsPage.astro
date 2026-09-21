@@ -16,6 +16,7 @@ const techLines = projectTechLines.map((item) => ({ ...item, icon: techIcons[ite
 const projectPresentation = {
   "security-research": { icon: "tabler:shield-lock", accent: "blue" },
   "ctf-notes": { icon: "tabler:flag-3", accent: "pink" },
+  "whuctf-lapsa-writeup": { icon: "tabler:flag-3", accent: "pink" },
   "recon-tools": { icon: "tabler:shield-lock", accent: "blue" },
   "open-source": { icon: "simple-icons:github", accent: "mint" },
   "personal-blog": { icon: "tabler:code", accent: "lavender" },
@@ -23,7 +24,8 @@ const projectPresentation = {
 } as const;
 const projectCards = projectEntries.map((project) => ({
   ...project,
-  ...projectPresentation[project.id]
+  ...projectPresentation[project.id],
+  href: "href" in project ? project.href : undefined
 }));
 
 ---
@@ -84,6 +86,12 @@ const projectCards = projectEntries.map((project) => ({
               <span>{detail}</span>
             ))}
           </div>
+          {project.href && (
+            <a class="works-card-read" href={project.href}>
+              阅读完整 Writeup
+              <Icon name="tabler:arrow-right" aria-hidden="true" />
+            </a>
+          )}
           <button type="button" class="works-card-toggle" data-card-toggle aria-expanded="false" aria-controls={`project-status-${project.id}`}>
             <Icon name="tabler:chevron-down" aria-hidden="true" />
             查看状态
@@ -318,6 +326,33 @@ const projectCards = projectEntries.map((project) => ({
 
     .works-card-tags span {
       font-weight: 800;
+    }
+
+    .works-card-read {
+      display: inline-flex;
+      align-items: center;
+      justify-self: start;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 8px 13px;
+      color: var(--accent);
+      background: var(--paper-soft);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .works-card-read:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--paper-shadow);
+    }
+
+    .works-card-read svg {
+      width: 1.1em;
+      height: 1.1em;
     }
 
     .works-card-toggle {
