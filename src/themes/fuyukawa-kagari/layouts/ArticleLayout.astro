@@ -15,6 +15,7 @@ const date = new Intl.DateTimeFormat("zh-CN", {
   day: "2-digit"
 }).format(frontmatter.pubDate);
 const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth >= 2 && heading.depth <= 3);
+const tocHeadings = headings.filter((heading) => heading.depth === 2);
 ---
 
 <BaseLayout title={title} description={description} isArticlePage article={frontmatter}>
@@ -49,11 +50,11 @@ const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth 
       </footer>
     </article>
     {
-      headings.length > 0 && (
+      tocHeadings.length > 0 && (
         <aside class="article-toc" aria-label="文章导航" data-pagefind-ignore>
           <p>这篇笔记的目录</p>
           <nav>
-            {headings.map((heading) => (
+            {tocHeadings.map((heading) => (
               <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>
                 {heading.text}
               </a>

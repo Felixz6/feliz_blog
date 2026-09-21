@@ -18,7 +18,6 @@ export const profileStatus = [
 export const profileTech = [
   { key: "web-security", name: "Web Security", note: "Web 安全学习与研究" },
   { key: "ctf", name: "CTF", note: "题目练习与解题记录" },
-  { key: "php", name: "PHP", note: "脚本与工具开发" },
   { key: "linux", name: "Linux", note: "系统与命令行工具" },
   { key: "git", name: "Git", note: "版本管理与协作" },
   { key: "open-source", name: "Open Source", note: "开源项目与社区" },

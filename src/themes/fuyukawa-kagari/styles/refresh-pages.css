@@ -109,7 +109,6 @@ body[data-fuyukawa] .about-avatar-card { padding: 12px 0; }
 body[data-fuyukawa] .about-avatar-card img { width: 164px; height: 164px; margin: auto; border: 6px solid white; box-shadow: 0 0 0 1px #dce9e6, 0 12px 28px #3759510d; }
 body[data-fuyukawa] .about-tape,
 body[data-fuyukawa] .about-section::before { display: none; }
-body[data-fuyukawa] .about-avatar-flower { right: 34px; bottom: 12px; background: var(--mint); box-shadow: none; width: 32px; height: 32px; }
 body[data-fuyukawa] .about-id-card h1 { font-size: 2rem; line-height: 1.4; }
 body[data-fuyukawa] .about-kicker,
 body[data-fuyukawa] .about-mini-title,
