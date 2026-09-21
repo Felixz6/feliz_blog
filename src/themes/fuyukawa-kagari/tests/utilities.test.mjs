@@ -49,6 +49,9 @@ class Element {
   }
   removeEventListener(name, handler) { this.events.get(name)?.delete(handler); }
   dispatch(name, event = {}) { for (const handler of [...(this.events.get(name) ?? [])]) handler(event); }
+  async dispatchAsync(name, event = {}) {
+    for (const handler of [...(this.events.get(name) ?? [])]) await handler(event);
+  }
   setAttribute(key, value) { this.attributes[key] = value; }
 }
 
@@ -219,5 +222,111 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
   assert.equal(toggle.attributes["aria-label"], "播放音乐");
   player.bind();
   assert.equal(toggle.events.get("click").size, 1);
+  for (const controller of ["controlAbort", "audioAbort", "unlockAbort"]) player[controller]?.abort();
+});
+
+test("music manifest and audio wait for music-dock intent, then playback loads one track", async () => {
+  const nodes = new Map(), doc = new Element(), win = new Element(), dock = new Element(), handle = new Element();
+  for (const name of ["toggle", "prev", "next", "volume", "seek", "current", "duration", "note", "status", "volume-label"]) {
+    nodes.set(`[data-music-${name}]`, new Element());
+  }
+  nodes.set(".music-track", new Element());
+  const dockChildren = new Set([handle, ...nodes.values()]);
+  dock.contains = (node) => node === dock || dockChildren.has(node);
+  dock.matches = () => false;
+  dock.querySelector = (selector) => selector === ":focus" ? null : handle;
+  handle.closest = (selector) => selector === ".toy-dock-handle" ? handle : null;
+  handle.blur = () => {};
+  doc.querySelector = (selector) => selector === ".toy-dock" ? dock : nodes.get(selector);
+  doc.body = new Element();
+  win.location = { origin: "https://example.test" };
+  win.clearTimeout = () => {};
+  win.setTimeout = () => 1;
+  const localData = new Map([[
+    "yuimi-radio-state-v1",
+    JSON.stringify({ trackId: "track-a", currentTime: 42, volume: .28, paused: true })
+  ]]);
+  let musicStateWrites = 0;
+  let now = 10_000;
+  class TestDate extends Date { static now() { return now; } }
+  const storage = (data = new Map()) => {
+    return {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => {
+        data.set(key, value);
+        if (key === "yuimi-radio-state-v1") musicStateWrites += 1;
+      }
+    };
+  };
+  let fetchCount = 0;
+  class Audio extends Element {
+    constructor() {
+      super(); this._src = ""; this.preload = "auto"; this.volume = .28;
+      this.paused = true; this.currentTime = 0; this.duration = 100;
+      this.loadCount = 0; this.playCount = 0;
+    }
+    get src() { return this._src; }
+    set src(value) { this._src = new URL(value, win.location.origin).href; }
+    load() { this.loadCount += 1; }
+    async play() { this.playCount += 1; this.paused = false; this.dispatch("play"); }
+    pause() { this.paused = true; this.dispatch("pause"); }
+  }
+  const context = vm.createContext({
+    document: doc, window: win, Node: Element, Element, Audio,
+    localStorage: storage(localData), sessionStorage: storage(), URL, AbortController, Date: TestDate,
+    fetch: async () => {
+      fetchCount += 1;
+      return { json: async () => [
+        { id: "track-a", title: "A track", src: "/track-a.mp3" },
+        { id: "track-b", title: "B track", src: "/track-b.mp3" }
+      ] };
+    }
+  });
+  vm.runInContext(section("let toyDockCloseTimer", "const sakuraStateKey ="), context);
+  const player = win.__yuimiRadio;
+
+  assert.equal(player.audio.preload, "none");
+  assert.equal(fetchCount, 0);
+  assert.equal(player.audio.src, "");
+  assert.equal(player.audio.loadCount, 0);
+  doc.dispatch("astro:page-load");
+  assert.equal(fetchCount, 0);
+  assert.equal(player.audio.loadCount, 0);
+
+  doc.dispatch("click", { target: handle });
+  await player.init();
+  assert.equal(fetchCount, 1);
+  assert.equal(dock.classList.contains("is-pinned"), true);
+  assert.equal(player.audio.src, "");
+  assert.equal(player.audio.loadCount, 0);
+
+  await nodes.get("[data-music-toggle]").dispatchAsync("click");
+  assert.equal(player.audio.preload, "none");
+  assert.equal(player.audio.src, "https://example.test/track-a.mp3");
+  assert.equal(player.audio.loadCount, 1);
+  assert.equal(player.audio.playCount, 1);
+  assert.equal(JSON.parse(localData.get("yuimi-radio-state-v1")).currentTime, 42);
+  player.audio.dispatch("loadedmetadata");
+  assert.equal(player.audio.currentTime, 42);
+  const writesBeforeProgress = musicStateWrites;
+  player.audio.dispatch("timeupdate");
+  assert.equal(musicStateWrites, writesBeforeProgress);
+  for (let i = 0; i < 4; i += 1) {
+    now += 1000;
+    player.audio.dispatch("timeupdate");
+  }
+  assert.equal(musicStateWrites, writesBeforeProgress);
+  now += 1000;
+  player.audio.currentTime = 44;
+  player.audio.dispatch("timeupdate");
+  assert.equal(musicStateWrites, writesBeforeProgress + 1);
+  assert.equal(nodes.get("[data-music-current]").textContent, "00:44");
+  assert.equal(JSON.parse(localData.get("yuimi-radio-state-v1")).currentTime, 44);
+
+  await nodes.get("[data-music-next]").dispatchAsync("click");
+  assert.equal(fetchCount, 1);
+  assert.equal(player.audio.src, "https://example.test/track-b.mp3");
+  assert.equal(player.audio.loadCount, 2);
+  assert.equal(player.audio.preload, "none");
   for (const controller of ["controlAbort", "audioAbort", "unlockAbort"]) player[controller]?.abort();
 });

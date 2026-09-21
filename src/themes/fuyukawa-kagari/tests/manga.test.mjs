@@ -212,17 +212,25 @@ test("failed or late image decode never reveals an incomplete scene", async () =
   assert.equal(late.frames.size, 0);
 });
 
-test("album keeps one complete picture selected and removes its handlers", () => {
+test("album tabs and image controls switch pages, wrap forward, and remove handlers", () => {
   const root = element();
   const tabs = Array.from({ length: 3 }, () => element());
   const pages = Array.from({ length: 3 }, () => element());
+  const nextButtons = Array.from({ length: 3 }, () => element());
+  pages.forEach((page, index) => { page.querySelector = (selector) => selector === "[data-album-next]" ? nextButtons[index] : null; });
   root.querySelectorAll = (selector) => selector.includes("tab") ? tabs : pages;
   const cleanup = mountAlbum(root);
   tabs[2].dispatch("click");
   assert.deepEqual(pages.map((page) => page.hidden), [true, true, false]);
   assert.deepEqual(tabs.map((tab) => tab.attributes["aria-pressed"]), ["false", "false", "true"]);
+  nextButtons[2].dispatch("click");
+  assert.deepEqual(pages.map((page) => page.hidden), [false, true, true]);
+  assert.deepEqual(tabs.map((tab) => tab.attributes["aria-pressed"]), ["true", "false", "false"]);
+  nextButtons[0].dispatch("click");
+  assert.deepEqual(pages.map((page) => page.hidden), [true, false, true]);
   cleanup();
   assert.ok(tabs.every((tab) => tab.events.get("click").size === 0));
+  assert.ok(nextButtons.every((button) => button.events.get("click").size === 0));
 });
 
 test("archive filters include empty categories and restore every entry", () => {
@@ -284,6 +292,10 @@ test("manga CSS stays theme-local, responsive, and never crops article covers", 
   assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: contain/);
   assert.match(source, /height: calc\(100% - 64px\)/);
   assert.match(source, /body\[data-fuyukawa\] :where\(\.manga-art\)/);
+  assert.match(source, /\.album-page-image-next \.manga-art\s*\{[^}]*min-width:\s*0[^}]*min-height:\s*0/);
+  assert.match(source, /@media \(max-width: 1100px\)[\s\S]*?\.album-page-image-next\s*\{\s*height:\s*350px/);
+  assert.match(source, /@media \(max-width: 760px\)[\s\S]*?\.album-page-image-next\s*\{\s*height:\s*360px/);
+  assert.doesNotMatch(source, /\.album-page\s*>\s*img/);
   assert.match(source, /\.chapter-track\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(source, /@media \(max-width: 860px\)[\s\S]*?\.chapter-track\s*\{[^}]*grid-auto-flow:\s*column/);
   assert.match(source, /max-width: 480px/);

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>蒜头攻防大战</title>
+  <style>
+    :root{
+      --bg:#07110f;--bg2:#0c1b18;--ink:#f5fff9;--muted:#a9c2b8;
+      --green:#76f7a7;--lime:#c9ff63;--amber:#ffca62;--red:#ff7b79;
+      --line:rgba(205,255,225,.18);--panel:rgba(19,41,35,.78);
+      --shadow:0 24px 70px rgba(0,0,0,.38);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink)}
+    body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,sans-serif}
+    body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
+      radial-gradient(circle at 12% 18%,rgba(118,247,167,.11),transparent 30%),
+      radial-gradient(circle at 90% 76%,rgba(201,255,99,.08),transparent 32%),
+      linear-gradient(135deg,#07110f 0%,#0b1715 52%,#06100e 100%)}
+    .deck{height:100%;position:relative}
+    .slide{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:2.6vh;
+      padding:6.2vh 6.5vw 4.2vh;opacity:0;transform:translateX(4%);pointer-events:none;
+      transition:opacity .34s ease,transform .34s ease}
+    .slide.active{opacity:1;transform:none;pointer-events:auto}
+    .slide.prev{transform:translateX(-4%)}
+    .slide::after{content:"";position:absolute;right:4.2vw;top:5.2vh;width:7.2rem;height:7.2rem;
+      border:1px solid rgba(118,247,167,.08);border-radius:28px;transform:rotate(18deg);z-index:-1}
+    .eyebrow{font-size:clamp(13px,1.05vw,20px);letter-spacing:.18em;text-transform:uppercase;color:var(--green);font-weight:700}
+    h1,h2,h3,p{margin:0}
+    h1{font-size:clamp(48px,6.2vw,104px);line-height:1.02;letter-spacing:-.045em;max-width:12ch}
+    h2{font-size:clamp(34px,3.8vw,68px);line-height:1.08;letter-spacing:-.03em;max-width:18ch}
+    h3{font-size:clamp(20px,1.65vw,31px);line-height:1.2}
+    p,li{font-size:clamp(16px,1.25vw,25px);line-height:1.65}
+    .lead{font-size:clamp(20px,1.55vw,31px);line-height:1.55;color:#d7ebe1;max-width:39em}
+    .muted{color:var(--muted)} .green{color:var(--green)} .lime{color:var(--lime)} .amber{color:var(--amber)} .red{color:var(--red)}
+    .title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;border-bottom:1px solid var(--line);padding-bottom:2vh}
+    .section-no{font:700 clamp(30px,4vw,66px)/1 ui-monospace,SFMono-Regular,Consolas,monospace;color:rgba(118,247,167,.25)}
+    .content{min-height:0;display:grid;align-items:center;gap:2.2vw}
+    .two{grid-template-columns:1.04fr .96fr}.two-even{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}
+    .stack{display:grid;gap:1.8vh}.big-gap{gap:3vh}
+    .panel{background:linear-gradient(150deg,rgba(25,54,45,.84),rgba(13,29,25,.75));border:1px solid var(--line);
+      border-radius:24px;padding:clamp(18px,2.3vw,38px);box-shadow:var(--shadow)}
+    .panel.soft{box-shadow:none;background:rgba(16,37,31,.52)}
+    .rule{height:1px;background:var(--line);margin:1.2vh 0}
+    ul{margin:0;padding-left:1.25em}.clean{list-style:none;padding:0;display:grid;gap:1.35vh}
+    .clean li{position:relative;padding-left:1.35em}.clean li::before{content:"";position:absolute;left:0;top:.72em;width:.52em;height:.52em;border-radius:50%;background:var(--green);box-shadow:0 0 18px rgba(118,247,167,.55)}
+    .chips{display:flex;flex-wrap:wrap;gap:.7rem}.chip{font-size:clamp(13px,1vw,18px);padding:.42rem .8rem;border:1px solid var(--line);border-radius:999px;color:#dff9ea;background:rgba(118,247,167,.07)}
+    .metric{display:grid;gap:.3rem}.metric strong{font:800 clamp(34px,3.5vw,65px)/1 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--lime)}
+    .metric span{font-size:clamp(14px,1.05vw,20px);color:var(--muted)}
+    .flow{display:grid;grid-template-columns:repeat(5,1fr);align-items:center;gap:1.2vw}
+    .flow-step{min-height:15vh;display:grid;align-content:center;gap:.7rem;padding:1.2rem;border:1px solid var(--line);border-radius:20px;background:rgba(15,35,29,.72)}
+    .flow-step b{font:800 clamp(20px,1.55vw,30px)/1.15 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--green)}
+    .flow-step span{font-size:clamp(14px,1.05vw,20px);line-height:1.45;color:#d8eae1}
+    .arrow{font-size:clamp(22px,2vw,38px);color:var(--lime);text-align:center}.flow .arrow{position:absolute;opacity:0}
+    .diagram{position:relative;min-height:48vh;display:grid;place-items:center}
+    .orbit{position:absolute;border:1px solid var(--line);border-radius:50%}.orbit.a{width:92%;height:68%}.orbit.b{width:70%;height:90%}
+    .core{position:relative;z-index:2;width:min(24vw,330px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;padding:2rem;
+      background:radial-gradient(circle at 35% 30%,rgba(201,255,99,.32),rgba(23,61,45,.92) 45%,rgba(8,20,17,.98));border:1px solid rgba(201,255,99,.38);box-shadow:0 0 70px rgba(118,247,167,.15)}
+    .core strong{font-size:clamp(25px,2.4vw,45px)}
+    .sat{position:absolute;z-index:3;padding:.7rem 1rem;border-radius:999px;background:#102c23;border:1px solid var(--line);font-size:clamp(13px,1vw,18px);font-weight:700}
+    .sat.s1{top:10%;left:8%}.sat.s2{right:2%;top:25%}.sat.s3{left:2%;bottom:22%}.sat.s4{right:12%;bottom:7%}
+    .gridboard{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;width:min(38vw,570px);aspect-ratio:4/3;padding:14px;border-radius:22px;background:#0c1b18;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .cell{display:grid;place-items:center;border-radius:8px;background:#152b25;color:#6d897d;font:700 clamp(12px,1vw,19px)/1 ui-monospace,Consolas,monospace}
+    .cell.wall{background:#31453e}.cell.me{background:var(--green);color:#082015}.cell.opp{background:#ff8d69;color:#331008}.cell.apple{background:#4a3b22;color:var(--amber)}.cell.shield{background:#14384b;color:#83d9ff}.cell.danger{outline:2px solid var(--red);background:#3b2525}
+    .formula{font:800 clamp(22px,2.2vw,42px)/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;color:#edfff5;letter-spacing:-.03em}
+    .formula .accent{color:var(--lime)}
+    .scorebars{display:grid;gap:1.35vh}.bar{display:grid;grid-template-columns:8.5em 1fr 4.5em;align-items:center;gap:1rem}
+    .bar span{font-size:clamp(14px,1.05vw,20px)}.track{display:block;height:13px;border-radius:999px;background:#172c26;overflow:hidden}.fill{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--lime));box-shadow:0 0 18px rgba(118,247,167,.28)}
+    .bar:nth-of-type(5) .fill{background:linear-gradient(90deg,#ffb65c,var(--amber));box-shadow:0 0 18px rgba(255,202,98,.25)}
+    .bar:nth-of-type(6) .fill{background:linear-gradient(90deg,#65bfff,#8ce7ff);box-shadow:0 0 18px rgba(101,191,255,.25)}
+    .code{font:600 clamp(15px,1.18vw,23px)/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;color:#d8f7e5;background:#071410;border:1px solid var(--line);border-radius:18px;padding:1.2rem 1.4rem}
+    .digits{display:flex;gap:.85rem;align-items:center;flex-wrap:wrap}.digit{width:clamp(46px,4vw,72px);aspect-ratio:1;border-radius:16px;display:grid;place-items:center;background:#153a2d;border:1px solid rgba(118,247,167,.3);font:800 clamp(23px,2vw,38px)/1 ui-monospace,Consolas,monospace}.digit small{position:absolute;opacity:0}
+    .mapping{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem}.mapitem{text-align:center;padding:1rem .5rem;border-radius:16px;background:rgba(118,247,167,.07);border:1px solid var(--line)}.mapitem b{display:block;font-size:clamp(22px,2vw,37px);color:var(--green)}.mapitem span{font-size:clamp(13px,1vw,18px);color:var(--muted)}
+    .bridge{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:2vw}.bridge .side{min-height:28vh;padding:2rem;border-radius:24px;border:1px solid var(--line);background:rgba(16,38,31,.62)}.bridge .side h3{color:var(--green);margin-bottom:1.4vh}.bridge .mid{font-size:clamp(30px,4vw,66px);color:var(--lime)}
+    .quote{font-size:clamp(27px,3vw,55px);line-height:1.35;font-weight:800;max-width:25ch;letter-spacing:-.025em}.quote em{font-style:normal;color:var(--lime)}
+    .footer{display:flex;justify-content:space-between;align-items:center;color:#7e9d90;font-size:clamp(12px,.92vw,17px)}
+    .footer .brand{letter-spacing:.08em;text-transform:uppercase}
+    .progress{position:fixed;left:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--green),var(--lime));width:11.111%;transition:width .3s ease;z-index:20}
+    .nav{position:fixed;right:1.2rem;bottom:1.1rem;z-index:30;display:flex;gap:.45rem}.nav button{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(10,26,21,.78);color:var(--ink);font-size:19px;cursor:pointer}.nav button:hover{border-color:var(--green);color:var(--green)}
+    .help{position:fixed;left:1.2rem;bottom:1.1rem;z-index:30;color:#799487;font-size:12px;opacity:.6}
+    .notes{display:none}.notes-panel{display:none;position:fixed;left:2vw;right:2vw;bottom:2vh;z-index:40;background:rgba(3,12,9,.96);border:1px solid var(--line);border-radius:18px;padding:1rem 1.2rem;color:#d8eee3;box-shadow:var(--shadow);font-size:16px;line-height:1.55}.show-notes .notes-panel{display:block}.show-notes .slide{padding-bottom:22vh}
+    .cover{grid-template-columns:1.2fr .8fr}.cover-art{position:relative;min-height:55vh}.snake-path{position:absolute;inset:5% 0 0 8%;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:1vw;transform:rotate(-5deg)}
+    .seg{border-radius:22px;background:linear-gradient(145deg,#9cffbd,#48cc79);box-shadow:0 16px 40px rgba(62,200,112,.22)}.seg:nth-child(1){grid-area:2/4}.seg:nth-child(2){grid-area:2/3}.seg:nth-child(3){grid-area:3/3}.seg:nth-child(4){grid-area:4/3}.seg:nth-child(5){grid-area:4/2}.seg:nth-child(6){grid-area:4/1;opacity:.52}.seg.eye{position:relative;background:linear-gradient(145deg,var(--lime),var(--green))}.seg.eye::before,.seg.eye::after{content:"";position:absolute;top:22%;width:12%;aspect-ratio:1;border-radius:50%;background:#07110f}.seg.eye::before{left:25%}.seg.eye::after{right:25%}
+    .pill{display:inline-flex;align-items:center;gap:.6rem;padding:.5rem .8rem;border-radius:999px;background:rgba(201,255,99,.11);border:1px solid rgba(201,255,99,.22);font-size:clamp(13px,1vw,18px);color:#eaffe1}
+    .pill::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--lime);box-shadow:0 0 13px var(--lime)}
+    .slide-8 h2{font-size:clamp(32px,3.25vw,56px);max-width:24ch}
+    .slide-8 .content{grid-template-rows:minmax(0,1fr) auto;align-items:stretch;gap:1.6vh}
+    .slide-8 .bridge .side{min-height:0;padding:1.45rem 1.8rem}
+    .slide-8 .bridge .mid{align-self:center;justify-self:center}
+    .slide-8 .bridge .side h3{margin-bottom:.8vh}
+    .slide-8 .bridge .side .clean{gap:.75vh}
+    .slide-8 .summary{padding:1.05rem 1.4rem}
+    .slide-8 .summary .quote{font-size:clamp(23px,2.2vw,38px);line-height:1.3}
+    @media(max-width:900px){.slide{padding:5vh 5vw}.two,.two-even,.three,.cover{grid-template-columns:1fr}.flow{grid-template-columns:1fr 1fr}.cover-art{display:none}.gridboard{width:min(76vw,570px)}.diagram{min-height:40vh}.bridge{grid-template-columns:1fr}.bridge .mid{transform:rotate(90deg);text-align:center}.section-no{display:none}}
+    @media print{html,body{overflow:visible;background:#07110f;-webkit-print-color-adjust:exact;print-color-adjust:exact}.deck{height:auto}.slide{position:relative;width:100vw;height:56.25vw;min-height:0;opacity:1;transform:none;page-break-after:always;break-after:page}.nav,.help,.progress,.notes-panel{display:none!important}@page{size:16in 9in;margin:0}}
+  </style>
+</head>
+<body>
+  <main class="deck" id="deck">
+    <section class="slide active" data-seconds="35">
+      <div class="eyebrow">安全创客实践</div>
+      <div class="content cover">
+        <div class="stack big-gap">
+          <span class="pill">AI 对抗 · 网格搜索 · 状态压缩</span>
+          <h1>蒜头攻防<br><span class="green">大战</span></h1>
+          <p class="lead">让“贪吃蛇”从寻找一条路，升级为在同时移动、动态缩圈和对手博弈中做实时决策。</p>
+          <div class="chips"><span class="chip">状态重建</span><span class="chip">BFS 多指标</span><span class="chip">最坏情形评分</span><span class="chip">四进制 Hash</span></div>
+        </div>
+        <div class="cover-art" aria-label="抽象贪吃蛇图形">
+          <div class="snake-path"><i class="seg eye"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i></div>
+        </div>
+      </div>
+      <footer class="footer"><span class="brand">团队名称:你信不过我你跑不跑</span><span>01 / 09</span></footer>
+      <aside class="notes">开场只讲一个判断：这不是普通贪吃蛇，而是一个受到时间限制的双人实时博弈。我们的工作包含一个对抗 AI 主体，以及一个用四进制 Hash 压缩蛇形状态的算法题。</aside>
+    </section>
+
+    <section class="slide" data-seconds="60">
+      <header class="title-row"><div><div class="eyebrow">挑战定义</div><h2>难点不在“走一步”，而在<span class="green">同时预判</span></h2></div><span class="section-no">02</span></header>
+      <div class="content two">
+        <div class="stack big-gap">
+          <p class="lead">每回合只有 <b class="lime">100 ms</b>。双方同时移动，地图持续缩圈，苹果和护盾又会改变长度与碰撞胜负。</p>
+          <ul class="clean">
+            <li><b>信息不完整：</b>地图只给占用区域，不给精确身体顺序</li>
+            <li><b>动作不确定：</b>看不到对手本回合选择</li>
+            <li><b>空间动态：</b>尾格释放、身体增长、边界收缩同时发生</li>
+          </ul>
+        </div>
+        <div class="gridboard" aria-label="蒜头攻防示意地图">
+          <i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i>
+          <i class="cell wall">#</i><i class="cell">·</i><i class="cell me">1</i><i class="cell me">1</i><i class="cell apple">●</i><i class="cell">·</i><i class="cell">·</i><i class="cell wall">#</i>
+          <i class="cell wall">#</i><i class="cell">·</i><i class="cell">·</i><i class="cell me">1</i><i class="cell">·</i><i class="cell wall">#</i><i class="cell shield">◆</i><i class="cell wall">#</i>
+          <i class="cell wall">#</i><i class="cell">·</i><i class="cell">·</i><i class="cell danger">!</i><i class="cell">·</i><i class="cell">·</i><i class="cell opp">2</i><i class="cell wall">#</i>
+          <i class="cell wall">#</i><i class="cell">·</i><i class="cell wall">#</i><i class="cell">·</i><i class="cell">·</i><i class="cell opp">2</i><i class="cell opp">2</i><i class="cell wall">#</i>
+          <i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i><i class="cell wall">#</i>
+        </div>
+      </div>
+      <footer class="footer"><span>约束先于收益：先活下来，再争资源</span><span>02 / 09</span></footer>
+      <aside class="notes">解释三类难点。强调同时移动意味着“只找眼前最短路”会频繁出错；动态尾格与缩圈又让静态可达性不够。由此自然引出下一页的完整决策链。</aside>
+    </section>
+
+    <section class="slide" data-seconds="65">
+      <header class="title-row"><div><div class="eyebrow">总体方案</div><h2>五步闭环，把复杂规则压成<span class="green">一次实时决策</span></h2></div><span class="section-no">03</span></header>
+      <div class="content">
+        <div class="flow">
+          <div class="flow-step"><b>01</b><span>恢复双方身体历史</span></div>
+          <div class="flow-step"><b>02</b><span>枚举己方最多 4 个落点</span></div>
+          <div class="flow-step"><b>03</b><span>BFS 计算空间与资源</span></div>
+          <div class="flow-step"><b>04</b><span>枚举对手全部合法一步</span></div>
+          <div class="flow-step"><b>05</b><span>按最坏局面选择最高分</span></div>
+        </div>
+        <div class="panel soft" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:2vw">
+          <p class="formula">输入：地图 + 双方状态</p><span class="arrow">→</span><p class="formula" style="text-align:right">输出：一个<span class="accent">合法落点</span></p>
+        </div>
+      </div>
+      <footer class="footer"><span>状态重建 → 候选枚举 → BFS → 对手推演 → 最坏评分</span><span>03 / 09</span></footer>
+      <aside class="notes">用五个动词讲清完整架构，不展开函数名。重点是先重建状态，再把己方四个动作与对手四个回应组合评估，最后不是取平均，而是看每个动作在最坏回应下还能否成立。</aside>
+    </section>
+
+    <section class="slide" data-seconds="75">
+      <header class="title-row"><div><div class="eyebrow">核心创新一</div><h2>用历史恢复身体，让<span class="green">尾格释放</span>进入搜索</h2></div><span class="section-no">04</span></header>
+      <div class="content two-even">
+        <div class="stack big-gap">
+          <p class="lead">占用字符只告诉我们“哪里有身体”，连续回合的头坐标才能恢复“身体顺序”。</p>
+          <div class="panel soft">
+            <div class="formula">head[t] → head[t−1] → … → tail</div>
+            <div class="rule"></div>
+            <p class="muted">新头压入历史；再用地图可见长度校准，覆盖初始生长和吃道具后的变化。</p>
+          </div>
+          <p><b class="amber">直接收益：</b>若本步不增长，旧尾格可以临时开放；AI 因此能判断“绕回自己的尾巴”是否可行。</p>
+        </div>
+        <div class="diagram">
+          <div class="orbit a"></div><div class="orbit b"></div>
+          <div class="core"><strong>动态身体<br><span class="green">模型</span></strong></div>
+          <span class="sat s1">历史头坐标</span><span class="sat s2">可见长度校准</span><span class="sat s3">本回合尾格释放</span><span class="sat s4">未来尾部连通</span>
+        </div>
+      </div>
+      <footer class="footer"><span>从“静态障碍图”升级为“随时间释放的身体”</span><span>04 / 09</span></footer>
+      <aside class="notes">这是主体 AI 的第一处关键设计。解释地图不含身体顺序，所以保存连续头坐标；移动后，非增长情况下尾巴会空出来。若把尾巴一直当墙，AI 会错过大量可行路线；若无条件开放，又会穿身。我们的判定与增长规则一致。</aside>
+    </section>
+
+    <section class="slide" data-seconds="80">
+      <header class="title-row"><div><div class="eyebrow">核心创新二</div><h2>BFS 不只求最短路，而是测量<span class="green">生存质量</span></h2></div><span class="section-no">05</span></header>
+      <div class="content two">
+        <div class="scorebars panel soft">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem"><h3>一次 BFS，复用五类结果</h3><span class="chip">指标强弱示意</span></div>
+          <div class="bar"><span>连通面积</span><i class="track"><i class="fill" style="width:92%"></i></i><span>area</span></div>
+          <div class="bar"><span>下一步出口</span><i class="track"><i class="fill" style="width:70%"></i></i><span>mobility</span></div>
+          <div class="bar"><span>尾部连通</span><i class="track"><i class="fill" style="width:84%"></i></i><span>tail</span></div>
+          <div class="bar"><span>苹果距离</span><i class="track"><i class="fill" style="width:58%"></i></i><span>apple</span></div>
+          <div class="bar"><span>护盾距离</span><i class="track"><i class="fill" style="width:76%"></i></i><span>shield</span></div>
+        </div>
+        <div class="stack big-gap">
+          <p class="quote">“最近”不是目标，<em>可持续地到达</em>才是目标。</p>
+          <ul class="clean">
+            <li>面积足够，或仍能回到未来尾部，才允许积极增长</li>
+            <li>出口过少、即将缩圈、同格败碰直接高额惩罚</li>
+            <li>领先时保空间，落后且临近终局时提高资源收益</li>
+          </ul>
+        </div>
+      </div>
+      <footer class="footer"><span>同一张距离场复用多项指标 · 单次 BFS 为 O(nm)</span><span>05 / 09</span></footer>
+      <aside class="notes">普通 BFS 只给最短距离，我们在同一次遍历中同时收集面积、出口、资源、尾部连通。强调“安全空间”的判断：面积够大，或者能持续追随尾巴。这样既保持线性复杂度，又比单一最短路更稳定。</aside>
+    </section>
+
+    <section class="slide" data-seconds="80">
+      <header class="title-row"><div><div class="eyebrow">对抗决策</div><h2>把对手的四种回应都算一遍，选择<span class="green">最坏也能接受</span>的动作</h2></div><span class="section-no">06</span></header>
+      <div class="content two-even">
+        <div class="stack big-gap">
+          <div class="panel soft">
+            <p class="formula">Score(move) = <span class="accent">min</span><sub>opp ∈ legal</sub> Eval(move, opp)</p>
+          </div>
+          <ul class="clean">
+            <li><b>同格碰撞：</b>按护盾状态，再按移动后长度判断</li>
+            <li><b>最坏领地：</b>比较双方 BFS 到达时间，取所有回应中的最小领地</li>
+            <li><b>封路机会：</b>对手无合法步或仅有必败回应时，提升终局优先级</li>
+          </ul>
+        </div>
+        <div class="panel" style="display:grid;gap:1.5vh">
+          <h3>一个候选动作的四种未来</h3>
+          <div class="mapping">
+            <div class="mapitem"><b>↑</b><span>安全</span></div><div class="mapitem"><b>→</b><span>领地 −4</span></div><div class="mapitem"><b>↓</b><span class="red">败碰</span></div><div class="mapitem"><b>←</b><span>封路</span></div>
+          </div>
+          <div class="rule"></div>
+          <p class="lead">这里的结论取决于最差的“败碰”，因此该动作被淘汰。</p>
+        </div>
+      </div>
+      <footer class="footer"><span>用最坏情形降低“只猜一条对手路线”的乐观偏差</span><span>06 / 09</span></footer>
+      <aside class="notes">这是主体 AI 最能体现对抗性的部分。每个己方动作面对对手最多四个落点，先处理碰撞，再比较领地。最终采用最小值，而不是平均值；哪怕三个未来很好，只要一个合法回应会让我们立即失败，就淘汰。</aside>
+    </section>
+
+    <section class="slide" data-seconds="85">
+      <header class="title-row"><div><div class="eyebrow">算法题创新</div><h2>四进制 Hash：用一个整数表示<span class="green">整条蛇的形状</span></h2></div><span class="section-no">07</span></header>
+      <div class="content two">
+        <div class="stack big-gap">
+          <div class="mapping">
+            <div class="mapitem"><b>0</b><span>上</span></div><div class="mapitem"><b>1</b><span>右</span></div><div class="mapitem"><b>2</b><span>下</span></div><div class="mapitem"><b>3</b><span>左</span></div>
+          </div>
+          <div class="panel soft">
+            <p class="formula">hash = hash × 4 + direction</p>
+            <div class="rule"></div>
+            <div class="digits"><span class="digit">1</span><span class="digit">2</span><span class="digit">2</span><span class="digit">3</span><span class="arrow">→</span><span class="formula amber">107₁₀</span></div>
+          </div>
+        </div>
+        <div class="stack big-gap">
+          <p class="lead">给定蛇头坐标，再记录相邻身体节的相对方向序列，就能唯一恢复整条蛇。</p>
+          <div class="code">int get_shape_hash(Snake *s, int k) {
+  int hash = 0;
+  for (int i = 1; i &lt; k; ++i)
+    hash = hash * 4 + direction(i);
+  return hash;
+}</div>
+          <p><b class="lime">刚好匹配约束：</b><code>k ≤ 9</code>，最多 8 位四进制数，因此 <code>0…4⁸−1 = 65535</code>，可直接作为 <code>vis[16][16][65536]</code> 的下标。</p>
+        </div>
+      </div>
+      <footer class="footer"><span>状态 =（蛇头行，蛇头列，形状 Hash）</span><span>07 / 09</span></footer>
+      <aside class="notes">这是算法题的创新点。逐节保存坐标很直观，但判重成本高。相邻蛇节只有四种方向，所以天然是四进制数字。给定蛇头与方向序列，整条蛇唯一确定。k 最大为 9，最多八位，正好落入 16 位无符号范围，对应代码中的 65536。</aside>
+    </section>
+
+    <section class="slide slide-8" data-seconds="65">
+      <header class="title-row"><div><div class="eyebrow">能力迁移</div><h2>算法题压缩状态，大项目用状态<span class="green">做决策</span></h2></div><span class="section-no">08</span></header>
+      <div class="content bridge">
+        <div class="side">
+          <h3>贪吃蛇算法题</h3>
+          <ul class="clean"><li>完整蛇形是搜索状态</li><li>四进制编码实现紧凑判重</li><li>BFS 保证最少步数</li></ul>
+        </div>
+        <div class="mid">→</div>
+        <div class="side">
+          <h3>蒜头攻防大战</h3>
+          <ul class="clean"><li>身体历史是动态状态</li><li>尾格释放提升模型一致性</li><li>BFS 服务于多指标对抗评分</li></ul>
+        </div>
+      </div>
+      <div class="panel soft summary"><p class="quote" style="max-width:none;text-align:center">共同方法：先找到<span class="lime">最小充分状态</span>，再只搜索影响未来的信息。</p></div>
+      <footer class="footer"><span>算法训练不是孤立题目，而是大项目建模能力的来源</span><span>08 / 09</span></footer>
+      <aside class="notes">把小题和大项目串起来：小题让我们理解如何用最小充分状态做 BFS 判重；大项目进一步面对不完整信息、动态身体和对手。两者共同的核心不是“都用了 BFS”，而是先设计正确状态，再搜索。</aside>
+    </section>
+
+    <section class="slide" data-seconds="45">
+      <header class="title-row"><div><div class="eyebrow">结论</div><h2>在 100 ms 内，把<span class="green">生存、资源与博弈</span>放进同一个决策器</h2></div><span class="section-no">09</span></header>
+      <div class="content two">
+        <div class="stack big-gap">
+          <p class="quote">我们交付的不是一条固定路线，而是一套能随局面更新的<em>实时决策方法</em>。</p>
+          <div class="chips"><span class="chip">最大 50×50</span><span class="chip">O(nm) 单回合</span><span class="chip">固定数组</span><span class="chip">G++11</span></div>
+        </div>
+        <div class="panel stack">
+          <div class="metric"><strong>01</strong><span>动态状态：身体历史 + 尾格释放</span></div>
+          <div class="rule"></div>
+          <div class="metric"><strong>02</strong><span>稳健对抗：对手全枚举 + 最坏领地</span></div>
+          <div class="rule"></div>
+          <div class="metric"><strong>03</strong><span>状态压缩：四进制 Hash 支撑算法题 BFS</span></div>
+        </div>
+      </div>
+      <footer class="footer"><span class="brand">谢谢 · 欢迎提问</span><span>09 / 09</span></footer>
+      <aside class="notes">结尾回扣三个创新点：身体状态重建、最坏情形对抗、四进制状态压缩。复杂度保持 O(nm)，满足实时限制。停在这里进入提问，不再重复过程细节。</aside>
+    </section>
+  </main>
+
+  <div class="progress" id="progress"></div>
+  <div class="help">← → / Space 翻页 · F 全屏 · N 备注 · P 打印</div>
+  <div class="nav"><button id="prev" aria-label="上一页">‹</button><button id="next" aria-label="下一页">›</button></div>
+  <div class="notes-panel" id="notesPanel"></div>
+  <script>
+    const slides=[...document.querySelectorAll('.slide')];
+    const progress=document.getElementById('progress');
+    const notesPanel=document.getElementById('notesPanel');
+    let index=0;
+    function show(next){
+      index=Math.max(0,Math.min(slides.length-1,next));
+      slides.forEach((s,i)=>{s.classList.toggle('active',i===index);s.classList.toggle('prev',i<index)});
+      progress.style.width=((index+1)/slides.length*100)+'%';
+      notesPanel.textContent=`建议用时 ${slides[index].dataset.seconds} 秒｜${slides[index].querySelector('.notes').textContent}`;
+      history.replaceState(null,'','#'+(index+1));
+    }
+    document.getElementById('prev').addEventListener('click',()=>show(index-1));
+    document.getElementById('next').addEventListener('click',()=>show(index+1));
+    addEventListener('keydown',e=>{
+      if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(index+1)}
+      if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(index-1)}
+      if(e.key==='Home')show(0); if(e.key==='End')show(slides.length-1);
+      if(e.key.toLowerCase()==='f')document.documentElement.requestFullscreen?.();
+      if(e.key.toLowerCase()==='n')document.body.classList.toggle('show-notes');
+      if(e.key.toLowerCase()==='p')print();
+    });
+    let touchX=0;addEventListener('touchstart',e=>touchX=e.changedTouches[0].screenX,{passive:true});
+    addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-touchX;if(Math.abs(dx)>55)show(index+(dx<0?1:-1))},{passive:true});
+    const initial=parseInt(location.hash.slice(1),10);show(Number.isFinite(initial)?initial-1:0);
+  </script>
+</body>
+</html>

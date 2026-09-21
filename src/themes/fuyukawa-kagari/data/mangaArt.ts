@@ -2,6 +2,7 @@ import { kagariAsset } from "../assets";
 
 const images = {
   "festival-cover": [750, 1050],
+  "clannad-cover": [1026, 1533],
   "biqigu-cover": [1254, 1254],
   "afternoon-cover": [800, 1130],
   "together-cover": [800, 1130],
