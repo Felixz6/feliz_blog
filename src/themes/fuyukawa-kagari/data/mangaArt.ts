@@ -5,6 +5,7 @@ const images = {
   "biqigu-cover": [1254, 1254],
   "afternoon-cover": [800, 1130],
   "together-cover": [800, 1130],
+  "eighty-six-cover": [1076, 1432],
   "notebook-page": [700, 1013],
   "workshop-page": [625, 850],
   "playroom-page": [700, 1013],

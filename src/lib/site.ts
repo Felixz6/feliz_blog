@@ -1,7 +1,8 @@
 export const site = {
   name: "kanade",
-  title: "Feliz Lab",
-  description: "音無結弦の時 躍動天使の心 立於浮華の世 奏響天籟の音",
+  title: "Feliz | Anime × Security × Technology",
+  description: "Feliz personal blog about cybersecurity, programming, anime, open source projects and technology.",
+  socialImage: "/themes/fuyukawa-kagari/assets/hero-wallpaper.webp",
   author: "Feliz",
   keywords: ["个人博客", "CTF", "Web Security", "开源", "开发工具", "AI"],
   nav: [

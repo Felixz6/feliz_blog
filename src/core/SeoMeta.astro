@@ -27,6 +27,7 @@ const isProfile = canonicalPath === "/about";
 const openGraphType = isArticlePage ? "article" : isProfile ? "profile" : "website";
 const articleId = `${canonicalUrl}#article`;
 const articleImage = article?.cover ? new URL(article.cover, siteRoot).toString() : undefined;
+const socialImage = articleImage ?? new URL(site.socialImage, siteRoot).toString();
 const articleKeywords = article
   ? Array.from(new Set([...(article.seoKeywords ?? []), ...article.tags]))
   : [];
@@ -127,12 +128,12 @@ const structuredData = JSON.stringify({
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonicalUrl} />
-{articleImage && <meta property="og:image" content={articleImage} />}
-{articleImage && <meta property="og:image:alt" content={`${article?.title ?? title} 封面`} />}
-<meta name="twitter:card" content={articleImage ? "summary_large_image" : "summary"} />
+<meta property="og:image" content={socialImage} />
+<meta property="og:image:alt" content={articleImage ? `${article?.title ?? title} 封面` : site.title} />
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
-{articleImage && <meta name="twitter:image" content={articleImage} />}
+<meta name="twitter:image" content={socialImage} />
 {isArticlePage && article && <meta property="article:author" content={personUrl} />}
 {isArticlePage && article && <meta property="article:published_time" content={article.pubDate.toISOString()} />}
 {isArticlePage && article && <meta property="article:modified_time" content={(article.updatedDate ?? article.pubDate).toISOString()} />}

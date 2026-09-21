@@ -84,7 +84,7 @@ const pagefindIntegration = () => ({
 });
 
 export default defineConfig({
-  site: "https://felizx.vercel.app/",
+  site: "https://felizx.com",
   output: "static",
   prefetch: {
     prefetchAll: false,
