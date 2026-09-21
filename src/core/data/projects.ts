@@ -1,7 +1,6 @@
 export const projectTechLines = [
   { key: "web-security", label: "Web Security", note: "安全研究与分析" },
   { key: "ctf", label: "CTF", note: "题目与解题笔记" },
-  { key: "php", label: "PHP", note: "脚本与工具" },
   { key: "open-source", label: "Open Source", note: "开源项目记录" },
   { key: "web-development", label: "Web Development", note: "个人博客与开发" },
   { key: "ai", label: "AI", note: "工具与工作流实验" }
@@ -30,10 +29,10 @@ export const projectEntries = [
     id: "recon-tools",
     title: "Recon Tools",
     type: "Development Tools",
-    line: "php",
+    line: "web-security",
     status: "占位项目，待补充",
     summary: "后续用于记录侦察工具、脚本与使用方法。",
-    details: ["PHP", "开发工具"]
+    details: ["Recon", "开发工具"]
   },
   {
     id: "open-source",

@@ -27,7 +27,6 @@ const bioSecondLine = bioBreakIndex >= 0
 const techPresentation = {
   "web-security": { icon: "tabler:shield-lock", tone: "blue" },
   ctf: { icon: "tabler:flag-3", tone: "pink" },
-  php: { icon: "simple-icons:php", tone: "orange" },
   linux: { icon: "simple-icons:linux", tone: "ink" },
   git: { icon: "simple-icons:git", tone: "mint" },
   "open-source": { icon: "simple-icons:github", tone: "lavender" },
@@ -62,7 +61,6 @@ const nowDoing = currentSignals;
       <div class="about-avatar-card">
         <span class="about-tape about-tape--left" aria-hidden="true"></span>
         <img src={kagariAssets.profile} alt={`${profileIdentity.displayName} avatar`} width="220" height="220" />
-        <span class="about-avatar-flower" aria-hidden="true">✦</span>
       </div>
 
       <div class="about-id-card">
@@ -101,9 +99,9 @@ const nowDoing = currentSignals;
       <div class="about-readme-hero">
         <div>
           <p class="section-kicker">04 / Dear reader</p>
-          <h2>很高兴，在这里遇见你。</h2>
+          <h2>很高兴，在这里遇见你</h2>
           <p>
-            这里整理计算机、网络安全、CTF、开源与开发工具相关记录，也会留出位置写下 AI、看番记录和个人生活。
+            这里有我，并且不止有我。
           </p>
         </div>
         <MangaArt image="letter-page" class="about-letter-art" eager />
@@ -267,15 +265,6 @@ const nowDoing = currentSignals;
     .about-avatar-card img {
       aspect-ratio: 1;
       object-fit: cover;
-      border-radius: 50%;
-    }
-
-    .about-avatar-flower {
-      position: absolute;
-      display: grid;
-      place-items: center;
-      color: #fffaf1;
-      border: 2px solid rgba(255, 255, 255, 0.82);
       border-radius: 50%;
     }
 

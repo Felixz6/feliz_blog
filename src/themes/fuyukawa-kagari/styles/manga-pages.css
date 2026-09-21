@@ -62,11 +62,12 @@ body[data-fuyukawa] .album-tabs button { width: 40px; height: 42px; font: .74rem
 body[data-fuyukawa] .album-tabs button[aria-pressed="true"] { color: var(--rose); border-bottom-color: var(--rose); }
 body[data-fuyukawa] .album-pages { position: relative; min-width: 0; }
 body[data-fuyukawa] .album-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, .65fr); align-items: center; gap: 28px; margin: 0; }
-body[data-fuyukawa] .album-page > img { width: 100%; height: 410px; object-fit: contain; }
+body[data-fuyukawa] .album-page > img { width: 100%; height: 500px; object-fit: contain; object-position: center; }
 body[data-fuyukawa] .album-page figcaption { padding-bottom: 140px; }
 body[data-fuyukawa] .album-page figcaption span { font: .68rem Consolas, monospace; color: var(--accent); }
-body[data-fuyukawa] .album-page figcaption h3 { font: 1.3rem/1.8 "KaiTi", "Microsoft YaHei", serif; margin: 16px 0; color: var(--manga-ink); }
+body[data-fuyukawa] .album-page figcaption h3 { font: 1.3rem/1.8 "KaiTi", "Microsoft YaHei", serif; margin: 16px 0; color: var(--manga-ink); white-space: pre-line; }
 body[data-fuyukawa] .album-page figcaption small { font-size: .66rem; color: var(--ink-soft); }
+body[data-fuyukawa] .album-page figcaption small.album-page-credit--right { display: block; margin-right: 24px; font-size: .9rem; text-align: right; }
 body[data-fuyukawa] .album-companion { position: absolute; bottom: 12px; right: 24px; width: 125px; height: 145px; pointer-events: none; }
 body[data-fuyukawa] .article-margin-character { width: 90px; height: 138px; margin: 24px auto 0; }
 body[data-fuyukawa] .article-colophon { margin-top: 56px; border-block: 1px solid var(--line); padding: 26px 0; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1fr); align-items: center; gap: 32px; }

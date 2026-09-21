@@ -52,6 +52,11 @@ test("home and archive preserve complete covers in stable portrait frames", () =
   assert.match(read("pages/HomePage.astro"), /width="700" height="1000" loading="lazy"/);
 });
 
+test("About profile omits the mint avatar badge", () => {
+  assert.doesNotMatch(read("pages/AboutPage.astro"), /about-avatar-flower/);
+  assert.doesNotMatch(css, /about-avatar-flower/);
+});
+
 test("header stays transparent with symmetric centered navigation", () => {
   const rules = new Map();
   postcss.parse(css).walkRules((rule) => {
