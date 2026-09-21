@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -45,7 +45,7 @@ test("responsive covers keep accepted sources unchanged and use smaller, same-as
   }
   assert.equal(Object.keys(manifest).length, 24);
   assert.ok(smallBytes < originalBytes * .4, "Small-cover total must save at least 60% without lowering quality");
-  assert.ok(totalVariants < 5_000_000, "Derivative files have a bounded publishing cost");
+  assert.ok(totalVariants < 6_500_000, "Derivative files have a bounded publishing cost");
 });
 
 test("cover attributes preserve full-resolution fallback, permit high-DPR selection and leave unknown URLs alone", () => {
@@ -104,4 +104,16 @@ test("Fuyukawa blog and home use responsive cover candidates with lazy image loa
   const archive = await readFile(new URL(`../${paths[0]}`, import.meta.url), "utf8");
   assert.match(archive, /post-cover-frame/);
   assert.match(archive, /getCoverSources\(post\.cover/);
+  assert.match(archive, /\(max-width: 480px\) calc\(100vw - 84px\)/);
+  assert.match(archive, /"318px"/);
+
+  const blogDirectory = new URL("../src/content/blog/", import.meta.url);
+  for (const filename of (await readdir(blogDirectory)).filter(name => name.endsWith(".md"))) {
+    const post = await readFile(new URL(filename, blogDirectory), "utf8");
+    const cover = post.match(/^cover:\s*["']?(\/blog-covers\/cover-\d+\.webp)["']?\s*$/m)?.[1];
+    if (!cover) continue;
+    const widths = (manifest as Record<string, any>)[cover]?.variants.map((variant: any) => variant.width) ?? [];
+    assert.ok(widths.includes(320), `${cover} needs a DPR 1 candidate`);
+    assert.ok(widths.includes(640), `${cover} needs a DPR 2 candidate for the 318px card`);
+  }
 });
