@@ -26,6 +26,16 @@ export const projectEntries = [
     details: ["CTF", "解题记录"]
   },
   {
+    id: "whuctf-lapsa-writeup",
+    title: "2026 WHUCTF 校赛 Writeup",
+    type: "CTF Write-up",
+    line: "ctf",
+    status: "已发布，可阅读全文",
+    summary: "lapsa 队的 2026 年 WHUCTF 校赛解题记录。",
+    details: ["WHUCTF", "lapsa 队", "Writeup"],
+    href: "/blog/2026-whuctf-lapsa-writeup/"
+  },
+  {
     id: "recon-tools",
     title: "Recon Tools",
     type: "Development Tools",
