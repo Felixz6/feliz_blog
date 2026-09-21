@@ -14,7 +14,7 @@ export async function getPublishedPosts() {
 export async function getPublishedPostPaths() {
   const posts = await getPublishedPosts();
   return posts.map((post) => ({
-    params: { slug: post.id },
+    params: { slug: post.data.slug ?? post.id },
     props: { post }
   }));
 }

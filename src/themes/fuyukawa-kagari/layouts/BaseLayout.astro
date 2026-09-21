@@ -119,7 +119,7 @@ const themedNotFoundRedirectScript = `(() => {
             <div class="music-info-area">
               <span class="music-meta">Playlist</span>
               <p class="music-track">lofi sakura loop</p>
-              <p class="music-note" data-music-note>正在读取歌单...</p>
+              <p class="music-note" data-music-note>打开音乐工具时读取歌单...</p>
             </div>
           </div>
           <div class="music-progress">
@@ -310,12 +310,14 @@ const themedNotFoundRedirectScript = `(() => {
         toyDock.classList.toggle("is-dismissed", !pinned);
         if (!pinned) handle.blur();
         syncToyDock();
+        if (pinned) void window.__yuimiRadio?.init();
       });
       document.addEventListener("pointerover", (event) => {
         if (!isInsideToyDock(event.target) || isInsideToyDock(event.relatedTarget)) return;
         window.clearTimeout(toyDockCloseTimer);
         getToyDock()?.classList.remove("is-dismissed");
         syncToyDock();
+        void window.__yuimiRadio?.init();
       });
       document.addEventListener("pointerout", (event) => {
         if (!isInsideToyDock(event.target) || isInsideToyDock(event.relatedTarget)) return;
@@ -331,6 +333,7 @@ const themedNotFoundRedirectScript = `(() => {
         if (!isInsideToyDock(event.target)) return;
         getToyDock()?.classList.remove("is-dismissed");
         syncToyDock();
+        void window.__yuimiRadio?.init();
       });
       document.addEventListener("focusout", () => queueMicrotask(syncToyDock));
       window.addEventListener("pointerdown", (event) => {
@@ -349,14 +352,18 @@ const themedNotFoundRedirectScript = `(() => {
       const musicCacheKey = "yuimi-radio-state-v1";
       const musicAutoplayKey = "yuimi-radio-autoplay-v1";
       const musicSessionAutoplayKey = "yuimi-radio-session-autoplay-v1";
+      const musicProgressPersistInterval = 5000;
       const createMusicPlayer = () => {
         const audio = new Audio();
+        audio.preload = "none";
         const player = {
           audio,
           tracks: [],
           index: 0,
           seeking: false,
           initialized: false,
+          initializing: null,
+          restoreTime: 0,
           restoreAutoplay: false,
           pendingAutoplay: false,
           elements: {},
@@ -364,6 +371,7 @@ const themedNotFoundRedirectScript = `(() => {
           audioAbort: null,
           unlockAbort: null
         };
+        let lastMusicProgressSavedAt = null;
 
         const formatAudioTime = (seconds) => {
           if (!Number.isFinite(seconds)) return "00:00";
@@ -382,6 +390,10 @@ const themedNotFoundRedirectScript = `(() => {
 
         const isMusicAutoplayEnabled = () => localStorage.getItem(musicAutoplayKey) === "1";
         const isMusicSessionAutoplayEnabled = () => sessionStorage.getItem(musicSessionAutoplayKey) === "1";
+        const shouldRestoreAutoplay = () => {
+          const cached = getMusicState();
+          return cached.paused === false && (isMusicAutoplayEnabled() || isMusicSessionAutoplayEnabled());
+        };
         const setMusicSessionAutoplayEnabled = (enabled) => {
           sessionStorage.setItem(musicSessionAutoplayKey, enabled ? "1" : "0");
         };
@@ -400,16 +412,24 @@ const themedNotFoundRedirectScript = `(() => {
         const saveMusicState = () => {
           const currentTrack = player.tracks[player.index];
           if (!currentTrack) return;
+          const savedAt = Date.now();
           localStorage.setItem(
             musicCacheKey,
             JSON.stringify({
               trackId: currentTrack.id,
-              currentTime: audio.currentTime || 0,
+              currentTime: player.restoreTime > 0 ? player.restoreTime : audio.currentTime || 0,
               volume: audio.volume,
               paused: player.pendingAutoplay ? false : audio.paused,
-              updatedAt: Date.now()
+              updatedAt: savedAt
             })
           );
+          lastMusicProgressSavedAt = savedAt;
+        };
+
+        const saveMusicProgress = () => {
+          const now = Date.now();
+          if (lastMusicProgressSavedAt !== null && now - lastMusicProgressSavedAt < musicProgressPersistInterval) return;
+          saveMusicState();
         };
 
         const queryElements = () => {
@@ -458,6 +478,7 @@ const themedNotFoundRedirectScript = `(() => {
         const loadMusicTrack = (index, { keepTime = 0, autoplay = false, persist = true } = {}) => {
           if (!player.tracks.length) return;
           player.index = (index + player.tracks.length) % player.tracks.length;
+          player.restoreTime = keepTime;
           const track = player.tracks[player.index];
           const nextSrc = new URL(track.src, window.location.origin).href;
           if (audio.src !== nextSrc) {
@@ -472,6 +493,7 @@ const themedNotFoundRedirectScript = `(() => {
             "loadedmetadata",
             async () => {
               if (keepTime > 0 && keepTime < audio.duration - 1) audio.currentTime = keepTime;
+              player.restoreTime = 0;
               updateMusicUi();
               if (autoplay) {
                 try {
@@ -490,41 +512,59 @@ const themedNotFoundRedirectScript = `(() => {
           if (persist) saveMusicState();
         };
 
-        const initMusicPlayer = async () => {
+        const initMusicPlayer = () => {
           queryElements();
           if (player.initialized) {
             updateMusicUi();
-            return;
+            return Promise.resolve(true);
           }
+          if (player.initializing) return player.initializing;
 
-          try {
-            const response = await fetch("/themes/fuyukawa-kagari/music/manifest.json", { cache: "no-cache" });
-            player.tracks = await response.json();
-          } catch {
-            player.tracks = [];
-          }
+          player.initializing = (async () => {
+            try {
+              const response = await fetch("/themes/fuyukawa-kagari/music/manifest.json", { cache: "no-cache" });
+              const tracks = await response.json();
+              player.tracks = Array.isArray(tracks) ? tracks : [];
+            } catch {
+              player.tracks = [];
+              if (player.elements.note) player.elements.note.textContent = "歌单读取失败，请稍后重试。";
+              return false;
+            }
 
-          if (!player.tracks.length) {
-            if (player.elements.track) player.elements.track.textContent = "暂无歌曲";
-            if (player.elements.note) player.elements.note.textContent = "请把 MP3 放入 MUSIC 文件夹。";
-            return;
-          }
+            player.initialized = true;
+            if (!player.tracks.length) {
+              updateMusicUi();
+              if (player.elements.track) player.elements.track.textContent = "暂无歌曲";
+              if (player.elements.note) player.elements.note.textContent = "请把 MP3 放入 MUSIC 文件夹。";
+              return true;
+            }
 
-          const cached = getMusicState();
-          const cachedIndex = player.tracks.findIndex((track) => track.id === cached.trackId);
-          player.index = cachedIndex >= 0 ? cachedIndex : 0;
-          audio.volume = Number.isFinite(cached.volume) ? clampVolume(cached.volume) : clampVolume(player.elements.volume?.value);
-          player.restoreAutoplay = cached.paused === false && (isMusicAutoplayEnabled() || isMusicSessionAutoplayEnabled());
-          player.pendingAutoplay = player.restoreAutoplay;
-          loadMusicTrack(player.index, {
-            keepTime: Number(cached.currentTime ?? 0),
-            autoplay: false,
-            persist: false
+            const cached = getMusicState();
+            const cachedIndex = player.tracks.findIndex((track) => track.id === cached.trackId);
+            player.index = cachedIndex >= 0 ? cachedIndex : 0;
+            player.restoreTime = Number(cached.currentTime ?? 0);
+            audio.volume = Number.isFinite(cached.volume) ? clampVolume(cached.volume) : clampVolume(player.elements.volume?.value);
+            player.restoreAutoplay = shouldRestoreAutoplay();
+            player.pendingAutoplay = player.restoreAutoplay;
+            if (player.restoreAutoplay && player.elements.note) {
+              player.elements.note.textContent = "已恢复进度，点击页面继续。";
+            }
+            updateMusicUi();
+            return true;
+          })().finally(() => {
+            player.initializing = null;
           });
-          if (player.restoreAutoplay && player.elements.note) {
-            player.elements.note.textContent = "已恢复进度，点击播放继续。";
+          return player.initializing;
+        };
+
+        const ensureCurrentTrackSource = () => {
+          const track = player.tracks[player.index];
+          if (!track) return false;
+          const nextSrc = new URL(track.src, window.location.origin).href;
+          if (audio.src !== nextSrc) {
+            loadMusicTrack(player.index, { keepTime: player.restoreTime, autoplay: false, persist: false });
           }
-          player.initialized = true;
+          return true;
         };
 
         player.bind = () => {
@@ -534,8 +574,10 @@ const themedNotFoundRedirectScript = `(() => {
           const listenerOptions = { signal: player.controlAbort.signal };
 
           player.elements.toggle?.addEventListener("click", async () => {
+            await player.init();
             if (!player.tracks.length) return;
             if (audio.paused) {
+              ensureCurrentTrackSource();
               try {
                 await audio.play();
                 setMusicSessionAutoplayEnabled(true);
@@ -553,11 +595,15 @@ const themedNotFoundRedirectScript = `(() => {
             saveMusicState();
           }, listenerOptions);
 
-          player.elements.prev?.addEventListener("click", () => {
+          player.elements.prev?.addEventListener("click", async () => {
+            await player.init();
+            if (!player.tracks.length) return;
             loadMusicTrack(player.index - 1, { autoplay: !audio.paused });
           }, listenerOptions);
 
-          player.elements.next?.addEventListener("click", () => {
+          player.elements.next?.addEventListener("click", async () => {
+            await player.init();
+            if (!player.tracks.length) return;
             loadMusicTrack(player.index + 1, { autoplay: !audio.paused });
           }, listenerOptions);
 
@@ -591,6 +637,7 @@ const themedNotFoundRedirectScript = `(() => {
           const tryResumeAfterRefresh = async () => {
             if (!player.pendingAutoplay || !audio.paused || !player.tracks.length) return;
             try {
+              ensureCurrentTrackSource();
               await audio.play();
               setMusicSessionAutoplayEnabled(true);
               player.pendingAutoplay = false;
@@ -611,7 +658,7 @@ const themedNotFoundRedirectScript = `(() => {
 
           audio.addEventListener("timeupdate", () => {
             updateMusicUi();
-            saveMusicState();
+            saveMusicProgress();
           }, audioListenerOptions);
           audio.addEventListener("play", () => {
             setMusicSessionAutoplayEnabled(true);
@@ -629,21 +676,21 @@ const themedNotFoundRedirectScript = `(() => {
           }, audioListenerOptions);
           window.addEventListener("pagehide", saveMusicState, listenerOptions);
           updateMusicUi();
+          if (shouldRestoreAutoplay()) void player.init();
         };
 
         player.init = initMusicPlayer;
         player.update = updateMusicUi;
         player.isAutoplayEnabled = isMusicAutoplayEnabled;
         player.setAutoplayEnabled = setMusicAutoplayEnabled;
+        player.shouldRestoreAutoplay = shouldRestoreAutoplay;
         return player;
       };
 
       window.__yuimiRadio ??= createMusicPlayer();
       window.__yuimiRadio.bind();
-      window.__yuimiRadio.init();
       document.addEventListener("astro:page-load", () => {
         window.__yuimiRadio?.bind();
-        window.__yuimiRadio?.init();
       });
 
       const sakuraStateKey = "yuimi-sakura-enabled-v1";

@@ -164,13 +164,22 @@ export function mountChapterRail(root, win = window) {
 export function mountAlbum(root) {
   const tabs = [...root.querySelectorAll("[data-album-tab]")];
   const pages = [...root.querySelectorAll("[data-album-page]")];
-  const handlers = tabs.map((tab, index) => {
-    const choose = () => {
-      tabs.forEach((item, i) => item.setAttribute("aria-pressed", String(i === index)));
-      pages.forEach((item, i) => { item.hidden = i !== index; });
-    };
+  const handlers = [];
+  const choosePage = (index) => {
+    tabs.forEach((item, i) => item.setAttribute("aria-pressed", String(i === index)));
+    pages.forEach((item, i) => { item.hidden = i !== index; });
+  };
+  tabs.forEach((tab, index) => {
+    const choose = () => choosePage(index);
     tab.addEventListener("click", choose);
-    return () => tab.removeEventListener("click", choose);
+    handlers.push(() => tab.removeEventListener("click", choose));
+  });
+  pages.forEach((page, index) => {
+    const nextButton = page.querySelector("[data-album-next]");
+    if (!nextButton || pages.length < 2) return;
+    const next = () => choosePage((index + 1) % pages.length);
+    nextButton.addEventListener("click", next);
+    handlers.push(() => nextButton.removeEventListener("click", next));
   });
   return () => handlers.forEach((remove) => remove());
 }

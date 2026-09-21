@@ -33,3 +33,20 @@ test("Fuyukawa pauses the second-by-second clock while hidden", () => {
   assert.match(homeSource, /document\.addEventListener\("visibilitychange", handleClockVisibility\)/);
   assert.doesNotMatch(homeSource, /setInterval\(updateHomeClock, 1000\)/);
 });
+
+test("music manifest and audio source are deferred until music-player intent", () => {
+  const initStart = layoutSource.indexOf("const initMusicPlayer =");
+  const initEnd = layoutSource.indexOf("const ensureCurrentTrackSource =", initStart);
+  assert.ok(initStart >= 0 && initEnd > initStart);
+  assert.match(layoutSource, /audio\.preload = "none"/);
+  assert.match(layoutSource, /const musicProgressPersistInterval = 5000/);
+  assert.match(layoutSource, /audio\.addEventListener\("timeupdate", \(\) => \{\s*updateMusicUi\(\);\s*saveMusicProgress\(\);/);
+  assert.doesNotMatch(layoutSource.slice(initStart, initEnd), /audio\.load\(|loadMusicTrack\(/);
+
+  const bootstrapStart = layoutSource.indexOf("window.__yuimiRadio ??=");
+  const bootstrapEnd = layoutSource.indexOf("const sakuraStateKey =", bootstrapStart);
+  const bootstrap = layoutSource.slice(bootstrapStart, bootstrapEnd);
+  assert.match(bootstrap, /window\.__yuimiRadio\.bind\(\)/);
+  assert.doesNotMatch(bootstrap, /window\.__yuimiRadio\.init\(\)/);
+  assert.match(layoutSource, /if \(pinned\) void window\.__yuimiRadio\?\.init\(\)/);
+});
