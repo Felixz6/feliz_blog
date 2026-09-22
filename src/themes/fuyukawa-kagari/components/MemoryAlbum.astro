@@ -17,7 +17,12 @@ const pages = [
     {pages.map((page, i) => (
       <figure class="album-page" id={`memory-page-${i}`} data-album-page hidden={i !== 0}>
         <button class="album-page-image-next" type="button" data-album-next aria-label="翻到下一页" title="点击图片翻到下一页">
-          <MangaArt image={page.image} alt={page.alt} />
+          <MangaArt
+            image={page.image}
+            alt={page.alt}
+            eager={page.image === "clannad-cover"}
+            fetchpriority={page.image === "clannad-cover" ? "high" : undefined}
+          />
         </button>
         <figcaption>
           {page.subtitle && <span>{page.subtitle}</span>}
