@@ -75,6 +75,15 @@ const themedNotFoundRedirectScript = `(() => {
     <link rel="icon" type="image/png" href={kagariAssets.favicon} />
     <link rel="apple-touch-icon" href={kagariAssets.appleTouchIcon} />
     <title>{title}</title>
+    {Astro.url.pathname === "/" && (
+      <link
+        rel="preload"
+        as="image"
+        href={kagariAssets.heroWallpaper}
+        type="image/webp"
+        fetchpriority="high"
+      />
+    )}
     {canonicalPath !== "/" && <link rel="stylesheet" href={refreshPagesHref} />}
     {canonicalPath !== "/" && <link rel="stylesheet" href={mangaPagesHref} />}
     <ClientRouter />

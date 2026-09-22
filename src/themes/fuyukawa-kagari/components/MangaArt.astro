@@ -5,8 +5,9 @@ interface Props {
   class?: string;
   alt?: string;
   eager?: boolean;
+  fetchpriority?: "high" | "low" | "auto";
 }
-const { image, class: className, alt = "", eager = false } = Astro.props;
+const { image, class: className, alt = "", eager = false, fetchpriority } = Astro.props;
 const art = mangaArt(image);
 ---
 <img
@@ -15,5 +16,6 @@ const art = mangaArt(image);
   alt={alt}
   loading={eager ? "eager" : "lazy"}
   decoding="async"
+  fetchpriority={fetchpriority}
   draggable="false"
 />
