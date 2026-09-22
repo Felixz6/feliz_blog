@@ -24,7 +24,20 @@ export const profileTech = [
   { key: "ai", name: "AI", note: "模型、工具与工作流" }
 ] as const;
 
-export const animeFavorites = [] as const;
+export const animeFavorites = [
+  { key: "relife", title: "ReLIFE", subtitle: "ReLIFE 重返17岁" },
+  { key: "clannad", title: "CLANNAD", subtitle: "团子大家族" },
+  { key: "oregairu", title: "我的青春恋爱物语果然有问题", subtitle: "やはり俺の青春ラブコメはまちがっている。" },
+  { key: "eighty-six", title: "86 - 不存在的战区", subtitle: "８６―エイティシックス―" },
+  { key: "sword-art-online", title: "刀剑神域", subtitle: "ソードアート・オンライン" },
+  { key: "grand-blue", title: "碧蓝之海", subtitle: "ぐらんぶる" },
+  { key: "mushoku-tensei", title: "无职转生", subtitle: "無職転生 ～異世界行ったら本気だす～" },
+  { key: "rezero", title: "Re：从零开始的异世界生活", subtitle: "Re:ゼロから始める異世界生活" },
+  { key: "eromanga-sensei", title: "埃罗芒阿老师", subtitle: "エロマンガ先生" },
+  { key: "charlotte", title: "夏洛特", subtitle: "シャーロット" },
+  { key: "classroom-of-the-elite", title: "欢迎来到实力至上主义教室", subtitle: "ようこそ実力至上主義の教室へ" },
+  { key: "engage-kiss", title: "契约之吻", subtitle: "エンゲージ・キス" }
+] as const;
 
 export const xpFavorites = [] as const;
 

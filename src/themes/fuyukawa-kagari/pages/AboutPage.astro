@@ -35,7 +35,9 @@ const techPresentation = {
 const techStack = profileTech.map((tech) => ({ ...tech, ...techPresentation[tech.key] }));
 const animeShelf = animeFavorites.map((item) => ({
   ...item,
-  image: kagariAsset(`about/${item.key}.webp`)
+  image: kagariAsset(`about/${item.key}.webp`),
+  image320: kagariAsset(`about/responsive/${item.key}-320.webp`),
+  image640: kagariAsset(`about/responsive/${item.key}-640.webp`)
 }));
 const xpTags = xpFavorites.map((item) => ({
   ...item,
@@ -153,7 +155,22 @@ const nowDoing = currentSignals;
           {animeShelf.length === 0 && <p class="about-empty-state">喜欢的作品待补充。</p>}
           {animeShelf.map((item) => (
             <article class="about-media-card">
-              <img src={item.image} alt={`${item.title} 官方视觉缩略图`} loading="lazy" width="900" height="506" />
+              <picture>
+                <source
+                  media="(max-width: 760px) and (min-resolution: 2dppx)"
+                  srcset={`${item.image640} 640w, ${item.image} 900w`}
+                  sizes="calc((100vw - 70px) / 2)"
+                />
+                <img
+                  src={item.image}
+                  srcset={`${item.image320} 320w, ${item.image640} 640w, ${item.image} 900w`}
+                  sizes="(max-width: 760px) calc((100vw - 70px) / 2), (max-width: 1100px) calc((100vw - 360px) / 2), (max-width: 1320px) calc((100vw - 410px) / 3), 303.33px"
+                  alt={`${item.title} 官方视觉缩略图`}
+                  loading="lazy"
+                  width="900"
+                  height="506"
+                />
+              </picture>
               <div>
                 <h3>{item.title}</h3>
                 <p>{item.subtitle}</p>
