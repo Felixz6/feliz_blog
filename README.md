@@ -2,7 +2,7 @@
 
 Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用 Fuyukawa Kagari 主题，包含文章、项目展示与个人资料页面。
 
-- 网站配置地址：<https://felizx.vercel.app/>
+- 网站配置地址：<https://felizx.com/>
 - GitHub 仓库：<https://github.com/Felixz6/feliz_blog>
 - 技术栈：Astro、TypeScript、Pagefind
 
