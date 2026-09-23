@@ -44,6 +44,18 @@ const navItems = site.nav.map((item) => ({
   ...item,
   href: getThemePath("fuyukawa-kagari", item.href)
 }));
+const voyagerOneStart = new Date("1977-09-05T12:56:00Z");
+const voyagerTwoStart = new Date("1977-08-20T14:29:00Z");
+const contractStart = new Date("2022-09-24T00:00:00+08:00");
+const initialRenderTime = new Date();
+const formatInitialElapsed = (start: Date, mode: "minute" | "days") => {
+  const totalSeconds = Math.floor(Math.max(0, initialRenderTime.getTime() - start.getTime()) / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  if (mode === "days") return `第 ${days.toLocaleString("zh-CN")} 天`;
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${days.toLocaleString("zh-CN")}天 ${String(hours).padStart(2, "0")}小时 ${String(minutes).padStart(2, "0")}分`;
+};
 const isAlternateThemeRoute = Astro.url.pathname.startsWith("/themes/");
 const themedNotFoundRedirectScript = `(() => {
   const themeMatch = window.location.pathname.match(/^\\/themes\\/(fuyukawa-kagari)(?:\\/|$)/);
@@ -126,12 +138,12 @@ const themedNotFoundRedirectScript = `(() => {
                   </div>
                 </div>
               </div>
-              <span class="music-cover-caption" data-music-status>待播放</span>
+              <span class="music-cover-caption" data-music-status>已暂停</span>
             </div>
             <div class="music-info-area">
               <span class="music-meta">Playlist</span>
-              <p class="music-track">lofi sakura loop</p>
-              <p class="music-note" data-music-note>打开音乐工具时读取歌单...</p>
+              <p class="music-track">高橋優 - ヤキモチ</p>
+              <p class="music-note" data-music-note>点击播放即可聆听</p>
             </div>
           </div>
           <div class="music-progress">
@@ -204,9 +216,9 @@ const themedNotFoundRedirectScript = `(() => {
         <div class="footer-inner">
           <p class="footer-signature-line">© 2026 {site.author} / {site.name}</p>
           <p>二次元手账、开发记录、还有一点点宇宙回声。</p>
-          <p>🛰️ 旅行者一号：<time data-elapsed-from="1977-09-05T12:56:00Z" data-elapsed-mode="minute">计算中...</time> 仍在远航</p>
-          <p>🛰️ 旅行者二号：<time data-elapsed-from="1977-08-20T14:29:00Z" data-elapsed-mode="minute">计算中...</time> 仍在远航</p>
-          <p>💍 契约之吻：<time data-elapsed-from="2022-09-24T00:00:00+08:00" data-elapsed-mode="days">计算中...</time>，第二季仍未响应</p>
+          <p>🛰️ 旅行者一号：<time data-elapsed-from="1977-09-05T12:56:00Z" data-elapsed-mode="minute" dateTime={voyagerOneStart.toISOString()}>{formatInitialElapsed(voyagerOneStart, "minute")}</time> 仍在远航</p>
+          <p>🛰️ 旅行者二号：<time data-elapsed-from="1977-08-20T14:29:00Z" data-elapsed-mode="minute" dateTime={voyagerTwoStart.toISOString()}>{formatInitialElapsed(voyagerTwoStart, "minute")}</time> 仍在远航</p>
+          <p>💍 契约之吻：<time data-elapsed-from="2022-09-24T00:00:00+08:00" data-elapsed-mode="days" dateTime={contractStart.toISOString()}>{formatInitialElapsed(contractStart, "days")}</time>，第二季仍未响应</p>
           <p class="footer-status-line">sakura: falling / music: ready / tea: warm</p>
           <p class="manga-art-credit">插画与漫画：葉佐乃《儚いキミは猛攻をはじめる》 · 冬川篝主题手帖</p>
         </div>
@@ -481,7 +493,7 @@ const themedNotFoundRedirectScript = `(() => {
             volume.style.setProperty("--range-fill", `${audio.volume * 100}%`);
           }
           if (volumeLabel) volumeLabel.textContent = `${Math.round(audio.volume * 100)}%`;
-          if (status) status.textContent = audio.paused ? "待播放" : "播放中";
+          if (status) status.textContent = audio.paused ? "已暂停" : "播放中";
           if (toggle) {
             toggle.setAttribute("aria-label", audio.paused ? "播放音乐" : "暂停音乐");
             toggle.setAttribute("title", audio.paused ? "播放音乐" : "暂停音乐");
