@@ -23,7 +23,8 @@ test("Fuyukawa pauses CSS animation work while the document is hidden", () => {
 });
 
 test("lite mode removes only persistent decorative motion", () => {
-  assert.match(fuyukawaThemeSource, /data-yuimi-performance="lite"\] \.sakura-rain span[^]*\.console-meter span[^]*animation: none !important/);
+  assert.match(fuyukawaThemeSource, /data-yuimi-performance="lite"\][^]*\.console-meter span[^]*animation: none !important/);
+  assert.doesNotMatch(fuyukawaThemeSource, /\.sakura-rain span/);
 });
 
 test("production build enforces active route, CSS, and responsive-media budgets", () => {

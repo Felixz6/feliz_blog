@@ -10,7 +10,7 @@
     "prepare:covers": "node scripts/prepare-responsive-covers.mjs",
     "prune:media": "node scripts/prune-published-media.mjs",
     "check:performance": "node scripts/check-performance-budgets.mjs",
-    "test": "node --test tests/*.test.ts",
+    "test": "node --test tests/*.test.ts src/themes/fuyukawa-kagari/tests/sakura-performance.test.mjs",
     "preview": "astro preview",
     "generate:assets": "node scripts/generate-assets.mjs",
     "optimize:images": "node scripts/optimize-images.mjs",

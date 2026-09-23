@@ -229,6 +229,7 @@ const themedNotFoundRedirectScript = `(() => {
 
     <script>
       import { installNavigationFeedback } from "../lib/navigation-feedback.mjs";
+      import { createSakuraController } from "../lib/sakura-runtime.mjs";
 
       installNavigationFeedback(document, window);
 
@@ -721,7 +722,6 @@ const themedNotFoundRedirectScript = `(() => {
         window.__yuimiRadio?.bind();
       });
 
-      const sakuraStateKey = "yuimi-sakura-enabled-v1";
       const getContextMenu = () => document.querySelector("[data-context-menu]");
       let contextMenuReturnFocus = null;
       const hideContextMenu = () => {
@@ -732,11 +732,9 @@ const themedNotFoundRedirectScript = `(() => {
           contextMenuReturnFocus.focus({ preventScroll: true });
         }
       };
-      const isSakuraEnabled = () => localStorage.getItem(sakuraStateKey) !== "0";
-      const setSakuraEnabled = (enabled) => {
-        localStorage.setItem(sakuraStateKey, enabled ? "1" : "0");
-        document.body.classList.toggle("hide-sakura", !enabled);
-      };
+      let sakuraController;
+      const isSakuraEnabled = () => sakuraController?.isEnabled() ?? true;
+      const setSakuraEnabled = (enabled) => sakuraController?.setUserEnabled(enabled);
       const updateContextToggleLabels = () => {
         const contextMenu = getContextMenu();
         const sakuraButton = contextMenu?.querySelector('[data-context-action="sakura"]');
@@ -760,7 +758,20 @@ const themedNotFoundRedirectScript = `(() => {
         });
       };
 
-      setSakuraEnabled(isSakuraEnabled());
+      sakuraController = createSakuraController({
+        windowRef: window,
+        documentRef: document,
+        onStateChange: updateContextToggleLabels
+      });
+      if (import.meta.env.DEV || new URLSearchParams(window.location.search).has("debug-sakura")) {
+        window.__yuimiSakuraController = sakuraController;
+      }
+      sakuraController.mount();
+      document.addEventListener("astro:before-swap", sakuraController.destroy);
+      document.addEventListener("astro:page-load", () => {
+        sakuraController.mount();
+        updateContextToggleLabels();
+      });
       updateContextToggleLabels();
       window.addEventListener("yuimi:music-autoplay-change", updateContextToggleLabels);
 

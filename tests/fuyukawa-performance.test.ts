@@ -59,7 +59,7 @@ test("music manifest and audio source are deferred until music-player intent", (
   assert.doesNotMatch(layoutSource.slice(initStart, initEnd), /audio\.load\(|loadMusicTrack\(/);
 
   const bootstrapStart = layoutSource.indexOf("window.__yuimiRadio ??=");
-  const bootstrapEnd = layoutSource.indexOf("const sakuraStateKey =", bootstrapStart);
+  const bootstrapEnd = layoutSource.indexOf("const getContextMenu =", bootstrapStart);
   const bootstrap = layoutSource.slice(bootstrapStart, bootstrapEnd);
   assert.match(bootstrap, /window\.__yuimiRadio\.bind\(\)/);
   assert.doesNotMatch(bootstrap, /window\.__yuimiRadio\.init\(\)/);
