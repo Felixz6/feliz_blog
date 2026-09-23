@@ -98,6 +98,11 @@ test("Web Development category and Personal Blog placeholder are removed", () =>
   assert.equal(projectEntries.some((project) => project.line === "web-development"), false);
 });
 
+test("empty AI project placeholder and filter are not published", () => {
+  assert.equal(projectEntries.some((project) => project.id === "ai-experiments"), false);
+  assert.equal(projectTechLines.some((line) => line.key === "ai"), false);
+});
+
 test("Projects category summary row is removed while project filters remain", () => {
   const projectsPage = readFileSync(new URL("../src/themes/fuyukawa-kagari/pages/ProjectsPage.astro", import.meta.url), "utf8");
   const pageStyles = readFileSync(new URL("../src/themes/fuyukawa-kagari/styles/refresh-pages.css", import.meta.url), "utf8");

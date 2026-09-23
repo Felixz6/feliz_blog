@@ -7,11 +7,9 @@ import MemoryAlbum from "../components/MemoryAlbum.astro";
 import {
   animeFavorites,
   currentSignals,
-  favoriteGames,
   profileIdentity,
   profileStatus,
-  profileTech,
-  xpFavorites
+  profileTech
 } from "@/core/data/profile";
 import { site } from "@/lib/site";
 
@@ -38,21 +36,6 @@ const animeShelf = animeFavorites.map((item) => ({
   image: kagariAsset(`about/${item.key}.webp`),
   image320: kagariAsset(`about/responsive/${item.key}-320.webp`),
   image640: kagariAsset(`about/responsive/${item.key}-640.webp`)
-}));
-const xpTags = xpFavorites.map((item) => ({
-  ...item,
-  image: kagariAsset(`about/xp-${item.key}.webp`)
-}));
-const gameIcons = {
-  "cyberpunk-2077": "simple-icons:steam",
-  "the-finals": "simple-icons:thefinals",
-  kovaaks: "tabler:device-gamepad",
-  aimlabs: "tabler:device-gamepad"
-} as const;
-const gameShelf = favoriteGames.map((item) => ({
-  ...item,
-  image: kagariAsset(`about/${item.key}.webp`),
-  icon: gameIcons[item.key]
 }));
 const nowDoing = currentSignals;
 ---
@@ -180,57 +163,6 @@ const nowDoing = currentSignals;
         </div>
       </section>
 
-      <section class="about-section about-section--split" aria-label="XP and games">
-        <div>
-          <div class="about-section-heading">
-            <Icon name="tabler:heart" aria-hidden="true" />
-            <div>
-              <p>XP tags</p>
-              <h2>XP</h2>
-            </div>
-          </div>
-
-          <div class="about-xp-grid">
-            {xpTags.length === 0 && <p class="about-empty-state">兴趣标签待补充。</p>}
-            {xpTags.map((item) => (
-              <article class="about-xp-card">
-                <img src={item.image} alt={`${item.title} 泛化视觉贴纸`} loading="lazy" width="900" height="506" />
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.subtitle}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div class="about-section-heading">
-            <Icon name="tabler:device-gamepad" aria-hidden="true" />
-            <div>
-              <p>Game shelf</p>
-              <h2>喜欢的游戏</h2>
-            </div>
-          </div>
-
-          <div class="about-game-list">
-            {gameShelf.length === 0 && <p class="about-empty-state">喜欢的游戏待补充。</p>}
-            {gameShelf.map((item) => (
-              <article class="about-game-card">
-                <img src={item.image} alt={`${item.title} 官方视觉缩略图`} loading="lazy" width="900" height="506" />
-                <div>
-                  <span aria-hidden="true">
-                    <Icon name={item.icon} />
-                  </span>
-                  <h3>{item.title}</h3>
-                  <p>{item.subtitle}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section class="about-section" aria-labelledby="now-doing-title">
         <div class="about-section-heading">
           <Icon name="tabler:flower" aria-hidden="true" />
@@ -333,8 +265,7 @@ const nowDoing = currentSignals;
 
     .about-link-row svg,
     .about-section-heading svg,
-    .about-tech-icon svg,
-    .about-game-card span svg {
+    .about-tech-icon svg {
       width: 1.2em;
       height: 1.2em;
     }
@@ -444,25 +375,19 @@ const nowDoing = currentSignals;
     }
 
     .about-tech-card h3,
-    .about-media-card h3,
-    .about-xp-card h3,
-    .about-game-card h3 {
+    .about-media-card h3 {
       margin: 0;
       color: var(--ink);
       font-size: 1rem;
       line-height: 1.35;
     }
 
-    .about-media-card h3,
-    .about-xp-card h3,
-    .about-game-card h3 {
+    .about-media-card h3 {
       font-size: 0.96rem;
     }
 
     .about-tech-card p,
-    .about-media-card p,
-    .about-xp-card p,
-    .about-game-card p {
+    .about-media-card p {
       margin: 5px 0 0;
       color: var(--ink-soft);
       font-size: 0.82rem;
@@ -473,9 +398,7 @@ const nowDoing = currentSignals;
       display: grid;
     }
 
-    .about-media-card,
-.about-xp-card,
-.about-game-card {
+    .about-media-card {
       overflow: hidden;
       border-radius: 8px;
     }
@@ -487,104 +410,18 @@ const nowDoing = currentSignals;
       object-fit: cover;
     }
 
-    .about-xp-card img {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      background: var(--paper-soft);
-    }
-
-    .about-game-card img {
-      display: block;
-      width: 92px;
-      height: 64px;
-      min-height: 0;
-      aspect-ratio: 23 / 16;
-      object-fit: contain;
-      background: #f0f5fa;
-      border-radius: 4px;
-    }
-
     .about-media-card img {
       height: auto;
       object-fit: contain;
     }
 
-    .about-xp-card img {
-      aspect-ratio: 4 / 3;
-      height: auto;
-      object-fit: cover;
-    }
-
-    .about-media-card div,
-    .about-xp-card div {
+    .about-media-card div {
       padding: 12px;
     }
 
     .about-media-card div {
       min-height: 72px;
       padding: 10px 12px 12px;
-    }
-
-    .about-section--split > div {
-      min-width: 0;
-      display: grid;
-      align-content: start;
-      gap: 14px;
-    }
-
-    .about-xp-grid {
-      display: grid;
-    }
-
-    .about-game-card {
-      display: grid;
-      grid-template-columns: 92px minmax(0, 1fr);
-      align-items: center;
-      min-width: 0;
-      min-height: 0;
-      gap: 12px;
-      padding: 12px;
-    }
-
-    .about-game-card div {
-      display: grid;
-      grid-template-columns: 22px minmax(0, 1fr);
-      gap: 4px 6px;
-      align-items: start;
-      min-width: 0;
-      min-height: 0;
-      padding: 0;
-    }
-
-    .about-game-card span {
-      display: inline-grid;
-      place-items: center;
-      width: 22px;
-      height: 22px;
-      grid-row: span 2;
-      margin-bottom: 0;
-      color: var(--ink);
-      background: var(--blue-soft);
-      border-radius: 4px;
-    }
-
-    .about-game-card span svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    .about-game-card h3 {
-      margin: 0;
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
-
-    .about-game-card p {
-      margin: 0;
-      font-size: 0.72rem;
-      line-height: 1.6;
     }
 
     .about-activity-grid {

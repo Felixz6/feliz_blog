@@ -39,10 +39,6 @@ export const animeFavorites = [
   { key: "engage-kiss", title: "契约之吻", subtitle: "エンゲージ・キス" }
 ] as const;
 
-export const xpFavorites = [] as const;
-
-export const favoriteGames = [] as const;
-
 export const currentSignals = [
   { label: "技术记录", text: "Web Security、CTF 与 Linux 的学习笔记。" },
   { label: "开发方向", text: "关注 Git、开源项目、开发工具与 AI 工作流。" },

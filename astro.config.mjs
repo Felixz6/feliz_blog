@@ -90,7 +90,8 @@ export default defineConfig({
     "/projects/clown-src-6k-skill/docs/": "/projects/src-skill/docs/",
     "/projects/clown-src-6k-skill/docs/overview/": "/projects/src-skill/docs/overview/",
     "/projects/clown-src-6k-skill/docs/structure/": "/projects/src-skill/docs/structure/",
-    "/projects/clown-src-6k-skill/docs/deployment/": "/projects/src-skill/docs/deployment/"
+    "/projects/clown-src-6k-skill/docs/deployment/": "/projects/src-skill/docs/deployment/",
+    "/blog/astrbot-roleplay-persona-notes/": "/blog/steamfn-malware-analysis/"
   },
   output: "static",
   prefetch: {

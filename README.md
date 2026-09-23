@@ -22,9 +22,9 @@ Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用
 
 ## 当前功能
 
-- 首页包含 Hero、个人资料终端卡片、最近文章、日期时间与本地天气信息。
+- 首页包含 Hero、个人资料终端卡片、最近文章与本地日期时间。
 - Blog 页面提供文章归档与 Pagefind 全文搜索。
-- Projects 页面目前是待补充的项目占位卡片，不代表这些项目已经完成。
+- Projects 页面展示已发布的项目、解题笔记与开源仓库链接。
 - About 页面从共享资料配置读取个人信息与技术方向。
 - 页面保留樱花雨效果和音乐播放器；播放器标题为 Music / Playlist。
 - Live2D、公告卡片和猪形滚动挂件已从当前界面移除。
@@ -92,7 +92,7 @@ npm run build
 
 构建产物位于 dist/。GitHub Actions 工作流 .github/workflows/deploy.yml 会在推送到 main 或手动触发时，使用 Node.js 24 执行安装、构建，并部署到 GitHub Pages。
 
-当前 Astro 站点元数据配置在 astro.config.mjs，其中 canonical site origin 为 https://felizx.vercel.app/。该地址与 GitHub Pages 工作流是两个独立配置；如果更换正式域名或托管方式，请同步调整站点 origin 和发布流程，避免 canonical URL 与实际部署地址不一致。
+当前 Astro 站点元数据配置在 astro.config.mjs，其中 canonical site origin 为 https://felizx.com/。该地址与 GitHub Pages 工作流是两个独立配置；如果更换正式域名或托管方式，请同步调整站点 origin 和发布流程，避免 canonical URL 与实际部署地址不一致。
 
 ## 主要目录
 

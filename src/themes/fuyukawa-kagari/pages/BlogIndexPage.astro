@@ -22,6 +22,7 @@ const posts = (await getPublishedPosts())
       ...post,
       wordCount: cjk + words,
       updatedAt: post.data.updatedDate ?? post.data.pubDate,
+      hasUpdatedDate: Boolean(post.data.updatedDate),
       cover: post.data.cover ?? kagariAssets.heroWallpaper
     };
   });
@@ -91,7 +92,7 @@ const blogCoverSizes = [
         <article class="blog-timeline-item" data-entry-category={post.data.category}>
           <div class="timeline-date">
             <time datetime={post.updatedAt.toISOString()}>{formatter.format(post.updatedAt)}</time>
-            <span>updated</span>
+            <span>{post.hasUpdatedDate ? "updated" : "published"}</span>
           </div>
           <a class="post-row blog-post-row" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
             <div class="post-cover-frame">
@@ -101,7 +102,7 @@ const blogCoverSizes = [
               <div class="meta-row">
                 <span>{categoryLabel[post.data.category]}</span>
                 <time datetime={post.data.pubDate.toISOString()}>发布 {formatter.format(post.data.pubDate)}</time>
-                <time datetime={post.updatedAt.toISOString()}>更新 {formatter.format(post.updatedAt)}</time>
+                {post.hasUpdatedDate && <time datetime={post.updatedAt.toISOString()}>更新 {formatter.format(post.updatedAt)}</time>}
                 <span>{post.wordCount.toLocaleString("zh-CN")} 字</span>
               </div>
               <h2>{post.data.title}</h2>
