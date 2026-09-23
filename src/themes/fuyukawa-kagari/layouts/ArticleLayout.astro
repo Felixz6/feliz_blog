@@ -6,7 +6,10 @@ import { Icon } from "astro-icon/components";
 import MangaArt from "../components/MangaArt.astro";
 import { site } from "@/lib/site";
 
-const { frontmatter } = Astro.props;
+const { frontmatter, archiveHref, archiveLabel, footerLabel } = Astro.props;
+const returnHref = archiveHref ?? getThemePath("fuyukawa-kagari", "/blog/");
+const returnLabel = archiveLabel ?? "回到笔记存档";
+const footerActionLabel = footerLabel ?? "再翻一篇笔记";
 const title = `${frontmatter.seoTitle ?? frontmatter.title} | ${site.name}`;
 const description = frontmatter.seoDescription ?? frontmatter.description;
 const date = new Intl.DateTimeFormat("zh-CN", {
@@ -29,7 +32,7 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2);
       </details>
     )}
     <article class="article" data-pagefind-body>
-      <a class="back-link" href={getThemePath("fuyukawa-kagari", "/blog/")}><Icon name="tabler:arrow-left" aria-hidden="true" />回到笔记存档</a>
+      <a class="back-link" href={returnHref}><Icon name="tabler:arrow-left" aria-hidden="true" />{returnLabel}</a>
       <header class="article-header">
         <div class="meta-row">
           <span>{categoryLabel[frontmatter.category]}</span>
@@ -46,7 +49,7 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2);
       </div>
       <footer class="article-colophon" data-pagefind-ignore>
         <MangaArt image="hand-note" />
-        <div><span class="manga-handwritten">To be continued.</span><p>这一页，先写到这里。</p><a href={getThemePath("fuyukawa-kagari", "/blog/")}>再翻一篇笔记 <Icon name="tabler:arrow-right" aria-hidden="true" /></a></div>
+        <div><span class="manga-handwritten">To be continued.</span><p>这一页，先写到这里。</p><a href={returnHref}>{footerActionLabel} <Icon name="tabler:arrow-right" aria-hidden="true" /></a></div>
       </footer>
     </article>
     {

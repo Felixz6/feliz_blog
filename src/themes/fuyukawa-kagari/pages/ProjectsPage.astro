@@ -9,7 +9,6 @@ const techIcons = {
   "web-security": "tabler:shield-lock",
   ctf: "tabler:flag-3",
   "open-source": "simple-icons:github",
-  "web-development": "tabler:code",
   ai: "tabler:sparkles"
 } as const;
 const techLines = projectTechLines.map((item) => ({ ...item, icon: techIcons[item.key] }));
@@ -18,16 +17,22 @@ const projectPresentation = {
   "ctf-notes": { icon: "tabler:flag-3", accent: "pink" },
   "whuctf-lapsa-writeup": { icon: "tabler:flag-3", accent: "pink" },
   "recon-tools": { icon: "tabler:shield-lock", accent: "blue" },
-  "open-source": { icon: "simple-icons:github", accent: "mint" },
-  "personal-blog": { icon: "tabler:code", accent: "lavender" },
+  "open-source-eisland-lite": { icon: "simple-icons:github", accent: "mint" },
+  "open-source-rime-sukura": { icon: "simple-icons:github", accent: "mint" },
+  "open-source-adsdk-agent": { icon: "simple-icons:github", accent: "mint" },
+  "open-source-mobile-vscode": { icon: "simple-icons:github", accent: "mint" },
   "ai-experiments": { icon: "tabler:sparkles", accent: "ink" }
 } as const;
-const projectCards = projectEntries.map((project) => ({
-  ...project,
-  ...projectPresentation[project.id],
-  href: "href" in project ? project.href : undefined,
-  linkLabel: "linkLabel" in project ? project.linkLabel : undefined
-}));
+const projectCards = projectEntries.map((project) => {
+  const href = "href" in project ? project.href : undefined;
+  return {
+    ...project,
+    ...projectPresentation[project.id],
+    href,
+    linkLabel: "linkLabel" in project ? project.linkLabel : undefined,
+    isExternal: href?.startsWith("https://") ?? false
+  };
+});
 
 ---
 
@@ -58,16 +63,6 @@ const projectCards = projectEntries.map((project) => ({
       ))}
     </div>
 
-    <section class="works-tech-board" aria-label="Tech lines">
-      {techLines.map((item) => (
-        <article data-line-card={item.key}>
-          <Icon name={item.icon} aria-hidden="true" />
-          <strong>{item.label}</strong>
-          <span>{item.note}</span>
-        </article>
-      ))}
-    </section>
-
     <section class="works-grid" aria-label="Project cards">
       {projectCards.map((project, index) => (
         <article class={`works-card works-card--${project.accent}`} data-project-line={project.line}>
@@ -88,15 +83,22 @@ const projectCards = projectEntries.map((project) => ({
             ))}
           </div>
           {project.href && (
-            <a class="works-card-read" href={project.href}>
+            <a
+              class="works-card-read"
+              href={project.href}
+              target={project.isExternal ? "_blank" : undefined}
+              rel={project.isExternal ? "noopener noreferrer" : undefined}
+              aria-label={project.isExternal ? `${project.title} GitHub 仓库：${project.href}` : undefined}
+            >
               {project.linkLabel ?? "阅读完整 Writeup"}
-              <Icon name="tabler:arrow-right" aria-hidden="true" />
+              <Icon name={project.isExternal ? "tabler:external-link" : "tabler:arrow-right"} aria-hidden="true" />
             </a>
           )}
-          <div class="works-card-status">
-            <strong>{project.status}</strong>
-            {!project.href && <p>下一步会把相关笔记、截图或可玩的 demo 慢慢补到这里。</p>}
-          </div>
+          {"status" in project && project.status && (
+            <div class="works-card-status">
+              <strong>{project.status}</strong>
+            </div>
+          )}
           {index === 0 && <MangaArt image="kagari-thinking" class="works-card-companion" />}
         </article>
       ))}
@@ -109,7 +111,6 @@ const projectCards = projectEntries.map((project) => ({
     const filterRoot = document.querySelector("[data-works-filter]");
     const filterButtons = filterRoot ? Array.from(filterRoot.querySelectorAll("button")) : [];
     const cards = Array.from(document.querySelectorAll("[data-project-line]"));
-    const lineCards = Array.from(document.querySelectorAll("[data-line-card]"));
 
     filterButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -123,10 +124,6 @@ const projectCards = projectEntries.map((project) => ({
           const isMatch = filter === "all" || card.dataset.projectLine === filter;
           card.classList.toggle("is-dimmed", !isMatch);
           card.hidden = !isMatch;
-        });
-        lineCards.forEach((card) => {
-          const isMatch = filter === "all" || card.dataset.lineCard === filter;
-          card.classList.toggle("is-highlighted", isMatch && filter !== "all");
         });
       });
     });
@@ -146,8 +143,7 @@ const projectCards = projectEntries.map((project) => ({
       overflow: visible;
     }
 
-    .works-filter,
-.works-tech-board {
+    .works-filter {
       position: relative;
       isolation: isolate;
       overflow: visible;
@@ -194,8 +190,7 @@ const projectCards = projectEntries.map((project) => ({
     .works-hero-orbit span:nth-child(4) { top: 68px; left: -4px; color: #c85278; }
 
     .works-hero-orbit svg,
-    .works-card-icon svg,
-    .works-tech-board svg {
+    .works-card-icon svg {
       width: 1.35em;
       height: 1.35em;
     }
@@ -219,27 +214,6 @@ const projectCards = projectEntries.map((project) => ({
     .works-filter button:hover {
       transform: translateY(-2px);
       box-shadow: var(--paper-shadow);
-    }
-
-    .works-tech-board {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-
-    .works-tech-board article {
-      display: grid;
-      gap: 8px;
-      color: var(--ink);
-      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
-    }
-
-    .works-tech-board strong {
-      color: var(--ink);
-    }
-
-    .works-tech-board span {
-      color: var(--ink-soft);
-      line-height: 1.55;
     }
 
     .works-grid {
@@ -296,8 +270,7 @@ const projectCards = projectEntries.map((project) => ({
       letter-spacing: 0;
     }
 
-    .works-card-summary,
-    .works-card-status p {
+    .works-card-summary {
       margin: 0;
       color: var(--ink-soft);
       line-height: 1.78;
@@ -326,6 +299,7 @@ const projectCards = projectEntries.map((project) => ({
       font-size: 0.78rem;
       font-weight: 700;
       text-decoration: none;
+      overflow-wrap: anywhere;
       transition: transform 180ms ease, box-shadow 180ms ease;
     }
 
@@ -353,16 +327,13 @@ const projectCards = projectEntries.map((project) => ({
     }
 
     @media (max-width: 1080px) {
-      .works-tech-board,
-.works-grid {
+      .works-grid {
         grid-template-columns: 1fr 1fr;
       }
     }
 
     @media (max-width: 720px) {
-
-      .works-tech-board,
-.works-grid {
+      .works-grid {
         grid-template-columns: 1fr;
       }
 

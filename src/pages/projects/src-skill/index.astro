@@ -1,0 +1,44 @@
+---
+import ProjectDetail from "@/themes/fuyukawa-kagari/components/ProjectDetail.astro";
+---
+
+<ProjectDetail
+  title="SRC Skill"
+  kicker="SRC RESEARCH TOOLKIT"
+  description="把 SRC 研究技能、规则、知识库、MCP 服务源码与部署脚本整理在同一个研究工作区。"
+  tags={["SRC Research", "Rules & Knowledge", "MCP"]}
+>
+  <section class="project-detail-section">
+    <h2>项目概览</h2>
+    <p>这个工作区围绕 src-research 技能构建：用技能入口和规则组织研究流程，以知识库沉淀方法，再通过 MCP 服务源码和部署脚本连接日常工具。项目文档覆盖 DSH、Claude Code 与 Codex 的使用方式。</p>
+  </section>
+
+  <section class="project-detail-grid" aria-label="项目组成">
+    <article class="project-detail-tile">
+      <strong>研究技能与规则</strong>
+      <p>集中整理技能入口、适用规则和可持续维护的研究知识库。</p>
+    </article>
+    <article class="project-detail-tile">
+      <strong>MCP 服务源码</strong>
+      <p>收纳资产搜索相关的 provider 服务源码，并与统一 recon-mcp Gateway 协作。</p>
+    </article>
+    <article class="project-detail-tile">
+      <strong>平台部署脚本</strong>
+      <p>为不同编码助手整理配置说明与部署工具，让同一套研究资料更容易复用。</p>
+    </article>
+  </section>
+
+  <section class="project-detail-section">
+    <h2>目录速览</h2>
+    <pre><code>skills/skill/   技能入口与知识库
+rules/          研究规则
+mcp-servers/    provider 服务源码
+scripts/        平台部署脚本</code></pre>
+  </section>
+
+  <section class="project-detail-section">
+    <h2>项目文档</h2>
+    <p>阅读项目说明、部署记录与目录分析。</p>
+    <a class="project-detail-doc-link" href="/projects/src-skill/docs/">浏览 3 份主文档</a>
+  </section>
+</ProjectDetail>

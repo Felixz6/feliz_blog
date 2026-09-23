@@ -1,0 +1,79 @@
+---
+import { getCollection, render } from "astro:content";
+import { Icon } from "astro-icon/components";
+import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const allDocs = await getCollection("projectDocs");
+  return allDocs.map((document) => ({
+    params: { project: document.data.project, slug: document.data.routeSlug },
+    props: {
+      document,
+      documents: allDocs
+        .filter((item) => item.data.project === document.data.project)
+        .sort((a, b) => a.data.order - b.data.order)
+    }
+  }));
+}
+
+const { document, documents } = Astro.props;
+const { Content, headings } = await render(document);
+const projectName = document.data.project === "src-skill" ? "SRC Skill" : "Recon MCP";
+const documentIndex = documents.findIndex((item) => item.id === document.id);
+const previousDocument = documents[documentIndex - 1];
+const nextDocument = documents[documentIndex + 1];
+const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+---
+
+<BaseLayout title={`${document.data.title} | ${projectName}`} description={document.data.description} isArticlePage>
+  <div class="article-shell project-doc-shell">
+    <article class="article" data-pagefind-body>
+      <a class="back-link" href={`/projects/${document.data.project}/docs/`}>
+        <Icon name="tabler:arrow-left" aria-hidden="true" />回到文档目录
+      </a>
+      <header class="article-header project-doc-header">
+        <div class="meta-row">
+          <span>{projectName} / PROJECT DOCS</span>
+          <span>{String(document.data.order).padStart(2, "0")} / {String(documents.length).padStart(2, "0")}</span>
+        </div>
+        {headings[0]?.depth !== 1 && <h1>{document.data.title}</h1>}
+        <p>{document.data.description}</p>
+      </header>
+      <div class="prose"><Content /></div>
+      <nav class="project-doc-pager" aria-label="项目文档导航">
+        {previousDocument ? (
+          <a href={`/projects/${document.data.project}/docs/${previousDocument.data.routeSlug}/`}>
+            <span>上一篇</span><strong>{previousDocument.data.title}</strong>
+          </a>
+        ) : <span></span>}
+        {nextDocument ? (
+          <a class="project-doc-pager-next" href={`/projects/${document.data.project}/docs/${nextDocument.data.routeSlug}/`}>
+            <span>下一篇</span><strong>{nextDocument.data.title}</strong>
+          </a>
+        ) : <a class="project-doc-pager-next" href={`/projects/${document.data.project}/`}>
+          <span>已读完</span><strong>返回项目介绍</strong>
+        </a>}
+      </nav>
+    </article>
+    {tocHeadings.length > 0 && (
+      <aside class="article-toc project-doc-toc" aria-label="文章导航">
+        <p>本文目录</p>
+        <nav>{tocHeadings.map((heading) => <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>{heading.text}</a>)}</nav>
+      </aside>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  body[data-fuyukawa] .article-shell.project-doc-shell { grid-template-columns: minmax(0, 820px) 220px; }
+  .project-doc-header .meta-row { display: flex; justify-content: space-between; gap: 16px; color: var(--accent); font: 700 .75rem/1.5 ui-monospace, monospace; letter-spacing: .06em; }
+  .project-doc-header h1 { margin-top: 15px; color: var(--ink); font-size: 2.25rem; line-height: 1.5; }
+  .project-doc-pager { display: flex; justify-content: space-between; gap: 18px; margin-top: 54px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .project-doc-pager a { display: grid; gap: 6px; max-width: 48%; color: var(--ink); text-decoration: none; }
+  .project-doc-pager a:hover strong { color: var(--accent); }
+  .project-doc-pager span { color: var(--ink-soft); font-size: .75rem; }
+  .project-doc-pager strong { line-height: 1.55; }
+  .project-doc-pager .project-doc-pager-next { margin-left: auto; text-align: right; }
+  @media (max-width: 900px) { body[data-fuyukawa] .article-shell.project-doc-shell { grid-template-columns: 1fr; gap: 20px; } .project-doc-toc { display: none; } }
+  @media (max-width: 680px) { .project-doc-header .meta-row { flex-wrap: wrap; } .project-doc-header h1 { font-size: 1.75rem; } }
+</style>

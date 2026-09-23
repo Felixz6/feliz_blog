@@ -85,6 +85,13 @@ const pagefindIntegration = () => ({
 
 export default defineConfig({
   site: "https://felizx.com",
+  redirects: {
+    "/projects/clown-src-6k-skill/": "/projects/src-skill/",
+    "/projects/clown-src-6k-skill/docs/": "/projects/src-skill/docs/",
+    "/projects/clown-src-6k-skill/docs/overview/": "/projects/src-skill/docs/overview/",
+    "/projects/clown-src-6k-skill/docs/structure/": "/projects/src-skill/docs/structure/",
+    "/projects/clown-src-6k-skill/docs/deployment/": "/projects/src-skill/docs/deployment/"
+  },
   output: "static",
   prefetch: {
     prefetchAll: false,
