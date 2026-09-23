@@ -122,6 +122,95 @@ img {
   border-radius: inherit;
 }
 
+.navigation-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1000;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.navigation-progress[data-state="loading"],
+.navigation-progress[data-state="prepared"],
+.navigation-progress[data-state="complete"] {
+  opacity: 1;
+}
+
+.navigation-progress-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(90deg, #f3a4bd 0%, #f8c1d1 66%, #f4a8c1 100%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.25, 1);
+}
+
+.navigation-progress[data-state="loading"] .navigation-progress-fill {
+  transform: scaleX(0.8);
+}
+
+.navigation-progress[data-state="prepared"] .navigation-progress-fill {
+  transform: scaleX(0.84);
+}
+
+.navigation-progress[data-state="complete"] .navigation-progress-fill {
+  transform: scaleX(1);
+}
+
+.navigation-progress[data-state="complete"] {
+  animation: navigation-progress-fade-out 100ms ease-out 60ms forwards;
+  transition: none;
+}
+
+.navigation-progress[data-state="complete"] .navigation-progress-fill {
+  animation: navigation-progress-finish 60ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+  transition: none;
+}
+
+@keyframes navigation-progress-finish {
+  from { transform: scaleX(0.84); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes navigation-progress-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+body[data-fuyukawa] #page-content {
+  transition: opacity 110ms ease-out, transform 110ms ease-out;
+}
+
+body[data-fuyukawa][data-navigating="true"] #page-content {
+  opacity: 0.86;
+  transform: translateY(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-fuyukawa] #page-content {
+    transition: none;
+  }
+
+  body[data-fuyukawa][data-navigating="true"] #page-content {
+    opacity: 1;
+    transform: none;
+  }
+
+  .navigation-progress,
+  .navigation-progress-fill {
+    transition-duration: 1ms;
+  }
+
+  .navigation-progress[data-state="complete"],
+  .navigation-progress[data-state="complete"] .navigation-progress-fill {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
 .toy-dock {
   position: fixed;
   top: 92px;

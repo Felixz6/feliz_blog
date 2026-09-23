@@ -103,6 +103,9 @@ const themedNotFoundRedirectScript = `(() => {
         <div class="scroll-progress-fill"></div>
       </div>
     </div>
+    <div class="navigation-progress" data-navigation-progress aria-hidden="true">
+      <div class="navigation-progress-fill" data-navigation-progress-fill></div>
+    </div>
     <aside class="toy-dock" aria-label="Music controls" transition:persist="yuimi-toy-dock">
       <button class="toy-dock-handle" type="button" aria-label="打开音乐工具" title="音乐播放器" aria-expanded="false" aria-controls="toy-dock-panel">
         <Icon name="tabler:player-play" aria-hidden="true" />
@@ -213,6 +216,10 @@ const themedNotFoundRedirectScript = `(() => {
     <MangaRuntime />
 
     <script>
+      import { installNavigationFeedback } from "../lib/navigation-feedback.mjs";
+
+      installNavigationFeedback(document, window);
+
       let scrollProgressFrame = 0;
 
       const updateScrollProgress = () => {
