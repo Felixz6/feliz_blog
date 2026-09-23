@@ -1,9 +1,12 @@
 const PROGRESS_SELECTOR = "[data-navigation-progress]";
 const CONTENT_SELECTOR = "#page-content";
+const PROGRESS_DELAY = 100;
 
 export function installNavigationFeedback(doc, win) {
   let generation = 0;
   let activeGeneration = null;
+  let progressTimer = null;
+  let progressWasShown = false;
   let contentAnimation = null;
 
   const progressFor = (root) => root?.querySelector(PROGRESS_SELECTOR);
@@ -13,20 +16,35 @@ export function installNavigationFeedback(doc, win) {
     if (state) progress.dataset.state = state;
     else delete progress.dataset.state;
   };
+  const cancelProgressTimer = () => {
+    if (progressTimer === null) return;
+    win.clearTimeout(progressTimer);
+    progressTimer = null;
+  };
   const clearGeneration = (id) => {
     if (activeGeneration !== id) return;
+    cancelProgressTimer();
     activeGeneration = null;
+    progressWasShown = false;
     doc.body?.removeAttribute("data-navigating");
     setProgressState(doc);
   };
 
   doc.addEventListener("astro:before-preparation", (event) => {
+    cancelProgressTimer();
     contentAnimation?.cancel();
     contentAnimation = null;
     const id = ++generation;
     activeGeneration = id;
+    progressWasShown = false;
     doc.body?.setAttribute("data-navigating", "true");
-    setProgressState(doc, "loading");
+    setProgressState(doc);
+    progressTimer = win.setTimeout(() => {
+      if (activeGeneration !== id) return;
+      progressTimer = null;
+      progressWasShown = true;
+      setProgressState(doc, "loading");
+    }, PROGRESS_DELAY);
 
     event.signal?.addEventListener("abort", () => clearGeneration(id), { once: true });
 
@@ -50,16 +68,20 @@ export function installNavigationFeedback(doc, win) {
   });
 
   doc.addEventListener("astro:after-preparation", () => {
-    if (activeGeneration !== null) setProgressState(doc, "prepared");
+    if (activeGeneration === null) return;
+    cancelProgressTimer();
+    if (progressWasShown) setProgressState(doc, "prepared");
   });
 
   doc.addEventListener("astro:before-swap", (event) => {
     if (activeGeneration === null) return;
+    cancelProgressTimer();
     event.newDocument?.body?.setAttribute("data-navigating", "true");
-    setProgressState(event.newDocument, "prepared");
+    setProgressState(event.newDocument, progressWasShown ? "prepared" : undefined);
   });
 
   doc.addEventListener("astro:after-swap", () => {
+    cancelProgressTimer();
     if (activeGeneration === null || win.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const content = doc.querySelector(CONTENT_SELECTOR);
     if (typeof content?.animate !== "function") return;
@@ -88,9 +110,11 @@ export function installNavigationFeedback(doc, win) {
 
   doc.addEventListener("astro:page-load", () => {
     if (activeGeneration === null) return;
+    cancelProgressTimer();
     activeGeneration = null;
     doc.body?.removeAttribute("data-navigating");
-    setProgressState(doc, "complete");
+    setProgressState(doc, progressWasShown ? "complete" : undefined);
+    progressWasShown = false;
   });
 
   doc.addEventListener("animationend", (event) => {
@@ -106,6 +130,8 @@ export function installNavigationFeedback(doc, win) {
     contentAnimation = null;
     generation += 1;
     activeGeneration = null;
+    cancelProgressTimer();
+    progressWasShown = false;
     doc.body?.removeAttribute("data-navigating");
     setProgressState(doc);
   });
