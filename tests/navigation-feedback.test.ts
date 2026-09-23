@@ -89,9 +89,30 @@ function makeDocument() {
 }
 
 function makeWindow(reducedMotion = false) {
+  let now = 0;
+  let nextTimer = 0;
+  const timers = new Map();
   return {
     addEventListener() {},
-    matchMedia: () => ({ matches: reducedMotion })
+    matchMedia: () => ({ matches: reducedMotion }),
+    setTimeout(callback, delay) {
+      const id = ++nextTimer;
+      timers.set(id, { callback, dueAt: now + delay });
+      return id;
+    },
+    clearTimeout(id) { timers.delete(id); },
+    advance(milliseconds) {
+      now += milliseconds;
+      while (true) {
+        const due = [...timers.entries()]
+          .filter(([, timer]) => timer.dueAt <= now)
+          .sort((a, b) => a[1].dueAt - b[1].dueAt)[0];
+        if (!due) return;
+        timers.delete(due[0]);
+        due[1].callback();
+      }
+    },
+    get pendingTimerCount() { return timers.size; }
   };
 }
 
@@ -101,11 +122,14 @@ function preparationEvent({ signal = new AbortController().signal, loader = asyn
 
 test("Astro lifecycle paints immediate feedback, completes progress, and fades the swapped main only", async () => {
   const doc = makeDocument();
-  installNavigationFeedback(doc, makeWindow());
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
 
   const start = preparationEvent();
   doc.dispatch("astro:before-preparation", start);
   assert.equal(doc.body.dataset.navigating, "true");
+  assert.equal(doc.page.progress.dataset.state, undefined);
+  win.advance(100);
   assert.equal(doc.page.progress.dataset.state, "loading");
   await start.loader();
 
@@ -136,6 +160,7 @@ test("Astro lifecycle paints immediate feedback, completes progress, and fades t
 
   const back = preparationEvent({ type: "traverse" });
   doc.dispatch("astro:before-preparation", back);
+  win.advance(100);
   assert.equal(doc.page.progress.dataset.state, "loading");
   assert.equal(doc.body.dataset.navigating, "true");
 });
@@ -165,7 +190,8 @@ test("aborted, rejected, and prevented preparations clear the active loading sta
 
 test("a late abort from an older rapid click cannot clear the newer navigation", async () => {
   const doc = makeDocument();
-  installNavigationFeedback(doc, makeWindow());
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
 
   const oldController = new AbortController();
   let releaseOldLoader;
@@ -179,6 +205,7 @@ test("a late abort from an older rapid click cannot clear the newer navigation",
   oldController.abort();
   releaseOldLoader();
   await oldLoader;
+  win.advance(100);
   assert.equal(doc.body.dataset.navigating, "true");
   assert.equal(doc.page.progress.dataset.state, "loading");
 
@@ -189,8 +216,10 @@ test("a late abort from an older rapid click cannot clear the newer navigation",
 
 test("a new navigation cancels a finished-page animation before dimming the outgoing main", () => {
   const doc = makeDocument();
-  installNavigationFeedback(doc, makeWindow());
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
   doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(100);
 
   const incoming = makePage();
   doc.dispatch("astro:before-swap", { newDocument: incoming });
@@ -200,6 +229,7 @@ test("a new navigation cancels a finished-page animation before dimming the outg
   assert.equal(oldContentAnimation.cancelled, false);
 
   doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(100);
   assert.equal(oldContentAnimation.cancelled, true);
   assert.equal(doc.body.dataset.navigating, "true");
   assert.equal(doc.page.progress.dataset.state, "loading");
@@ -207,8 +237,10 @@ test("a new navigation cancels a finished-page animation before dimming the outg
 
 test("reduced motion skips content translation while retaining the lightweight progress indicator", () => {
   const doc = makeDocument();
-  installNavigationFeedback(doc, makeWindow(true));
+  const win = makeWindow(true);
+  installNavigationFeedback(doc, win);
   doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(100);
   const incoming = makePage();
   doc.dispatch("astro:before-swap", { newDocument: incoming });
   doc.swapTo(incoming);
@@ -229,4 +261,99 @@ test("reduced motion skips content translation while retaining the lightweight p
   assert.match(css.toString(), /prefers-reduced-motion: reduce[^]*?opacity: 1;[^]*?transform: none/);
   assert.match(layout, /data-navigation-progress/);
   assert.match(layout, /installNavigationFeedback\(document, window\)/);
+});
+
+test("a 50ms navigation keeps immediate main feedback but never shows the progress bar", () => {
+  const doc = makeDocument();
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
+  doc.dispatch("astro:before-preparation", preparationEvent());
+
+  assert.equal(doc.body.dataset.navigating, "true");
+  win.advance(50);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+  doc.dispatch("astro:after-preparation");
+  assert.equal(win.pendingTimerCount, 0);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+
+  const incoming = makePage();
+  doc.dispatch("astro:before-swap", { newDocument: incoming });
+  doc.swapTo(incoming);
+  doc.dispatch("astro:after-swap");
+  doc.dispatch("astro:page-load");
+  assert.equal(incoming.progress.dataset.state, undefined);
+  assert.equal(incoming.body.dataset.navigating, undefined);
+});
+
+test("a 150ms preparation shows progress and completes it through Astro page-load", () => {
+  const doc = makeDocument();
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(150);
+  assert.equal(doc.page.progress.dataset.state, "loading");
+
+  doc.dispatch("astro:after-preparation");
+  assert.equal(doc.page.progress.dataset.state, "prepared");
+  const incoming = makePage();
+  doc.dispatch("astro:before-swap", { newDocument: incoming });
+  doc.swapTo(incoming);
+  doc.dispatch("astro:after-swap");
+  doc.dispatch("astro:page-load");
+  assert.equal(incoming.progress.dataset.state, "complete");
+});
+
+test("cancelling before the threshold clears the pending progress timer", () => {
+  const doc = makeDocument();
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
+  const controller = new AbortController();
+  doc.dispatch("astro:before-preparation", preparationEvent({ signal: controller.signal }));
+  win.advance(50);
+  assert.equal(win.pendingTimerCount, 1);
+
+  controller.abort();
+  assert.equal(win.pendingTimerCount, 0);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+  win.advance(150);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+  assert.equal(doc.body.dataset.navigating, undefined);
+});
+
+test("consecutive navigations replace the old threshold timer without stale effects", () => {
+  const doc = makeDocument();
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
+  const oldController = new AbortController();
+  doc.dispatch("astro:before-preparation", preparationEvent({ signal: oldController.signal }));
+  win.advance(50);
+
+  const currentController = new AbortController();
+  doc.dispatch("astro:before-preparation", preparationEvent({ signal: currentController.signal }));
+  oldController.abort();
+  assert.equal(win.pendingTimerCount, 1);
+  win.advance(50);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+  win.advance(50);
+  assert.equal(doc.page.progress.dataset.state, "loading");
+  assert.equal(doc.body.dataset.navigating, "true");
+
+  currentController.abort();
+  assert.equal(win.pendingTimerCount, 0);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+});
+
+test("page-load before 100ms cancels the timer without flashing 100 percent", () => {
+  const doc = makeDocument();
+  const win = makeWindow();
+  installNavigationFeedback(doc, win);
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(50);
+  doc.dispatch("astro:after-swap");
+  doc.dispatch("astro:page-load");
+
+  assert.equal(win.pendingTimerCount, 0);
+  assert.equal(doc.page.progress.dataset.state, undefined);
+  win.advance(150);
+  assert.equal(doc.page.progress.dataset.state, undefined);
 });
