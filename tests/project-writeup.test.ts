@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { projectEntries } from "../src/core/data/projects.ts";
 
 test("WHUCTF write-up appears in the CTF projects and links to its blog post", () => {
@@ -14,4 +14,22 @@ test("WHUCTF write-up appears in the CTF projects and links to its blog post", (
   const page = readFileSync(new URL("../src/themes/fuyukawa-kagari/pages/ProjectsPage.astro", import.meta.url), "utf8");
   assert.match(page, /href=\{project\.href\}/);
   assert.match(page, /阅读完整 Writeup/);
+});
+
+test("CTF Notes project is published and exposes its eight Web notes", () => {
+  const notesProject = projectEntries.find((project) => project.id === "ctf-notes");
+
+  assert.ok(notesProject);
+  assert.equal(notesProject.line, "ctf");
+  assert.equal(notesProject.href, "/projects/ctf-notes/");
+  assert.equal(notesProject.status, "已发布，8 篇 Web CTF 笔记");
+
+  const noteFiles = readdirSync(new URL("../src/content/ctf-notes/", import.meta.url))
+    .filter((file) => file.endsWith(".md"));
+  assert.equal(noteFiles.length, 8);
+
+  const indexPage = readFileSync(new URL("../src/pages/projects/ctf-notes/index.astro", import.meta.url), "utf8");
+  const detailPage = readFileSync(new URL("../src/pages/projects/ctf-notes/[slug].astro", import.meta.url), "utf8");
+  assert.match(indexPage, /ctfNotes/);
+  assert.match(detailPage, /render\(note\)/);
 });
