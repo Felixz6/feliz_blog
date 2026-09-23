@@ -8,8 +8,7 @@ import { site } from "@/lib/site";
 const techIcons = {
   "web-security": "tabler:shield-lock",
   ctf: "tabler:flag-3",
-  "open-source": "simple-icons:github",
-  ai: "tabler:sparkles"
+  "open-source": "simple-icons:github"
 } as const;
 const techLines = projectTechLines.map((item) => ({ ...item, icon: techIcons[item.key] }));
 const projectPresentation = {
@@ -20,8 +19,7 @@ const projectPresentation = {
   "open-source-eisland-lite": { icon: "simple-icons:github", accent: "mint" },
   "open-source-rime-sukura": { icon: "simple-icons:github", accent: "mint" },
   "open-source-adsdk-agent": { icon: "simple-icons:github", accent: "mint" },
-  "open-source-mobile-vscode": { icon: "simple-icons:github", accent: "mint" },
-  "ai-experiments": { icon: "tabler:sparkles", accent: "ink" }
+  "open-source-mobile-vscode": { icon: "simple-icons:github", accent: "mint" }
 } as const;
 const projectCards = projectEntries.map((project) => {
   const href = "href" in project ? project.href : undefined;

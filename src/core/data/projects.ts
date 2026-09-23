@@ -1,8 +1,7 @@
 export const projectTechLines = [
   { key: "web-security", label: "Web Security", note: "安全研究与分析" },
   { key: "ctf", label: "CTF", note: "题目与解题笔记" },
-  { key: "open-source", label: "Open Source", note: "开源项目记录" },
-  { key: "ai", label: "AI", note: "工具与工作流实验" }
+  { key: "open-source", label: "Open Source", note: "开源项目记录" }
 ] as const;
 
 export const projectEntries = [
@@ -86,14 +85,5 @@ export const projectEntries = [
     details: ["Android", "Python + C", "Local / Remote"],
     href: "https://github.com/Felixz6/MobileVSCode",
     linkLabel: "github.com/Felixz6/MobileVSCode"
-  },
-  {
-    id: "ai-experiments",
-    title: "AI Experiments",
-    type: "Experiments",
-    line: "ai",
-    status: "占位项目，待补充",
-    summary: "后续用于整理 AI 工具、模型与工作流实验。",
-    details: ["AI", "Workflow"]
   }
 ] as const;

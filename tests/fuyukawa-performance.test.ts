@@ -17,14 +17,13 @@ test("Fuyukawa has no Live2D widget or external loader and retains the music doc
   assert.match(layoutSource, /tabler:player-play/);
 });
 
-test("Fuyukawa bounds and defers location and weather requests", () => {
-  assert.match(homeSource, /const scheduleHomeWeather =/);
-  assert.match(homeSource, /locationCacheTtl = 1000 \* 60 \* 60 \* 12/);
-  assert.match(homeSource, /fetchWithTimeout\(weatherUrl, \{\}, 4500, signal\)/);
-  assert.match(homeSource, /requestJsonp\([^]*3500, signal/);
-  assert.match(homeSource, /performanceProfile === "full" && !constrainedNetwork/);
-  assert.match(homeSource, /connection\?\.saveData/);
-  assert.doesNotMatch(homeSource, /getPconlineIpLocation|getTencentNewsIpLocation/);
+test("homepage local signal uses only the date and time", () => {
+  assert.doesNotMatch(homeSource, /本地时间/);
+  assert.match(homeSource, /data-home-date/);
+  assert.match(homeSource, /data-home-time/);
+  assert.match(homeSource, /const homeDateFormatter = new Intl\.DateTimeFormat/);
+  assert.match(homeSource, /const homeTimeFormatter = new Intl\.DateTimeFormat/);
+  assert.doesNotMatch(homeSource, /data-home-weather|api\.open-meteo\.com|ipwho\.is|apis\.map\.qq\.com/);
 });
 
 test("Fuyukawa pauses the second-by-second clock while hidden", () => {
