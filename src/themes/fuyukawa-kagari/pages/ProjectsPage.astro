@@ -25,7 +25,8 @@ const projectPresentation = {
 const projectCards = projectEntries.map((project) => ({
   ...project,
   ...projectPresentation[project.id],
-  href: "href" in project ? project.href : undefined
+  href: "href" in project ? project.href : undefined,
+  linkLabel: "linkLabel" in project ? project.linkLabel : undefined
 }));
 
 ---
@@ -88,17 +89,13 @@ const projectCards = projectEntries.map((project) => ({
           </div>
           {project.href && (
             <a class="works-card-read" href={project.href}>
-              阅读完整 Writeup
+              {project.linkLabel ?? "阅读完整 Writeup"}
               <Icon name="tabler:arrow-right" aria-hidden="true" />
             </a>
           )}
-          <button type="button" class="works-card-toggle" data-card-toggle aria-expanded="false" aria-controls={`project-status-${project.id}`}>
-            <Icon name="tabler:chevron-down" aria-hidden="true" />
-            查看状态
-          </button>
-          <div class="works-card-panel" id={`project-status-${project.id}`} data-card-panel hidden>
+          <div class="works-card-status">
             <strong>{project.status}</strong>
-            <p>下一步会把相关笔记、截图或可玩的 demo 慢慢补到这里。</p>
+            {!project.href && <p>下一步会把相关笔记、截图或可玩的 demo 慢慢补到这里。</p>}
           </div>
           {index === 0 && <MangaArt image="kagari-thinking" class="works-card-companion" />}
         </article>
@@ -134,17 +131,6 @@ const projectCards = projectEntries.map((project) => ({
       });
     });
 
-    document.querySelectorAll("[data-card-toggle]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const card = button.closest(".works-card");
-        if (!card) return;
-
-        const isOpen = card.classList.toggle("is-open");
-        button.setAttribute("aria-expanded", String(isOpen));
-        const panel = card.querySelector("[data-card-panel]");
-        if (panel) panel.hidden = !isOpen;
-      });
-    });
     })();
   </script>
 
@@ -219,8 +205,7 @@ const projectCards = projectEntries.map((project) => ({
       flex-wrap: wrap;
     }
 
-    .works-filter button,
-.works-card-toggle {
+    .works-filter button {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -231,8 +216,7 @@ const projectCards = projectEntries.map((project) => ({
       transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
     }
 
-    .works-filter button:hover,
-    .works-card-toggle:hover {
+    .works-filter button:hover {
       transform: translateY(-2px);
       box-shadow: var(--paper-shadow);
     }
@@ -313,7 +297,7 @@ const projectCards = projectEntries.map((project) => ({
     }
 
     .works-card-summary,
-    .works-card-panel p {
+    .works-card-status p {
       margin: 0;
       color: var(--ink-soft);
       line-height: 1.78;
@@ -355,33 +339,17 @@ const projectCards = projectEntries.map((project) => ({
       height: 1.1em;
     }
 
-    .works-card-toggle {
-      justify-self: start;
+    .works-card-status {
+      display: grid;
+      gap: 6px;
+      align-self: end;
       margin-top: auto;
     }
 
-    .works-card-toggle svg {
-      transition: transform 180ms ease;
-    }
-
-    .works-card.is-open .works-card-toggle svg {
-      transform: rotate(180deg);
-    }
-
-    .works-card-panel {
-      display: grid;
-      grid-template-rows: 0fr;
-      opacity: 0;
-      transition: grid-template-rows 220ms ease, opacity 180ms ease;
-    }
-
-    .works-card-panel > * {
-      overflow: hidden;
-    }
-
-    .works-card.is-open .works-card-panel {
-      grid-template-rows: 1fr;
-      opacity: 1;
+    .works-card-status strong {
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 800;
     }
 
     @media (max-width: 1080px) {

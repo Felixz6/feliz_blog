@@ -21,9 +21,11 @@ export const projectEntries = [
     title: "CTF Notes",
     type: "Write-ups",
     line: "ctf",
-    status: "占位项目，待补充",
-    summary: "后续用于整理 CTF 练习、题目分析与解题笔记。",
-    details: ["CTF", "解题记录"]
+    status: "已发布，8 篇 Web CTF 笔记",
+    summary: "覆盖 SQL 注入、SSRF、SSTI、反序列化、文件上传与文件包含等常见题型。",
+    details: ["8 篇笔记", "Web CTF", "解题流程"],
+    href: "/projects/ctf-notes/",
+    linkLabel: "浏览 8 篇笔记"
   },
   {
     id: "whuctf-lapsa-writeup",

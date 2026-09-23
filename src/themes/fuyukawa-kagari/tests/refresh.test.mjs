@@ -85,12 +85,14 @@ test("all theme templates parse without errors", async () => {
   }
 });
 
-test("navigation, mobile article index and native project controls expose their state", () => {
+test("navigation, mobile article index and fixed project status expose their state", () => {
   assert.match(read("layouts/BaseLayout.astro"), /aria-current=/);
   assert.match(read("layouts/BaseLayout.astro"), /href="#page-content"/);
   assert.match(read("layouts/ArticleLayout.astro"), /<details class="article-mobile-toc"/);
-  assert.match(read("pages/ProjectsPage.astro"), /data-card-panel hidden/);
-  assert.match(read("pages/ProjectsPage.astro"), /aria-controls=/);
+  assert.match(read("pages/ProjectsPage.astro"), /class="works-card-status"/);
+  assert.match(read("pages/ProjectsPage.astro"), /\{project\.status\}/);
+  assert.doesNotMatch(read("pages/ProjectsPage.astro"), /相关内容已整理发布/);
+  assert.doesNotMatch(read("pages/ProjectsPage.astro"), /data-card-toggle|data-card-panel|查看状态/);
 });
 
 test("closed tool drawer hides its whole panel at every width", () => {
@@ -228,19 +230,15 @@ test("search failure renders a usable empty fallback", async () => {
   assert.doesNotMatch(fixture.output.innerHTML, /正在翻页/);
 });
 
-test("project filters and status disclosure update their accessible state on reentry", () => {
+test("project filters remain functional with status always visible", () => {
   const filters = [node({ filter: "all" }), node({ filter: "unity" })];
   const cards = [node({ projectLine: "unity" }), node({ projectLine: "astrbot" })];
   const lines = [node({ lineCard: "unity" }), node({ lineCard: "astrbot" })];
-  const panel = node();
-  const toggle = node();
-  toggle.closest = () => cards[0];
-  cards[0].querySelector = () => panel;
   const context = vm.createContext({
     document: {
       querySelector: () => ({ querySelectorAll: () => filters }),
       querySelectorAll: (selector) => ({
-        "[data-project-line]": cards, "[data-line-card]": lines, "[data-card-toggle]": [toggle]
+        "[data-project-line]": cards, "[data-line-card]": lines
       })[selector]
     }
   });
@@ -251,11 +249,6 @@ test("project filters and status disclosure update their accessible state on ree
   assert.equal(filters[0].attributes["aria-pressed"], "false");
   assert.equal(cards[0].classList.contains("is-dimmed"), false);
   assert.equal(cards[1].classList.contains("is-dimmed"), true);
-  toggle.events.get("click")();
-  assert.equal(toggle.attributes["aria-expanded"], "true");
-  assert.equal(panel.hidden, false);
-  toggle.events.get("click")();
-  assert.equal(panel.hidden, true);
   assert.doesNotThrow(() => vm.runInContext(script, context));
   filters[0].events.get("click")();
   assert.equal(cards[1].classList.contains("is-dimmed"), false);

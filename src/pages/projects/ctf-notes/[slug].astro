@@ -1,0 +1,56 @@
+---
+import { getCollection, render } from "astro:content";
+import { Icon } from "astro-icon/components";
+import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const notes = (await getCollection("ctfNotes")).sort((a, b) => a.data.order - b.data.order);
+  return notes.map((note) => ({ params: { slug: note.id }, props: { note } }));
+}
+
+const notes = (await getCollection("ctfNotes")).sort((a, b) => a.data.order - b.data.order);
+const { note } = Astro.props;
+const noteIndex = notes.findIndex((item) => item.id === note.id);
+const { Content, headings } = await render(note);
+const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const previousNote = notes[noteIndex - 1];
+const nextNote = notes[noteIndex + 1];
+---
+
+<BaseLayout title={`${note.data.title} | CTF Notes`} description={note.data.description} isArticlePage>
+  <div class="article-shell ctf-note-shell">
+    <article class="article" data-pagefind-body>
+      <a class="back-link" href="/projects/ctf-notes/"><Icon name="tabler:arrow-left" aria-hidden="true" />回到 CTF Notes</a>
+      <header class="article-header ctf-note-header">
+        <div class="meta-row"><span>CTF WEB NOTES</span><span>{String(noteIndex + 1).padStart(2, "0")} / {String(notes.length).padStart(2, "0")}</span></div>
+        {headings[0]?.depth !== 1 && <h1>{note.data.title}</h1>}
+        <p>{note.data.description}</p>
+      </header>
+      <div class="prose"><Content /></div>
+      <nav class="ctf-note-pager" aria-label="笔记导航">
+        {previousNote ? <a href={`/projects/ctf-notes/${previousNote.id}/`}><span>上一篇</span><strong>{previousNote.data.title}</strong></a> : <span></span>}
+        {nextNote ? <a class="ctf-note-pager-next" href={`/projects/ctf-notes/${nextNote.id}/`}><span>下一篇</span><strong>{nextNote.data.title}</strong></a> : <a class="ctf-note-pager-next" href="/projects/ctf-notes/"><span>已读完</span><strong>返回笔记列表</strong></a>}
+      </nav>
+    </article>
+    {tocHeadings.length > 0 && (
+      <aside class="article-toc ctf-note-toc" aria-label="文章导航">
+        <p>本文目录</p>
+        <nav>{tocHeadings.map((heading) => <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>{heading.text}</a>)}</nav>
+      </aside>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  body[data-fuyukawa] .article-shell.ctf-note-shell { grid-template-columns: minmax(0, 820px) 220px; }
+  .ctf-note-header .meta-row { display: flex; justify-content: space-between; gap: 16px; color: var(--accent); font: 700 .75rem/1.5 ui-monospace, monospace; letter-spacing: .06em; }
+  .ctf-note-header h1 { margin-top: 15px; color: var(--ink); font-size: 2.25rem; line-height: 1.5; }
+  .ctf-note-pager { display: flex; justify-content: space-between; gap: 18px; margin-top: 54px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .ctf-note-pager a { display: grid; gap: 6px; max-width: 48%; color: var(--ink); text-decoration: none; }
+  .ctf-note-pager a:hover strong { color: var(--accent); }
+  .ctf-note-pager span { color: var(--ink-soft); font-size: .75rem; }
+  .ctf-note-pager strong { line-height: 1.55; }
+  .ctf-note-pager .ctf-note-pager-next { margin-left: auto; text-align: right; }
+  @media (max-width: 900px) { body[data-fuyukawa] .article-shell.ctf-note-shell { grid-template-columns: 1fr; gap: 20px; } .ctf-note-toc { display: none; } }
+  @media (max-width: 680px) { .ctf-note-header h1 { font-size: 1.75rem; } }
+</style>

@@ -19,4 +19,13 @@ const blog = defineCollection({
   })
 });
 
-export const collections = { blog };
+const ctfNotes = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/ctf-notes" }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    order: z.number().int().positive()
+  })
+});
+
+export const collections = { blog, ctfNotes };
