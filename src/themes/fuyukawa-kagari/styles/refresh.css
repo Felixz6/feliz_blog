@@ -205,7 +205,6 @@ body[data-fuyukawa] .blog-search-heading .section-kicker { display: none; }
 
 /* Works: unframed sections, small colored identifiers and readable status rows. */
 body[data-fuyukawa] .works-filter button.is-active { background: #ebf4fc; border-color: #c8dfef; color: var(--accent); }
-body[data-fuyukawa] .works-tech-board article.is-highlighted { color: var(--accent); transform: none; box-shadow: none; }
 
 /* Personal shelves: original illustrations remain unmodified and inspectable. */
 

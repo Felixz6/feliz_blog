@@ -73,17 +73,12 @@ body[data-fuyukawa] .game-actions a { display: inline-flex; align-items: center;
 body[data-fuyukawa] .game-actions a:first-child { background: var(--game-accent); border-color: var(--game-accent); color: white; }
 body[data-fuyukawa] .game-actions svg { width: 17px; height: 17px; }
 body[data-fuyukawa] .game-note { width: min(1144px, calc(100% - 80px)); padding: 24px 0 64px; background: none; border: 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: .82rem; }
-body[data-fuyukawa] .works-shell { width: min(1144px, calc(100% - 80px)); padding: 100px 0 72px; gap: 30px; }
+body[data-fuyukawa] .works-shell { width: min(1600px, calc(100% - 80px)); padding: 100px 0 72px; gap: 30px; }
 body[data-fuyukawa] .works-hero { grid-template-columns: minmax(0, 1fr) 150px; }
 body[data-fuyukawa] .works-hero-orbit { width: 110px; height: 110px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: none; border: 0; border-radius: 0; }
 body[data-fuyukawa] .works-hero-orbit span { position: static; inset: auto; width: 50px; height: 50px; transform: none; background: white; border: 1px solid var(--line); color: var(--accent); box-shadow: none; border-radius: 6px; }
 body[data-fuyukawa] .works-filter { padding: 0 0 18px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; gap: 8px; }
 body[data-fuyukawa] .works-filter button { min-height: 42px; border: 1px solid transparent; background: transparent; box-shadow: none; border-radius: 6px; font-weight: 600; font-size: .82rem; }
-body[data-fuyukawa] .works-tech-board { padding: 0; border: 0; background: none; border-radius: 0; box-shadow: none; backdrop-filter: none; gap: 20px; }
-body[data-fuyukawa] .works-tech-board article { padding: 0 16px 0 0; min-height: 120px; border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; background: none; }
-body[data-fuyukawa] .works-tech-board article:last-child { border-right: 0; }
-body[data-fuyukawa] .works-tech-board strong { font-size: .95rem; }
-body[data-fuyukawa] .works-tech-board span { font-size: .8rem; }
 body[data-fuyukawa] .works-grid { gap: 22px; }
 body[data-fuyukawa] .works-card { padding: 26px; min-height: 330px; gap: 18px; background: white; border: 1px solid var(--line); border-top: 3px solid var(--blue); box-shadow: 3px 4px 0 #eaf1f8; backdrop-filter: none; }
 body[data-fuyukawa] .works-card--pink { border-top-color: var(--pink); }
@@ -202,7 +197,6 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .works-shell { padding-top: 84px; }
   body[data-fuyukawa] .works-hero { grid-template-columns: 1fr; }
   body[data-fuyukawa] .works-hero-orbit { display: none; }
-  body[data-fuyukawa] .works-tech-board { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   body[data-fuyukawa] .works-card { padding: 20px; }
   body[data-fuyukawa] .about-profile-shell { padding-top: 104px; grid-template-columns: 1fr; gap: 40px; }
   body[data-fuyukawa] .about-sidebar { position: static; grid-template-columns: 164px minmax(0, 1fr); gap: 22px; align-items: center; }
@@ -229,7 +223,6 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .post-cover-frame { width: 100%; }
   body[data-fuyukawa] .game-room,
   body[data-fuyukawa] .works-grid { grid-template-columns: 1fr; }
-  body[data-fuyukawa] .works-tech-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body[data-fuyukawa] .about-sidebar { grid-template-columns: 1fr; text-align: center; }
   body[data-fuyukawa] .about-link-row { justify-content: center; }
   body[data-fuyukawa] .about-status-card { text-align: left; }

@@ -1,0 +1,79 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
+import { site } from "@/lib/site";
+
+export async function getStaticPaths() {
+  const projectLabels = {
+    "src-skill": "SRC Skill",
+    "recon-mcp": "Recon MCP"
+  } as const;
+  const allDocs = await getCollection("projectDocs");
+  return Object.keys(projectLabels).map((project) => {
+    const key = project as keyof typeof projectLabels;
+    const documents = allDocs
+      .filter((document) => document.data.project === key)
+      .sort((a, b) => a.data.order - b.data.order);
+    return {
+      params: { project: key },
+      props: { project: key, projectName: projectLabels[key], documents }
+    };
+  });
+}
+
+const { project, projectName, documents } = Astro.props;
+---
+
+<BaseLayout title={`${projectName} 文档 | ${site.name}`} description={`${projectName} 的项目主文档。`}>
+  <main class="project-doc-index">
+    <a class="project-doc-back" href={`/projects/${project}/`}>
+      <Icon name="tabler:arrow-left" aria-hidden="true" />回到项目介绍
+    </a>
+    <header class="project-doc-hero">
+      <p class="section-kicker">PROJECT DOCUMENTS</p>
+      <h1>{projectName}<span>文档</span></h1>
+      <p>浏览该项目的主文档。选择一篇即可在网页中阅读完整 Markdown 内容。</p>
+      <span class="project-doc-count"><strong>{String(documents.length).padStart(2, "0")}</strong> 篇文档</span>
+    </header>
+    <section class="project-doc-list" aria-label={`${projectName} 主文档`}>
+      {documents.map((document, index) => (
+        <a class="project-doc-card" href={`/projects/${project}/docs/${document.data.routeSlug}/`}>
+          <span class="project-doc-number">{String(index + 1).padStart(2, "0")}</span>
+          <span class="project-doc-copy">
+            <strong>{document.data.title}</strong>
+            <span>{document.data.description}</span>
+          </span>
+          <Icon name="tabler:arrow-right" aria-hidden="true" />
+        </a>
+      ))}
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .project-doc-index { width: min(1100px, calc(100% - 40px)); margin: 112px auto 88px; }
+  .project-doc-back { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 30px; color: var(--accent); font-size: .88rem; font-weight: 720; text-decoration: none; }
+  .project-doc-back svg, .project-doc-card > svg { width: 19px; height: 19px; }
+  .project-doc-hero { position: relative; display: grid; gap: 14px; padding: 38px 42px; border: 1px solid var(--line); border-top: 3px solid #8dc3df; background: rgba(255,255,255,.84); box-shadow: 4px 5px 0 #eaf1f8; }
+  .project-doc-hero .section-kicker { margin: 0; color: var(--accent); font: 700 .75rem/1.4 ui-monospace, monospace; letter-spacing: .12em; }
+  .project-doc-hero h1 { margin: 0; color: var(--ink); font-size: clamp(2rem, 5vw, 3rem); }
+  .project-doc-hero h1 span { margin-left: 12px; color: var(--ink-soft); font-size: .48em; }
+  .project-doc-hero > p:not(.section-kicker) { max-width: 720px; margin: 0; color: var(--ink-soft); line-height: 1.8; }
+  .project-doc-count { position: absolute; top: 38px; right: 42px; display: grid; justify-items: end; color: var(--ink-soft); font-size: .76rem; }
+  .project-doc-count strong { color: #95abc3; font: 500 1.9rem/1 ui-monospace, monospace; }
+  .project-doc-list { display: grid; gap: 14px; margin-top: 24px; }
+  .project-doc-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) 22px; align-items: start; gap: 16px; min-height: 120px; padding: 22px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.86); box-shadow: 3px 4px 0 #edf3f8; color: inherit; text-decoration: none; transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
+  .project-doc-card:hover { transform: translateY(-3px); border-color: #acd0e4; box-shadow: 5px 7px 0 #edf3f8; }
+  .project-doc-number { color: #9cacc1; font: 600 1rem/1.5 ui-monospace, monospace; }
+  .project-doc-copy { display: grid; gap: 9px; }
+  .project-doc-copy strong { color: var(--ink); font-size: 1.04rem; }
+  .project-doc-copy span { color: var(--ink-soft); font-size: .88rem; line-height: 1.7; }
+  .project-doc-card > svg { margin-top: 3px; color: var(--accent); }
+  @media (max-width: 680px) {
+    .project-doc-index { width: min(100% - 28px, 560px); margin-top: 92px; }
+    .project-doc-hero { padding: 28px 24px; }
+    .project-doc-count { top: 29px; right: 24px; }
+    .project-doc-card { grid-template-columns: 30px minmax(0, 1fr) 20px; gap: 12px; padding: 18px; }
+  }
+</style>

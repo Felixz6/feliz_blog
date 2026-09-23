@@ -1,0 +1,25 @@
+---
+import { getCollection, render } from "astro:content";
+import { ArticlePage } from "@/themes/fuyukawa-kagari";
+
+export async function getStaticPaths() {
+  const notes = await getCollection("riscVNotes");
+  return notes.map((note) => ({
+    params: { slug: note.data.slug ?? note.id },
+    props: { note }
+  }));
+}
+
+const { note } = Astro.props;
+const { Content, headings } = await render(note);
+---
+
+<ArticlePage
+  frontmatter={note.data}
+  headings={headings}
+  archiveHref="/blog/risc-v-xv6-learning-notes/"
+  archiveLabel="回到学习目录"
+  footerLabel="返回章节选择"
+>
+  <Content />
+</ArticlePage>

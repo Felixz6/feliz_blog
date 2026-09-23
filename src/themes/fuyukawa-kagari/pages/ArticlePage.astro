@@ -1,10 +1,10 @@
 ---
 import ArticleLayout from "../layouts/ArticleLayout.astro";
 
-const { frontmatter, headings } = Astro.props;
+const { frontmatter, headings, archiveHref, archiveLabel, footerLabel } = Astro.props;
 ---
 
-<ArticleLayout frontmatter={frontmatter} headings={headings}>
+<ArticleLayout frontmatter={frontmatter} headings={headings} archiveHref={archiveHref} archiveLabel={archiveLabel} footerLabel={footerLabel}>
   <slot />
 </ArticleLayout>
 
