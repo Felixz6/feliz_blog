@@ -139,22 +139,28 @@ test("Home title has dark letter interiors and a white stroke, with no artwork c
   assert.ok(1.05 / (luminance + .05) > 7);
 });
 
-test("sakura uses small notched artwork and compositor-only nested animations", async () => {
-  assert.match(read("components/SakuraRain.astro"), /length: 16/);
-  assert.match(read("components/SakuraRain.astro"), /<i><\/i>/);
+test("sakura uses a single accessible canvas with tiered SVG petals", async () => {
+  assert.match(read("components/SakuraRain.astro"), /data-sakura-rain/);
+  assert.match(read("components/SakuraRain.astro"), /<canvas data-sakura-canvas/);
   assert.match(layout, /<SakuraRain \/>/);
-  assert.doesNotMatch(layout, /length: 34/);
-  for (const name of ["fuyukawa-petal-fall", "fuyukawa-petal-flutter"]) {
-    const rule = css.nodes.find((node) => node.type === "atrule" && node.name === "keyframes" && node.params === name);
-    assert.ok(rule);
-    rule.walkDecls((decl) => assert.ok(["opacity", "transform"].includes(decl.prop), decl.prop));
-  }
+  const runtime = read("lib/sakura-runtime.mjs");
+  const performance = read("lib/sakura-performance.mjs");
+  assert.match(layout, /createSakuraController/);
+  assert.match(layout, /astro:before-swap.*sakuraController\.destroy/);
+  assert.match(layout, /astro:page-load[\s\S]*sakuraController\.mount/);
+  assert.match(layout, /import\.meta\.env\.DEV \|\| new URLSearchParams\(window\.location\.search\)\.has\("debug-sakura"\)/);
+  assert.match(runtime, /getDebugTargets: \(\) => mounted \?/);
+  assert.doesNotMatch(runtime, /windowRef\.__yuimiSakuraSession/);
+  assert.match(runtime, /requestIdleCallback/);
+  assert.match(runtime, /cancelAnimationFrame/);
+  assert.match(runtime, /visibilitychange/);
+  for (const count of [16, 10, 4, 0]) assert.ok(performance.includes(`particles: ${count}`));
+  assert.match(performance, /maxDpr: 1\.5/);
+  assert.match(performance, /createFrameTimeMonitor/);
+  assert.doesNotMatch(read("styles/theme.css"), /\.sakura-rain span/);
   assert.match(css.toString(), /data-yuimi-visibility="hidden"[^]*?animation-play-state: paused/);
-  assert.match(css.toString(), /prefers-reduced-motion: reduce[^]*?\.sakura-rain \{ display: none/);
-  assert.match(css.toString(), /data-yuimi-performance="lite"[^]*?\.sakura-rain \{ display: none/);
   assert.equal(declarations(css, "body[data-fuyukawa] .sakura-rain").opacity, "1");
-  assert.equal(declarations(css, "body[data-fuyukawa] .sakura-rain span").height, "var(--sakura-size)");
-  assert.match(read("components/SakuraRain.astro"), /opacity: \(0.86/);
+  assert.equal(declarations(css, "body[data-fuyukawa] .sakura-rain canvas").height, "100%");
   const image = await sharp(fileURLToPath(new URL("../../../../public/themes/fuyukawa-kagari/assets/sakura-petal.svg", import.meta.url)))
     .resize(96, 128).ensureAlpha().raw().toBuffer();
   let visible = 0, transparent = 0;
@@ -282,7 +288,7 @@ test("music manifest and audio wait for music-dock intent, then playback loads o
       ] };
     }
   });
-  vm.runInContext(section("let toyDockCloseTimer", "const sakuraStateKey ="), context);
+  vm.runInContext(section("let toyDockCloseTimer", "const getContextMenu ="), context);
   const player = win.__yuimiRadio;
 
   assert.equal(player.audio.preload, "none");

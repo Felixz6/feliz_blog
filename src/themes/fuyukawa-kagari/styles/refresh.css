@@ -292,33 +292,7 @@ body[data-fuyukawa] .custom-context-menu button:hover { background: #eaf5ef; box
 body[data-fuyukawa] .context-theme-group button[aria-pressed="true"] { color: var(--accent); background: #eaf5ef; }
 body[data-fuyukawa] .theme-quick-switch { background: white; border: 1px solid var(--line); color: var(--accent); box-shadow: var(--paper-shadow); border-radius: 8px; width: 44px; height: 44px; }
 body[data-fuyukawa] .sakura-rain { inset: 0; opacity: 1; }
-body[data-fuyukawa] .sakura-rain span {
-  top: -24px; width: var(--sakura-size); height: var(--sakura-size);
-  border: 0; border-radius: 0; background: none; box-shadow: none; opacity: 0;
-  animation: fuyukawa-petal-fall var(--sakura-duration) linear infinite;
-  animation-delay: var(--sakura-delay);
-}
-body[data-fuyukawa] .sakura-rain i {
-  display: block; width: 100%; height: 100%;
-  background: url("/themes/fuyukawa-kagari/assets/sakura-petal.svg") center / contain no-repeat;
-  animation: fuyukawa-petal-flutter 5.6s ease-in-out infinite alternate;
-  animation-delay: var(--sakura-delay); transform-origin: 50% 70%;
-}
-body[data-fuyukawa] .sakura-rain span:nth-child(3n) { --petal-drift: -72px; }
-body[data-fuyukawa] .sakura-rain span:nth-child(3n + 1) { --petal-drift: 96px; }
-body[data-fuyukawa] .sakura-rain span:nth-child(3n + 2) { --petal-drift: 40px; }
-body[data-fuyukawa] .sakura-rain span:nth-child(even) i { animation-direction: alternate-reverse; animation-duration: 7s; opacity: .92; }
-@keyframes fuyukawa-petal-fall {
-  0% { opacity: 0; transform: translate3d(0, 0, 0); }
-  8% { opacity: var(--sakura-opacity); }
-  88% { opacity: var(--sakura-opacity); }
-  100% { opacity: 0; transform: translate3d(var(--petal-drift), calc(100vh + 48px), 0); }
-}
-@keyframes fuyukawa-petal-flutter {
-  0% { transform: rotate(-28deg) scaleX(.85); }
-  50% { transform: rotate(12deg) scaleX(1); }
-  100% { transform: rotate(58deg) scaleX(.7); }
-}
+body[data-fuyukawa] .sakura-rain canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
 body[data-fuyukawa] .scroll-progress-track { width: 5px; background: #e8f3ed; box-shadow: none; border: 1px solid white; }
 body[data-fuyukawa] .scroll-progress-fill { background: var(--pink); box-shadow: none; }
 
@@ -366,7 +340,6 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .site-footer { padding: 40px 24px 76px; }
   body[data-fuyukawa] .footer-inner { grid-template-columns: 1fr; gap: 10px; }
   body[data-fuyukawa] .toy-dock { --dock-top: 86px; }
-  body[data-fuyukawa] .sakura-rain span:nth-child(n + 9) { display: none; }
 }
 @media (max-width: 480px) {
   body[data-fuyukawa] .site-header { padding: 8px 12px; gap: 6px; }
@@ -405,13 +378,8 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .music-controls button:hover { background: #edf5fb; }
   body[data-fuyukawa] .music-controls button[data-music-toggle]:hover { background: #496f91; }
 }
-html:has(body[data-fuyukawa])[data-yuimi-performance="lite"] .sakura-rain { display: none; }
-html:has(body[data-fuyukawa])[data-yuimi-visibility="hidden"] :is(.sakura-rain span, .sakura-rain i, .record-disc) { animation-play-state: paused !important; }
-@media (pointer: coarse) {
-  body[data-fuyukawa] .sakura-rain span:nth-child(n + 9) { display: none; }
-}
+html:has(body[data-fuyukawa])[data-yuimi-visibility="hidden"] .record-disc { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
-  body[data-fuyukawa] .sakura-rain { display: none; }
   html:has(body[data-fuyukawa]) { scroll-behavior: auto; }
   body[data-fuyukawa] *, body[data-fuyukawa] *::before, body[data-fuyukawa] *::after {
     animation-duration: .01ms !important; animation-iteration-count: 1 !important;
