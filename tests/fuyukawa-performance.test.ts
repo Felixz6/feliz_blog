@@ -78,6 +78,7 @@ test("mobile homepage cards use separate grid rows in a right-top to left-bottom
   assert.match(mobileCardRule, /transform:\s*none/);
   assert.match(mobileRules, /body\[data-fuyukawa\] \.home-signal-card \{ justify-self: end; \}/);
   assert.match(mobileRules, /body\[data-fuyukawa\] \.home-welcome-bubble \{ justify-self: start; \}/);
+  assert.match(mobileRules, /body\[data-fuyukawa\] \.home-signal-card \{ margin-top: clamp\(36px, 6vh, 52px\); \}/);
 });
 
 test("portrait mobile hero uses its own manga crop while desktop keeps the original asset", () => {
