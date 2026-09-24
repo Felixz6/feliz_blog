@@ -93,6 +93,14 @@ const themedNotFoundRedirectScript = `(() => {
         <link
           rel="preload"
           as="image"
+          href={kagariAssets.mobileHeroManga}
+          type="image/webp"
+          media="(max-width: 760px) and (orientation: portrait) and (max-aspect-ratio: 3/5)"
+          fetchpriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
           href={kagariAssets.mobileHeroWallpaper}
           type="image/webp"
           media="(max-width: 760px)"

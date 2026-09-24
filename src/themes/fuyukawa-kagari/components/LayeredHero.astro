@@ -1,9 +1,17 @@
 ---
 import { mangaArt } from "../data/mangaArt";
+import { kagariAssets } from "../assets";
 ---
 <div class="manga-scene" data-manga-scene aria-hidden="true">
   <div class="manga-scene-camera">
-    <img {...mangaArt("hero-manga")} class="manga-scene-back" data-manga-back alt="" decoding="async" draggable="false" />
+    <picture>
+      <source
+        srcset={kagariAssets.mobileHeroManga}
+        media="(max-width: 760px) and (orientation: portrait) and (max-aspect-ratio: 3/5)"
+        type="image/webp"
+      />
+      <img {...mangaArt("hero-manga")} class="manga-scene-back" data-manga-back alt="" decoding="async" draggable="false" />
+    </picture>
     <img {...mangaArt("hero-character")} class="manga-scene-front" data-manga-front alt="" decoding="async" fetchpriority="high" draggable="false" />
   </div>
 </div>

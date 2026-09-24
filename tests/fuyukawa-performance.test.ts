@@ -11,6 +11,8 @@ const readSource = (relativePath: string) => readFileSync(
 const layoutSource = readSource("src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
 const homeSource = readSource("src/themes/fuyukawa-kagari/pages/HomePage.astro");
 const refreshStyles = readSource("src/themes/fuyukawa-kagari/styles/refresh.css");
+const mangaStyles = readSource("src/themes/fuyukawa-kagari/styles/manga.css");
+const layeredHeroSource = readSource("src/themes/fuyukawa-kagari/components/LayeredHero.astro");
 
 test("Fuyukawa has no Live2D widget or external loader and retains the music dock", () => {
   assert.doesNotMatch(layoutSource, /live.?2d|waifu|initWidget|cubismcore/i);
@@ -59,6 +61,24 @@ test("homepage preloads the split desktop scene and only the smaller mobile wall
   assert.doesNotMatch(layoutSource, /href=\{kagariAssets\.heroWallpaper\}/);
   assert.match(refreshStyles, /@media \(max-width: 760px\)[\s\S]*?hero-wallpaper-mobile\.webp/);
   assert.ok(mobileSize < desktopSize * 0.6, `mobile hero (${mobileSize}) should be at least 40% smaller than desktop hero (${desktopSize})`);
+});
+
+test("portrait mobile hero uses its own manga crop while desktop keeps the original asset", () => {
+  const mobileHeroManga = statSync(fileURLToPath(new URL(
+    "../public/themes/fuyukawa-kagari/assets/manga/hero-manga-mobile.webp",
+    import.meta.url
+  ))).size;
+  const desktopHeroManga = statSync(fileURLToPath(new URL(
+    "../public/themes/fuyukawa-kagari/assets/manga/hero-manga.webp",
+    import.meta.url
+  ))).size;
+
+  assert.match(layeredHeroSource, /<source\s+srcset=\{kagariAssets\.mobileHeroManga\}\s+media="\(max-width: 760px\) and \(orientation: portrait\) and \(max-aspect-ratio: 3\/5\)"/);
+  assert.match(layeredHeroSource, /<img \{\.\.\.mangaArt\("hero-manga"\)\} class="manga-scene-back" data-manga-back/);
+  assert.match(layoutSource, /href=\{kagariAssets\.mobileHeroManga\}[\s\S]*?media="\(max-width: 760px\) and \(orientation: portrait\) and \(max-aspect-ratio: 3\/5\)"/);
+  assert.match(layoutSource, /href=\{heroManga\.src\}[\s\S]*?media="\(min-width: 761px\)"/);
+  assert.match(mangaStyles, /background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
+  assert.ok(mobileHeroManga < desktopHeroManga * 0.45, `mobile manga hero (${mobileHeroManga}) should be at least 55% smaller than desktop hero (${desktopHeroManga})`);
 });
 
 test("Fuyukawa pauses the second-by-second clock while hidden", () => {
