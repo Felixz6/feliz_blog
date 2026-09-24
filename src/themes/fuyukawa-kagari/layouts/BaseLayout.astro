@@ -17,8 +17,6 @@ import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
 import MangaRuntime from "../components/MangaRuntime.astro";
 import SakuraRain from "../components/SakuraRain.astro";
-import Analytics from "@vercel/analytics/astro";
-import SpeedInsights from "@vercel/speed-insights/astro";
 
 interface Props {
   title?: string;
@@ -88,19 +86,29 @@ const themedNotFoundRedirectScript = `(() => {
     <link rel="apple-touch-icon" href={kagariAssets.appleTouchIcon} />
     <title>{title}</title>
     {Astro.url.pathname === "/" && (
-      <link
-        rel="preload"
-        as="image"
-        href={kagariAssets.heroWallpaper}
-        type="image/webp"
-        fetchpriority="high"
-      />
+      <>
+        <link
+          rel="preload"
+          as="image"
+          href={kagariAssets.mobileHeroWallpaper}
+          type="image/webp"
+          media="(max-width: 760px)"
+          fetchpriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href={kagariAssets.heroWallpaper}
+          type="image/webp"
+          media="(min-width: 761px)"
+          fetchpriority="high"
+        />
+      </>
     )}
     {canonicalPath !== "/" && <link rel="stylesheet" href={refreshPagesHref} />}
     {canonicalPath !== "/" && <link rel="stylesheet" href={mangaPagesHref} />}
     <ClientRouter />
     <ConsoleEasterEgg />
-    <Analytics />
   </head>
   <body
     data-fuyukawa
@@ -903,6 +911,5 @@ const themedNotFoundRedirectScript = `(() => {
       window.addEventListener("load", enhanceCodeBlocks);
       document.addEventListener("astro:page-load", enhanceCodeBlocks);
     </script>
-    <SpeedInsights />
   </body>
 </html>

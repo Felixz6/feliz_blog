@@ -90,7 +90,9 @@ npm test
 npm run build
 ~~~
 
-构建产物位于 `dist/`。截至 2026-09-24，正式入口 `https://felizx.com/` 和别名 `https://felizx.vercel.app/` 均由 Vercel 提供服务，两者返回相同页面 ETag；正式页 canonical 为 `https://felizx.com/`。Vercel 项目的 Git 来源、发布触发器和构建设置由 Vercel 控制台管理；当前仓库不使用 `vercel.json` 覆盖这些平台设置，也不再保留 GitHub Pages 工作流或 EdgeOne 配置。
+构建产物位于 `dist/`。截至 2026-09-24，正式入口 `https://felizx.com/` 与 `https://www.felizx.com/` 均接入 Cloudflare Pages 项目 `feliz-blog`（`https://feliz-blog.pages.dev/`），正式页 canonical 为 `https://felizx.com/`。静态站点使用 `npm run build` 构建并将 `dist/` 作为输出目录；构建分支、发布触发器与 DNS 由 Cloudflare 控制台管理。仓库不使用 Vercel adapter 或 `vercel.json`，也不再保留 GitHub Pages 工作流或 EdgeOne 配置。
+
+Vercel 专属 Analytics 与 Speed Insights 集成已从站点布局和依赖中移除。Vercel 项目可在迁移观察期内保留作回滚，但不应继续绑定正式域名或自动发布；观察期结束后可从 Vercel 控制台归档该项目。Cloudflare Web Analytics 如需启用，应在 Cloudflare 控制台单独配置。
 
 本次核验中，当前仓库 `Felixz6/feliz_blog` 的 GitHub Pages API 返回 404、Actions 工作流运行列表为空，`https://felixz6.github.io/feliz_blog/` 也返回 404。另一个仍可访问的 EdgeOne 域名 `https://yuimi-chaya.636.ltd/` 与 `https://yuimi-chaya.github.io/` 返回相同的旧版页面，canonical 为 `https://yuimi-chaya.github.io/`；它们属于旧站点部署，不是 `felizx.com` 的生产链路。此仓库的 `astro.config.mjs` 与 `public/robots.txt` 均以 `https://felizx.com/` 为 canonical/sitemap origin。
 
