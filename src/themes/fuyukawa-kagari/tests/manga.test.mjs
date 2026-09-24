@@ -280,6 +280,23 @@ test("home chapter rail omits Games and numbers About as the third chapter", asy
   assert.match(source, /data-rail-position[^>]*>01 \/ 03</);
 });
 
+test("offscreen home chapter artwork stays lazy, asynchronously decoded, and low priority", async () => {
+  const rail = await read("components/ChapterRail.astro");
+  const images = [...rail.matchAll(/<MangaArt\b[^>]*\/>/g)].map(([markup]) => markup);
+  assert.equal(images.length, 2);
+  assert.ok(images.every((markup) => /fetchpriority="low"/.test(markup)));
+  assert.ok(images.every((markup) => !/\beager\b/.test(markup)));
+
+  const component = await read("components/MangaArt.astro");
+  assert.match(component, /loading=\{eager \? "eager" : "lazy"\}/);
+  assert.match(component, /decoding="async"/);
+  assert.match(component, /fetchpriority=\{fetchpriority\}/);
+
+  const hero = await read("components/LayeredHero.astro");
+  assert.match(hero, /mangaArt\("hero-manga"\)/);
+  assert.doesNotMatch(hero, /fetchpriority="low"|loading="lazy"/);
+});
+
 test("manga CSS stays theme-local, responsive, and never crops article covers", async () => {
   const source = await read("styles/manga.css") + "\n" + await read("styles/manga-pages.css");
   const css = postcss.parse(source);

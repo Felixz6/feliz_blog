@@ -22,8 +22,8 @@ const chapters: { route: string; label: string; title: string; note: string; ima
     {chapters.map((chapter) => (
       <a class="chapter-leaf" data-rail-item href={getThemePath("fuyukawa-kagari", chapter.route)}>
         <span class="chapter-number">{chapter.label}</span>
-        <div class="chapter-picture"><MangaArt image={chapter.image} /></div>
-        <MangaArt image={chapter.sticker} class="chapter-sticker" />
+        <div class="chapter-picture"><MangaArt image={chapter.image} fetchpriority="low" /></div>
+        <MangaArt image={chapter.sticker} class="chapter-sticker" fetchpriority="low" />
         <div class="chapter-caption"><h3>{chapter.title}</h3><p>{chapter.note}</p></div>
         <Icon name="tabler:arrow-up" class="chapter-arrow" aria-hidden="true" />
       </a>
