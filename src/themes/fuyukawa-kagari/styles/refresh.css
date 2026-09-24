@@ -339,6 +339,8 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .home-welcome-bubble { position: static; inset: auto; transform: none; }
   body[data-fuyukawa] .home-signal-card { justify-self: end; }
   body[data-fuyukawa] .home-welcome-bubble { justify-self: start; }
+  /* Lower the first card enough to clear the wordmark; grid flow carries the quote card down with it. */
+  body[data-fuyukawa] .home-signal-card { margin-top: clamp(36px, 6vh, 52px); }
   body[data-fuyukawa] .home-journal { padding: 52px 24px; }
   body[data-fuyukawa] .journal-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   body[data-fuyukawa] .journal-entry { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 20px; }
