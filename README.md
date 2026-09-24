@@ -90,9 +90,9 @@ npm test
 npm run build
 ~~~
 
-构建产物位于 dist/。GitHub Actions 工作流 .github/workflows/deploy.yml 会在推送到 main 或手动触发时，使用 Node.js 24 执行安装、构建，并部署到 GitHub Pages。
+构建产物位于 `dist/`。截至 2026-09-24，正式入口 `https://felizx.com/` 和别名 `https://felizx.vercel.app/` 均由 Vercel 提供服务，两者返回相同页面 ETag；正式页 canonical 为 `https://felizx.com/`。Vercel 项目的 Git 来源、发布触发器和构建设置由 Vercel 控制台管理；当前仓库不使用 `vercel.json` 覆盖这些平台设置，也不再保留 GitHub Pages 工作流或 EdgeOne 配置。
 
-当前 Astro 站点元数据配置在 astro.config.mjs，其中 canonical site origin 为 https://felizx.com/。该地址与 GitHub Pages 工作流是两个独立配置；如果更换正式域名或托管方式，请同步调整站点 origin 和发布流程，避免 canonical URL 与实际部署地址不一致。
+本次核验中，当前仓库 `Felixz6/feliz_blog` 的 GitHub Pages API 返回 404、Actions 工作流运行列表为空，`https://felixz6.github.io/feliz_blog/` 也返回 404。另一个仍可访问的 EdgeOne 域名 `https://yuimi-chaya.636.ltd/` 与 `https://yuimi-chaya.github.io/` 返回相同的旧版页面，canonical 为 `https://yuimi-chaya.github.io/`；它们属于旧站点部署，不是 `felizx.com` 的生产链路。此仓库的 `astro.config.mjs` 与 `public/robots.txt` 均以 `https://felizx.com/` 为 canonical/sitemap origin。
 
 ## 主要目录
 
@@ -114,7 +114,6 @@ public/
 
 scripts/                          构建与资源处理脚本
 tests/                            仓库测试
-.github/workflows/deploy.yml      GitHub Pages 发布流程
 ~~~
 
 ## 许可证与第三方素材
