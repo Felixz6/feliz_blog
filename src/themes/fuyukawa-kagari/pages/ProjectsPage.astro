@@ -51,7 +51,7 @@ const projectCards = projectEntries.map((project) => {
       </div>
     </div>
 
-    <div class="works-filter" data-works-filter aria-label="Project filters">
+    <div class="works-filter" data-works-filter role="group" aria-label="Project filters">
       <button type="button" class="is-active" data-filter="all" aria-pressed="true">全部</button>
       {techLines.map((item) => (
         <button type="button" data-filter={item.key} aria-pressed="false">

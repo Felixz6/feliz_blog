@@ -54,7 +54,7 @@ const nowDoing = currentSignals;
         <p class="about-handle">{profileIdentity.handle} · {profileIdentity.siteName}</p>
         <p class="about-bio">{bioFirstLine}{bioSecondLine && <br />}{bioSecondLine}</p>
 
-        <div class="about-link-row" aria-label="profile links">
+        <nav class="about-link-row" aria-label="profile links">
           {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noreferrer">
             <Icon name="simple-icons:github" aria-hidden="true" />
             GitHub
@@ -63,7 +63,7 @@ const nowDoing = currentSignals;
             <Icon name="simple-icons:bilibili" aria-hidden="true" />
             Bilibili
           </a>}
-        </div>
+        </nav>
       </div>
 
       <div class="about-status-card">

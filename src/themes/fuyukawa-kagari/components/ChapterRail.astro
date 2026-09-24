@@ -18,7 +18,7 @@ const chapters: { route: string; label: string; title: string; note: string; ima
       <button type="button" data-rail-next aria-label="下一章" title="下一章" aria-controls="home-chapters"><Icon name="tabler:arrow-right" /></button>
     </div>
   </header>
-  <div class="chapter-track" id="home-chapters" data-rail-track tabindex="0" aria-label="手帖章节">
+  <div class="chapter-track" id="home-chapters" data-rail-track tabindex="0" role="group" aria-label="手帖章节">
     {chapters.map((chapter) => (
       <a class="chapter-leaf" data-rail-item href={getThemePath("fuyukawa-kagari", chapter.route)}>
         <span class="chapter-number">{chapter.label}</span>
