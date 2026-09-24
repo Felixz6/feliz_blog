@@ -40,7 +40,7 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2);
         </div>
         <h1>{frontmatter.title}</h1>
         <p>{frontmatter.description}</p>
-        <div class="tag-row" aria-label="Tags">
+        <div class="tag-row" role="group" aria-label="Tags">
           {frontmatter.tags.map((tag: string) => <span>#{tag}</span>)}
         </div>
       </header>

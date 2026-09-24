@@ -22,7 +22,7 @@ const { title, kicker, description, tags } = Astro.props;
       <p class="project-detail-kicker">{kicker}</p>
       <h1>{title}</h1>
       <p class="project-detail-intro">{description}</p>
-      <div class="project-detail-tags" aria-label="Project tags">
+      <div class="project-detail-tags" role="group" aria-label="Project tags">
         {tags.map((tag) => <span>{tag}</span>)}
       </div>
     </header>

@@ -39,7 +39,7 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
         <p class="eyebrow">Fuyukawa Kagari · Personal diary</p>
         <h1 data-title={site.name}>{site.name}</h1>
         <p class="hero-diary-line">把喜欢的事，写进每一个平凡日子。</p>
-        <p class="hero-text terminal-line" aria-label="typing subtitle">
+        <p class="hero-text terminal-line">
           <span class="hero-terminal-badge" aria-hidden="true"></span>
           <span class="hero-terminal-stack">
             <span class="hero-terminal-status" aria-hidden="true">
@@ -56,12 +56,12 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
         </p>
       </div>
 
-      <div class="hero-profile identity-card" data-hero-profile aria-label="Profile">
+      <div class="hero-profile identity-card" data-hero-profile role="group" aria-label="Profile">
         <div class="identity-avatar" data-poke-avatar>
           <img src={kagariAssets.profile} alt={`${profileIdentity.displayName} avatar`} width="168" height="168" />
           <span class="avatar-poke-bubble" data-poke-bubble>&#x64CD;&#x4F5C;&#x592A;&#x5FEB;&#x5566;&#xFF0C;&#x4F11;&#x606F;&#x4E00;&#x4E0B;&#x5427;</span>
         </div>
-        <div class="identity-terminal" aria-label="identity terminal card">
+        <div class="identity-terminal" role="group" aria-label="identity terminal card">
           <div class="identity-terminal-bar">
             <div class="terminal-dots" aria-hidden="true">
               <span></span>
@@ -77,7 +77,7 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
             <span class="terminal-cursor" aria-hidden="true"></span>
           </p>
           <p class="identity-caption">{profileIdentity.displayName} / {profileIdentity.handle}</p>
-          <div class="social-links" aria-label="Social links">
+          <nav class="social-links" aria-label="Social links">
             {profileIdentity.github.startsWith("https://") && <a href={profileIdentity.github} target="_blank" rel="noreferrer" aria-label="GitHub profile">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2.16c-3.2.7-3.87-1.38-3.87-1.38-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.16 1.18A10.9 10.9 0 0 1 12 5.98c.98 0 1.96.13 2.88.39 2.19-1.49 3.15-1.18 3.15-1.18.63 1.59.24 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.41-5.27 5.7.41.36.77 1.06.77 2.14v3.18c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
@@ -90,7 +90,7 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
               </svg>
               Bilibili
             </a>}
-          </div>
+          </nav>
         </div>
       </div>
 
@@ -122,11 +122,11 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
 
   <div class="home-content-bg">
     <section class="tag-rain-stage" id="main-content" data-tag-rain data-tags={JSON.stringify(fallingTags)} aria-label="Blog topic tags">
-      <div class="home-art-word" aria-label={site.name}>
+      <div class="home-art-word">
         <span>{site.name}</span>
         <small>anime notes / tiny toys / dev memo</small>
       </div>
-      <div class="home-signal-card" aria-label="Local signal">
+      <div class="home-signal-card" role="group" aria-label="Local signal">
         <p data-home-date>{initialHomeDate}</p>
         <strong data-home-time>{initialHomeTime}</strong>
       </div>
