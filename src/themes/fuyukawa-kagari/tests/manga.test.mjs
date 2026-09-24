@@ -297,17 +297,14 @@ test("offscreen home chapter artwork stays lazy, asynchronously decoded, and low
   assert.doesNotMatch(hero, /fetchpriority="low"|loading="lazy"/);
 });
 
-test("home fallback and split foreground share cover scaling to prevent a return-home size jump", async () => {
+test("home fallback and split foreground keep the original contained character size", async () => {
   const manga = await read("styles/manga.css");
   const refresh = await read("styles/refresh.css");
   assert.match(refresh, /background:\s*url\(["']?[^)]*hero-wallpaper\.webp["']?\)\s*center\s*\/\s*cover\s+no-repeat/);
-  assert.match(manga, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)\s*\{\s*background-image:\s*none/);
-  assert.match(manga, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-fit:\s*cover/);
-  assert.match(manga, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-position:\s*center\s*;/);
-
-  const wideRule = manga.match(/@media \(min-width: 1600px\)\s*\{[^}]*\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
-  assert.ok(wideRule, "wide-desktop fallback sizing remains explicitly matched");
-  assert.match(wideRule[1], /object-fit:\s*contain/);
+  assert.match(manga, /\.hero::before\s*\{[^}]*background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
+  assert.match(manga, /\.hero::before\s*\{[^}]*inset:\s*0 0 16px[^}]*background-size:\s*contain,\s*cover/);
+  assert.match(manga, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)::before\s*\{\s*display:\s*none/);
+  assert.match(manga, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-fit:\s*contain;\s*object-position:\s*center bottom/);
 
   const mobileRule = manga.match(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
   assert.ok(mobileRule, "mobile foreground sizing remains explicitly tuned");
@@ -323,7 +320,7 @@ test("manga CSS stays theme-local, responsive, and never crops article covers", 
   css.walkDecls("font-size", (declaration) => assert.doesNotMatch(declaration.value, /vw|cqw/));
   assert.doesNotMatch(source, /\.post-cover-frame\s+img|\.journal-entry\s*>\s*img/);
   assert.match(source, /inset: -24px/);
-  assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: cover/);
+  assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: contain/);
   assert.match(source, /height: calc\(100% - 64px\)/);
   assert.match(source, /body\[data-fuyukawa\] :where\(\.manga-art\)/);
   assert.match(source, /\.album-page-image-next \.manga-art\s*\{[^}]*min-width:\s*0[^}]*min-height:\s*0/);

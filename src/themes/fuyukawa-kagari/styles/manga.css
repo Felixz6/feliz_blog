@@ -16,20 +16,25 @@ body[data-fuyukawa] .manga-rail-controls button { display: grid; place-items: ce
 body[data-fuyukawa] .manga-rail-controls svg { width: 18px; height: 18px; }
 body[data-fuyukawa] .manga-rail-controls button:disabled { opacity: .32; cursor: default; }
 
-/* The original composite remains available until both independent layers decode. */
+/* Match the split scene from the first desktop paint while its layers decode. */
 body[data-fuyukawa] .hero-stage { height: calc(100svh - 82px); }
 body[data-fuyukawa] .hero { isolation: isolate; justify-content: flex-start; padding-inline: max(48px, calc((100% - 1240px) / 2)); }
 body[data-fuyukawa] .hero:has(.manga-scene[data-ready="true"]) { background-image: none; }
+@media (min-width: 761px) {
+  /* Keep the fallback at the same contained figure size as the decoded scene. */
+  body[data-fuyukawa] .hero::before {
+    content: ""; display: block; position: absolute; inset: 0 0 16px; z-index: 0; pointer-events: none;
+    background-image: url("/themes/fuyukawa-kagari/assets/manga/hero-character.webp"), url("/themes/fuyukawa-kagari/assets/manga/hero-manga.webp");
+    background-position: center bottom, center; background-size: contain, cover; background-repeat: no-repeat;
+  }
+  body[data-fuyukawa] .hero:has(.manga-scene[data-ready="true"])::before { display: none; }
+}
 body[data-fuyukawa] .manga-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; }
 body[data-fuyukawa] .manga-scene[data-ready="true"] { opacity: 1; }
 body[data-fuyukawa] .manga-scene-camera { position: absolute; inset: -24px; }
 body[data-fuyukawa] .manga-scene-camera img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; pointer-events: none; backface-visibility: hidden; }
-/* Match the decoded cutout to the fallback poster's cover scale on desktop. */
-body[data-fuyukawa] .manga-scene-camera .manga-scene-front { inset: 24px 24px 40px; width: calc(100% - 48px); height: calc(100% - 64px); object-fit: cover; object-position: center; }
-@media (min-width: 1600px) {
-  /* Wide desktops use a height-fitted fallback poster, so keep the cutout aligned. */
-  body[data-fuyukawa] .manga-scene-camera .manga-scene-front { object-fit: contain; }
-}
+/* Preserve the former smaller profile scale and match its fallback placement. */
+body[data-fuyukawa] .manga-scene-camera .manga-scene-front { inset: 24px 24px 40px; width: calc(100% - 48px); height: calc(100% - 64px); object-fit: contain; object-position: center bottom; }
 body[data-fuyukawa] .hero-overlay { background: none; pointer-events: none; }
 body[data-fuyukawa] .hero::after { z-index: 1; background: linear-gradient(180deg, #f8fbfe00 80%, #f8fbfe 100%); }
 body[data-fuyukawa] .hero-copy { width: 39%; max-width: 440px; text-align: left; justify-items: start; }

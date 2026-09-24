@@ -43,7 +43,7 @@ test("static homepage and widget markup starts with useful defaults before JavaS
   assert.doesNotMatch(layoutSource, /计算中\.\.\.|待播放|lofi sakura loop|打开音乐工具时读取歌单/);
 });
 
-test("homepage selects a smaller hero wallpaper for mobile without preloading both sizes", () => {
+test("homepage preloads the split desktop scene and only the smaller mobile wallpaper", () => {
   const mobileSize = statSync(fileURLToPath(new URL(
     "../public/themes/fuyukawa-kagari/assets/hero-wallpaper-mobile.webp",
     import.meta.url
@@ -54,7 +54,9 @@ test("homepage selects a smaller hero wallpaper for mobile without preloading bo
   ))).size;
 
   assert.match(layoutSource, /href=\{kagariAssets\.mobileHeroWallpaper\}[\s\S]*?media="\(max-width: 760px\)"/);
-  assert.match(layoutSource, /href=\{kagariAssets\.heroWallpaper\}[\s\S]*?media="\(min-width: 761px\)"/);
+  assert.match(layoutSource, /href=\{heroCharacter\.src\}[\s\S]*?media="\(min-width: 761px\)"/);
+  assert.match(layoutSource, /href=\{heroManga\.src\}[\s\S]*?media="\(min-width: 761px\)"/);
+  assert.doesNotMatch(layoutSource, /href=\{kagariAssets\.heroWallpaper\}/);
   assert.match(refreshStyles, /@media \(max-width: 760px\)[\s\S]*?hero-wallpaper-mobile\.webp/);
   assert.ok(mobileSize < desktopSize * 0.6, `mobile hero (${mobileSize}) should be at least 40% smaller than desktop hero (${desktopSize})`);
 });
