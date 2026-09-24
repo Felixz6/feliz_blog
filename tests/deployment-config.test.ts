@@ -31,3 +31,28 @@ test("legacy Vercel integrations and obsolete deployment configs are absent", ()
   assert.equal(existsSync(new URL("../edgeone.json", import.meta.url)), false);
   assert.equal(existsSync(new URL("../vercel.json", import.meta.url)), false);
 });
+
+test("Cloudflare Pages preserves HTML revalidation without injecting the Web Analytics beacon", () => {
+  const headers = readSource("public/_headers");
+
+  assert.match(headers, /^# Keep pages revalidatable and stop Cloudflare's automatic Web Analytics beacon injection\.\n\/\*\n  Cache-Control: public, max-age=0, must-revalidate, no-transform$/m);
+});
+
+test("long-lived asset caching is retained when the HTML Cache-Control rule is detached", () => {
+  const headers = readSource("public/_headers");
+  const expectedCacheGroups = [
+    "/_astro/*",
+    "/themes/fuyukawa-kagari/assets/*",
+    "/*.webp",
+    "/*.woff2"
+  ];
+
+  for (const group of expectedCacheGroups) {
+    const escapedGroup = group.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.match(
+      headers,
+      new RegExp(`^${escapedGroup}\\n  ! Cache-Control\\n  Cache-Control: public, max-age=31536000, immutable$`, "m"),
+      `${group} should keep the one-year immutable cache policy`
+    );
+  }
+});
