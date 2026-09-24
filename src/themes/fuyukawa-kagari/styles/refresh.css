@@ -335,6 +335,10 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .home-signal-card { right: 4%; top: 80px; width: 220px; padding: 20px; }
   body[data-fuyukawa] .home-signal-card strong { font-size: 2.1rem; }
   body[data-fuyukawa] .home-welcome-bubble { width: min(420px, 86%); left: 7%; bottom: 100px; }
+  body[data-fuyukawa] .home-signal-card,
+  body[data-fuyukawa] .home-welcome-bubble { position: static; inset: auto; transform: none; }
+  body[data-fuyukawa] .home-signal-card { justify-self: end; }
+  body[data-fuyukawa] .home-welcome-bubble { justify-self: start; }
   body[data-fuyukawa] .home-journal { padding: 52px 24px; }
   body[data-fuyukawa] .journal-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   body[data-fuyukawa] .journal-entry { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 20px; }

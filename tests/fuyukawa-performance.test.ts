@@ -63,6 +63,23 @@ test("homepage preloads the split desktop scene and only the smaller mobile wall
   assert.ok(mobileSize < desktopSize * 0.6, `mobile hero (${mobileSize}) should be at least 40% smaller than desktop hero (${desktopSize})`);
 });
 
+test("mobile homepage cards use separate grid rows in a right-top to left-bottom diagonal", () => {
+  const breakpoint = refreshStyles.indexOf("@media (max-width: 760px)");
+  const selector = "body[data-fuyukawa] .home-signal-card,\n  body[data-fuyukawa] .home-welcome-bubble";
+  const ruleStart = refreshStyles.indexOf(selector, breakpoint);
+  const ruleEnd = refreshStyles.indexOf("}", ruleStart);
+  const mobileRules = refreshStyles.slice(breakpoint);
+  const mobileCardRule = refreshStyles.slice(ruleStart, ruleEnd + 1);
+
+  assert.ok(breakpoint >= 0, "mobile breakpoint should exist");
+  assert.ok(ruleStart > breakpoint, "card flow reset should be inside the mobile breakpoint");
+  assert.match(mobileCardRule, /position:\s*static/);
+  assert.match(mobileCardRule, /inset:\s*auto/);
+  assert.match(mobileCardRule, /transform:\s*none/);
+  assert.match(mobileRules, /body\[data-fuyukawa\] \.home-signal-card \{ justify-self: end; \}/);
+  assert.match(mobileRules, /body\[data-fuyukawa\] \.home-welcome-bubble \{ justify-self: start; \}/);
+});
+
 test("portrait mobile hero uses its own manga crop while desktop keeps the original asset", () => {
   const mobileHeroManga = statSync(fileURLToPath(new URL(
     "../public/themes/fuyukawa-kagari/assets/manga/hero-manga-mobile.webp",
