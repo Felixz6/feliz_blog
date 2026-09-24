@@ -297,6 +297,23 @@ test("offscreen home chapter artwork stays lazy, asynchronously decoded, and low
   assert.doesNotMatch(hero, /fetchpriority="low"|loading="lazy"/);
 });
 
+test("home fallback and split foreground share cover scaling to prevent a return-home size jump", async () => {
+  const manga = await read("styles/manga.css");
+  const refresh = await read("styles/refresh.css");
+  assert.match(refresh, /background:\s*url\(["']?[^)]*hero-wallpaper\.webp["']?\)\s*center\s*\/\s*cover\s+no-repeat/);
+  assert.match(manga, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)\s*\{\s*background-image:\s*none/);
+  assert.match(manga, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-fit:\s*cover/);
+  assert.match(manga, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-position:\s*center\s*;/);
+
+  const wideRule = manga.match(/@media \(min-width: 1600px\)\s*\{[^}]*\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
+  assert.ok(wideRule, "wide-desktop fallback sizing remains explicitly matched");
+  assert.match(wideRule[1], /object-fit:\s*contain/);
+
+  const mobileRule = manga.match(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
+  assert.ok(mobileRule, "mobile foreground sizing remains explicitly tuned");
+  assert.match(mobileRule[1], /object-fit:\s*contain/);
+});
+
 test("manga CSS stays theme-local, responsive, and never crops article covers", async () => {
   const source = await read("styles/manga.css") + "\n" + await read("styles/manga-pages.css");
   const css = postcss.parse(source);
@@ -306,7 +323,7 @@ test("manga CSS stays theme-local, responsive, and never crops article covers", 
   css.walkDecls("font-size", (declaration) => assert.doesNotMatch(declaration.value, /vw|cqw/));
   assert.doesNotMatch(source, /\.post-cover-frame\s+img|\.journal-entry\s*>\s*img/);
   assert.match(source, /inset: -24px/);
-  assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: contain/);
+  assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: cover/);
   assert.match(source, /height: calc\(100% - 64px\)/);
   assert.match(source, /body\[data-fuyukawa\] :where\(\.manga-art\)/);
   assert.match(source, /\.album-page-image-next \.manga-art\s*\{[^}]*min-width:\s*0[^}]*min-height:\s*0/);

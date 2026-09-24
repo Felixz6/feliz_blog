@@ -86,6 +86,11 @@ body[data-fuyukawa] .hero {
   height: 100%; min-height: 600px; padding: 140px 24px 110px;
   background: url("/themes/fuyukawa-kagari/assets/hero-wallpaper.webp") center / cover no-repeat;
 }
+@media (max-width: 760px) {
+  body[data-fuyukawa] .hero {
+    background-image: url("/themes/fuyukawa-kagari/assets/hero-wallpaper-mobile.webp");
+  }
+}
 body[data-fuyukawa] .hero::before { display: none; }
 body[data-fuyukawa] .hero::after {
   background: linear-gradient(180deg, #ffffff00 60%, #f8fbfe 100%);
