@@ -375,6 +375,9 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .scroll-progress { display: none; }
   body[data-fuyukawa] .toy-dock-panel { padding: 12px; }
 }
+@media (max-width: 760px) and (orientation: portrait) {
+  body[data-fuyukawa] .home-welcome-bubble { transform: translateY(clamp(96px, 16vh, 144px)); }
+}
 @media (max-width: 360px) {
   body[data-fuyukawa] .music-player-shell { grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
   body[data-fuyukawa] .music-widget .record-player { width: 92px; height: 92px; }
