@@ -32,10 +32,11 @@ test("legacy Vercel integrations and obsolete deployment configs are absent", ()
   assert.equal(existsSync(new URL("../vercel.json", import.meta.url)), false);
 });
 
-test("Cloudflare Pages preserves HTML revalidation without injecting the Web Analytics beacon", () => {
+test("Cloudflare Pages keeps HTML revalidatable and transformable for edge compression", () => {
   const headers = readSource("public/_headers");
 
-  assert.match(headers, /^# Keep pages revalidatable and stop Cloudflare's automatic Web Analytics beacon injection\.\n\/\*\n  Cache-Control: public, max-age=0, must-revalidate, no-transform$/m);
+  assert.match(headers, /^# Keep pages revalidatable and allow Cloudflare to compress text responses\.\n\/\*\n  Cache-Control: public, max-age=0, must-revalidate$/m);
+  assert.doesNotMatch(headers, /^\s+Cache-Control:.*\bno-transform\b/m);
 });
 
 test("long-lived asset caching is retained when the HTML Cache-Control rule is detached", () => {
