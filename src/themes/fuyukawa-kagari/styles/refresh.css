@@ -6,7 +6,7 @@ html:has(body[data-fuyukawa]) {
 
 body[data-fuyukawa] {
   --ink: #47536b;
-  --ink-soft: #59677f;
+  --ink-soft: #758099;
   --paper: #ffffff;
   --paper-soft: #eef5fb;
   --cream: #f8fbfe;
@@ -23,7 +23,7 @@ body[data-fuyukawa] {
   --glass-shadow: 0 8px 24px #8599b410;
   --shadow: 0 12px 32px #8599b41c;
   --paper-shadow: 0 6px 18px #8599b412;
-  --accent: #496b86;
+  --accent: #577f9f;
   --rose: #b6698d;
   background: #f8fbfe;
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
