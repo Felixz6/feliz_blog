@@ -1,6 +1,6 @@
-# Keep pages revalidatable and stop Cloudflare's automatic Web Analytics beacon injection.
+# Keep pages revalidatable and allow Cloudflare to compress text responses.
 /*
-  Cache-Control: public, max-age=0, must-revalidate, no-transform
+  Cache-Control: public, max-age=0, must-revalidate
 
 /_astro/*
   ! Cache-Control
