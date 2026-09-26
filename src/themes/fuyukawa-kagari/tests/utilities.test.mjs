@@ -291,11 +291,16 @@ test("music manifest and audio wait for music-dock intent, then playback loads o
     constructor() {
       super(); this._src = ""; this.preload = "auto"; this.volume = .28;
       this.paused = true; this.currentTime = 0; this.duration = 100;
-      this.loadCount = 0; this.playCount = 0;
+      this.readyState = 0; this.loadCount = 0; this.playCount = 0;
     }
     get src() { return this._src; }
+    get currentSrc() { return this._src; }
     set src(value) { this._src = new URL(value, win.location.origin).href; }
-    load() { this.loadCount += 1; }
+    load() { this.loadCount += 1; this.readyState = 0; }
+    dispatch(name, event = {}) {
+      if (name === "loadedmetadata") this.readyState = 1;
+      super.dispatch(name, event);
+    }
     async play() { this.playCount += 1; this.paused = false; this.dispatch("play"); }
     pause() { this.paused = true; this.dispatch("pause"); }
   }
