@@ -25,6 +25,7 @@ interface Props {
   honorThemePreference?: boolean;
   redirectThemedNotFound?: boolean;
   isArticlePage?: boolean;
+  needsMangaRuntime?: boolean;
   article?: BlogPost["data"];
 }
 
@@ -34,6 +35,7 @@ const {
   honorThemePreference = false,
   redirectThemedNotFound = false,
   isArticlePage = false,
+  needsMangaRuntime = false,
   article
 } = Astro.props;
 const canonicalPath = getCanonicalPath(Astro.url.pathname);
@@ -252,7 +254,7 @@ const themedNotFoundRedirectScript = `(() => {
       </footer>
     </div>
     <ThemeLongPressMenu />
-    <MangaRuntime />
+    {needsMangaRuntime && <MangaRuntime />}
 
     <script>
       import { installNavigationFeedback } from "../lib/navigation-feedback.mjs";
