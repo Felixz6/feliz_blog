@@ -113,7 +113,7 @@ test("music manifest and audio source are deferred until music-player intent", (
   assert.ok(initStart >= 0 && initEnd > initStart);
   assert.match(layoutSource, /audio\.preload = "none"/);
   assert.match(layoutSource, /const musicProgressPersistInterval = 5000/);
-  assert.match(layoutSource, /audio\.addEventListener\("timeupdate", \(\) => \{\s*updateMusicUi\(\);\s*saveMusicProgress\(\);/);
+  assert.match(layoutSource, /audio\.addEventListener\("timeupdate", \(\) => \{\s*updateMusicProgressUi\(\);\s*saveMusicProgress\(\);/);
   assert.doesNotMatch(layoutSource.slice(initStart, initEnd), /audio\.load\(|loadMusicTrack\(/);
 
   const bootstrapStart = layoutSource.indexOf("window.__yuimiRadio ??=");
