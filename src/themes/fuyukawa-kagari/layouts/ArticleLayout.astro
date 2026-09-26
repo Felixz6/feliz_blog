@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import { categoryLabel } from "@/lib/site";
-import { getThemePath } from "@/core/themes/registry";
+import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { Icon } from "astro-icon/components";
 import MangaArt from "../components/MangaArt.astro";
 import { site } from "@/lib/site";
@@ -19,6 +19,7 @@ const date = new Intl.DateTimeFormat("zh-CN", {
 }).format(frontmatter.pubDate);
 const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth >= 2 && heading.depth <= 3);
 const tocHeadings = headings.filter((heading) => heading.depth === 2);
+const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pathname;
 ---
 
 <BaseLayout title={title} description={description} isArticlePage article={frontmatter}>
@@ -31,7 +32,7 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2);
         </nav>
       </details>
     )}
-    <article class="article" data-pagefind-body>
+    <article class="article" data-pagefind-body={shouldIndexArticle ? true : undefined}>
       <a class="back-link" href={returnHref}><Icon name="tabler:arrow-left" aria-hidden="true" />{returnLabel}</a>
       <header class="article-header">
         <div class="meta-row">
