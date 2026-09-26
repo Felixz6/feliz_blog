@@ -287,26 +287,15 @@ const themedNotFoundRedirectScript = `(() => {
       window.addEventListener("pageshow", scheduleScrollProgress);
 
       const padTimer = (value) => String(value).padStart(2, "0");
-      const getElapsedParts = (startDate) => {
-        const diff = Math.max(0, Date.now() - startDate.getTime());
-        const totalSeconds = Math.floor(diff / 1000);
-        return {
-          days: Math.floor(totalSeconds / 86400),
-          hours: Math.floor((totalSeconds % 86400) / 3600),
-          minutes: Math.floor((totalSeconds % 3600) / 60),
-          seconds: totalSeconds % 60
-        };
-      };
-
-      const formatElapsed = (startDate, mode = "second") => {
-        const { days, hours, minutes, seconds } = getElapsedParts(startDate);
-        if (mode === "minute") {
-          return `${days.toLocaleString("zh-CN")}天 ${padTimer(hours)}小时 ${padTimer(minutes)}分`;
-        }
+      const formatElapsed = (startDate, mode) => {
+        const totalMinutes = Math.floor(Math.max(0, Date.now() - startDate.getTime()) / 60000);
+        const days = Math.floor(totalMinutes / 1440);
         if (mode === "days") {
           return `第 ${days.toLocaleString("zh-CN")} 天`;
         }
-        return `${days.toLocaleString("zh-CN")}天 ${padTimer(hours)}小时 ${padTimer(minutes)}分 ${padTimer(seconds)}秒`;
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+        return `${days.toLocaleString("zh-CN")}天 ${padTimer(hours)}小时 ${padTimer(minutes)}分`;
       };
 
       const updateFooterTimers = () => {
@@ -325,13 +314,14 @@ const themedNotFoundRedirectScript = `(() => {
         footerTimer = 0;
         if (document.visibilityState !== "visible") return;
         updateFooterTimers();
-        footerTimer = window.setTimeout(scheduleFooterTimers, 1000);
+        // All footer counters start on an exact minute and show at most minute precision.
+        footerTimer = window.setTimeout(scheduleFooterTimers, 60000 - Date.now() % 60000);
       };
 
       scheduleFooterTimers();
-      document.addEventListener("astro:page-load", updateFooterTimers);
-      document.addEventListener("astro:after-swap", updateFooterTimers);
-      window.addEventListener("pageshow", updateFooterTimers);
+      document.addEventListener("astro:page-load", scheduleFooterTimers);
+      document.addEventListener("astro:after-swap", scheduleFooterTimers);
+      window.addEventListener("pageshow", scheduleFooterTimers);
       document.addEventListener("visibilitychange", scheduleFooterTimers);
 
       let toyDockCloseTimer = 0;
@@ -504,11 +494,8 @@ const themedNotFoundRedirectScript = `(() => {
           };
         };
 
-        const updateMusicUi = () => {
-          queryElements();
-          const { toggle, volume, seek, track, current, duration, note, status, volumeLabel } = player.elements;
-          const currentTrack = player.tracks[player.index];
-          if (track) track.textContent = currentTrack?.title ?? "Music";
+        const updateMusicProgressUi = () => {
+          const { seek, current, duration } = player.elements;
           if (current) current.textContent = formatAudioTime(audio.currentTime);
           if (duration) duration.textContent = formatAudioTime(audio.duration);
           if (seek && !player.seeking) {
@@ -516,6 +503,14 @@ const themedNotFoundRedirectScript = `(() => {
             seek.value = String(progress || 0);
           }
           if (seek) seek.style.setProperty("--range-fill", `${seek.value}%`);
+        };
+
+        const updateMusicUi = () => {
+          queryElements();
+          const { toggle, volume, track, note, status, volumeLabel } = player.elements;
+          const currentTrack = player.tracks[player.index];
+          if (track) track.textContent = currentTrack?.title ?? "Music";
+          updateMusicProgressUi();
           if (volume) {
             volume.value = String(audio.volume);
             volume.style.setProperty("--range-fill", `${audio.volume * 100}%`);
@@ -713,7 +708,7 @@ const themedNotFoundRedirectScript = `(() => {
           });
 
           audio.addEventListener("timeupdate", () => {
-            updateMusicUi();
+            updateMusicProgressUi();
             saveMusicProgress();
           }, audioListenerOptions);
           audio.addEventListener("play", () => {

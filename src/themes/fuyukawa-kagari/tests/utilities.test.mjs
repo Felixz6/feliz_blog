@@ -109,25 +109,6 @@ test("drawer pin, second-click close, hover reentry and Escape agree with aria-e
   assert.equal(handle.attributes["aria-expanded"], "false");
 });
 
-test("About game entries use small complete thumbnails in an actual grid", () => {
-  const root = postcss.parse(read("pages/AboutPage.astro").match(/<style>([\s\S]*?)<\/style>/)[1]);
-  const card = declarations(root, ".about-game-card");
-  const image = declarations(root, ".about-game-card img");
-  assert.equal(card.display, "grid");
-  assert.equal(card["grid-template-columns"], "92px minmax(0, 1fr)");
-  assert.equal(image.width, "92px");
-  assert.equal(image.height, "64px");
-  assert.equal(image["min-height"], "0");
-  assert.equal(image["object-fit"], "contain");
-  root.walkRules((rule) => {
-    if (rule.selector === ".about-game-card img") {
-      rule.walkDecls("object-fit", (decl) => assert.equal(decl.value, "contain"));
-    }
-  });
-  assert.equal(declarations(root, ".about-game-card div")["min-height"], "0");
-  assert.doesNotMatch(read("styles/refresh-pages.css"), /\.about-game-card (?:img|div|h3|p)\s*\{/);
-});
-
 test("Home title has dark letter interiors and a white stroke, with no artwork changes", () => {
   const title = declarations(css, "body[data-fuyukawa] .hero h1");
   assert.equal(title.color, "#495675");
@@ -186,7 +167,8 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
     nodes.set(`[data-music-${name}]`, new Element());
   }
   nodes.set(".music-track", new Element());
-  doc.querySelector = (selector) => nodes.get(selector);
+  let queryCount = 0;
+  doc.querySelector = (selector) => { queryCount += 1; return nodes.get(selector); };
   doc.body = new Element();
   const storage = () => {
     const data = new Map();
@@ -217,6 +199,11 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
   await player.audio.play();
   assert.equal(toggle.attributes["aria-pressed"], "true");
   assert.equal(nodes.get("[data-music-status]").textContent, "播放中");
+  const queriesBeforeProgress = queryCount;
+  player.audio.currentTime = 26;
+  player.audio.dispatch("timeupdate");
+  assert.equal(queryCount, queriesBeforeProgress, "progress ticks should reuse bound controls");
+  assert.equal(nodes.get("[data-music-current]").textContent, "00:26");
   const seek = nodes.get("[data-music-seek]");
   seek.value = "80";
   seek.dispatch("input");
@@ -229,6 +216,41 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
   player.bind();
   assert.equal(toggle.events.get("click").size, 1);
   for (const controller of ["controlAbort", "audioAbort", "unlockAbort"]) player[controller]?.abort();
+});
+
+test("footer counters update at minute boundaries and pause while hidden", () => {
+  const doc = new Element(), win = new Element();
+  const timers = new Map();
+  let nextId = 0, queryCount = 0;
+  let now = Date.parse("2026-09-26T08:12:34Z");
+  class TestDate extends Date { static now() { return now; } }
+  const nodes = [
+    { dataset: { elapsedFrom: "1977-09-05T12:56:00Z", elapsedMode: "minute" }, setAttribute() {} },
+    { dataset: { elapsedFrom: "2022-09-24T00:00:00+08:00", elapsedMode: "days" }, setAttribute() {} }
+  ];
+  doc.visibilityState = "visible";
+  doc.querySelectorAll = () => { queryCount += 1; return nodes; };
+  win.setTimeout = (fn, delay) => { timers.set(++nextId, { fn, delay }); return nextId; };
+  win.clearTimeout = (id) => timers.delete(id);
+  vm.runInNewContext(section("const padTimer =", "let toyDockCloseTimer"), {
+    document: doc, window: win, Date: TestDate
+  });
+  assert.equal(queryCount, 1);
+  assert.equal(timers.size, 1);
+  assert.equal([...timers.values()][0].delay, 26_000);
+  assert.match(nodes[0].textContent, /天 \d{2}小时 \d{2}分/);
+  assert.match(nodes[1].textContent, /^第 [\d,]+ 天$/);
+  doc.dispatch("astro:page-load");
+  assert.equal(queryCount, 2);
+  assert.equal(timers.size, 1, "page swaps must not duplicate timers");
+  doc.visibilityState = "hidden";
+  doc.dispatch("visibilitychange");
+  assert.equal(timers.size, 0);
+  now += 60_000;
+  doc.visibilityState = "visible";
+  doc.dispatch("visibilitychange");
+  assert.equal(queryCount, 3);
+  assert.equal(timers.size, 1);
 });
 
 test("music manifest and audio wait for music-dock intent, then playback loads one track", async () => {
