@@ -15,20 +15,35 @@ const assets = path.join(root, "public/themes/fuyukawa-kagari/assets");
 const read = (file) => fs.readFile(path.join(theme, file), "utf8");
 const manifest = JSON.parse(await fs.readFile(path.join(assets, "manga/manifest.json"), "utf8"));
 
+// prepare-art.mjs's manifest records the original lossless derivatives. The seven
+// published replacements were deliberately compressed in 3d86926; pin their
+// exact bytes here without rewriting that source/provenance manifest.
+const publishedOptimized = {
+  "letter-page.webp": { width: 384, height: 522, bytes: 42948, sha256: "7331944e8e013cb4e3e70cba00f074b7cf284b1ceac4773e6f773c1781808f91" },
+  "kagari-tea.webp": { width: 280, height: 510, bytes: 23002, sha256: "9296e9caac0d2a882a34bb2b13606024d702dc8ff1965e5ebde036e3eee07b59" },
+  "haruto-gift.webp": { width: 280, height: 540, bytes: 25082, sha256: "5e8c26d9ca8934586c26ee10d98fab175c79c06486ebfac7abd38d0728522371" },
+  "festival-pair.webp": { width: 320, height: 372, bytes: 27078, sha256: "00cdd76eb0faefedc25cb7bd4542d5fa618e154d4f20a1700b9eb43fc4890459" },
+  "kagari-thinking.webp": { width: 328, height: 512, bytes: 25922, sha256: "12c136ecc5d1e48c501d8a54c852ebab778a66425875a7dcfac700ac4869d8b5" },
+  "hero-character.webp": { width: 1920, height: 1080, bytes: 83534, sha256: "423f26df76888f65dd4b997b2432fb8936af44b74b21b6618070c5e2d7817ba0" },
+  "hero-manga.webp": { width: 1920, height: 1080, bytes: 303894, sha256: "d95a6946ca4bf30c4daba6e44002f1b550bfb6fa139322502115283bbb487393" }
+};
+
 test("artwork derivatives have correct dimensions, transparent stickers and bounded byte counts", async () => {
   let bytes = 0;
   for (const output of manifest.outputs) {
     const file = path.join(assets, "manga", output.file);
     const buffer = await fs.readFile(file);
     const metadata = await sharp(buffer).metadata();
-    assert.equal(metadata.width, output.width, output.file);
-    assert.equal(metadata.height, output.height, output.file);
-    assert.equal(buffer.length, output.bytes);
-    assert.equal(crypto.createHash("sha256").update(buffer).digest("hex"), output.sha256);
-    assert.ok(output.bytes < 900_000, output.file);
+    const published = publishedOptimized[output.file] ?? output;
+    assert.equal(metadata.width, published.width, output.file);
+    assert.equal(metadata.height, published.height, output.file);
+    assert.equal(buffer.length, published.bytes, output.file);
+    assert.equal(crypto.createHash("sha256").update(buffer).digest("hex"), published.sha256, output.file);
+    assert.ok(buffer.length < 900_000, output.file);
     if (/kagari-|haruto-|festival-pair|hero-character/.test(output.file)) assert.ok(metadata.hasAlpha, output.file);
     bytes += buffer.length;
   }
+  assert.ok(Object.keys(publishedOptimized).every((file) => manifest.outputs.some((output) => output.file === file)));
   assert.ok(bytes < 3_500_000);
   assert.equal(manifest.sourceFiles.length, 55);
   assert.ok(manifest.outputs.every((output) => output.sources.every((source) => !source.endsWith(".mp4"))));
@@ -54,31 +69,46 @@ test("all 55 source artworks remain byte-identical", { skip: sourceArtworkSkipRe
   }
 });
 
-test("the transparent hero preserves original opaque pixels without resampling colour", async () => {
+test("the published transparent hero preserves the original mask and bounded colour fidelity", async () => {
   const original = await sharp(path.join(assets, "hero-wallpaper.jpg")).resize(1920, 1080).removeAlpha().raw().toBuffer();
   const foreground = await sharp(path.join(assets, "manga/hero-character.webp")).ensureAlpha().raw().toBuffer();
   const mask = await sharp(path.join(theme, "art/hero-subject-mask.svg")).resize(1920, 1080).ensureAlpha().extractChannel(3).raw().toBuffer();
-  let opaque = 0, transparent = 0;
+  let opaque = 0, transparent = 0, colourError = 0, maxColourError = 0;
   for (let i = 0; i < 1920 * 1080; i++) {
     assert.equal(foreground[i * 4 + 3], mask[i], `alpha pixel ${i}`);
     if (!mask[i]) { transparent++; continue; }
     if (mask[i] === 255) {
       opaque++;
-      for (let c = 0; c < 3; c++) assert.equal(foreground[i * 4 + c], original[i * 3 + c], `RGB pixel ${i}`);
+      for (let c = 0; c < 3; c++) {
+        const error = Math.abs(foreground[i * 4 + c] - original[i * 3 + c]);
+        colourError += error;
+        maxColourError = Math.max(maxColourError, error);
+      }
     }
   }
   assert.ok(opaque > 400_000 && transparent > 1_500_000);
+  assert.ok(colourError / (opaque * 3) < 3, "opaque RGB mean error");
+  assert.ok(maxColourError <= 50, "opaque RGB peak error");
 });
 
-test("background reconstruction preserves every pixel in the intact original panel regions", async () => {
+test("published background retains bounded fidelity in the original panel regions", async () => {
   const original = await sharp(path.join(assets, "hero-wallpaper.jpg")).resize(1920, 1080).removeAlpha().raw().toBuffer();
   const background = await sharp(path.join(assets, "manga/hero-manga.webp")).removeAlpha().raw().toBuffer();
+  let colourError = 0, maxColourError = 0, channels = 0;
   for (const rect of manifest.hero.preservedRegions) {
     for (let y = rect.top; y < rect.top + rect.height; y++) {
       const from = (y * 1920 + rect.left) * 3;
-      assert.deepEqual(background.subarray(from, from + rect.width * 3), original.subarray(from, from + rect.width * 3));
+      for (let i = from; i < from + rect.width * 3; i++) {
+        const error = Math.abs(background[i] - original[i]);
+        colourError += error;
+        maxColourError = Math.max(maxColourError, error);
+        channels++;
+      }
     }
   }
+  assert.ok(channels > 3_000_000);
+  assert.ok(colourError / channels < 2, "preserved panel mean error");
+  assert.ok(maxColourError <= 30, "preserved panel peak error");
 });
 
 test("spring and parallax remain bounded across frame rates and oversized deltas", () => {
