@@ -1,11 +1,13 @@
 const PROGRESS_SELECTOR = "[data-navigation-progress]";
 const CONTENT_SELECTOR = "#page-content";
 const PROGRESS_DELAY = 100;
+const BOOKMARK_DELAY = 600;
 
 export function installNavigationFeedback(doc, win) {
   let generation = 0;
   let activeGeneration = null;
   let progressTimer = null;
+  let bookmarkTimer = null;
   let progressWasShown = false;
   let contentAnimation = null;
 
@@ -16,6 +18,19 @@ export function installNavigationFeedback(doc, win) {
     if (state) progress.dataset.state = state;
     else delete progress.dataset.state;
   };
+  const setBookmarkVisible = (root, visible) => {
+    const bookmark = root?.querySelector("[data-navigation-bookmark]");
+    if (!bookmark) return;
+    if (visible) bookmark.dataset.visible = "true";
+    else delete bookmark.dataset.visible;
+    const message = bookmark.querySelector("[data-navigation-message]");
+    if (message) message.textContent = visible ? "正在翻到下一页" : "";
+  };
+  const clearBookmark = () => {
+    if (bookmarkTimer !== null) win.clearTimeout(bookmarkTimer);
+    bookmarkTimer = null;
+    setBookmarkVisible(doc, false);
+  };
   const cancelProgressTimer = () => {
     if (progressTimer === null) return;
     win.clearTimeout(progressTimer);
@@ -24,6 +39,7 @@ export function installNavigationFeedback(doc, win) {
   const clearGeneration = (id) => {
     if (activeGeneration !== id) return;
     cancelProgressTimer();
+    clearBookmark();
     activeGeneration = null;
     progressWasShown = false;
     doc.body?.removeAttribute("data-navigating");
@@ -32,6 +48,7 @@ export function installNavigationFeedback(doc, win) {
 
   doc.addEventListener("astro:before-preparation", (event) => {
     cancelProgressTimer();
+    clearBookmark();
     contentAnimation?.cancel();
     contentAnimation = null;
     const id = ++generation;
@@ -45,6 +62,12 @@ export function installNavigationFeedback(doc, win) {
       progressWasShown = true;
       setProgressState(doc, "loading");
     }, PROGRESS_DELAY);
+
+    bookmarkTimer = win.setTimeout(() => {
+      if (activeGeneration !== id) return;
+      bookmarkTimer = null;
+      setBookmarkVisible(doc, true);
+    }, BOOKMARK_DELAY);
 
     event.signal?.addEventListener("abort", () => clearGeneration(id), { once: true });
 
@@ -70,29 +93,34 @@ export function installNavigationFeedback(doc, win) {
   doc.addEventListener("astro:after-preparation", () => {
     if (activeGeneration === null) return;
     cancelProgressTimer();
+    clearBookmark();
     if (progressWasShown) setProgressState(doc, "prepared");
   });
 
   doc.addEventListener("astro:before-swap", (event) => {
     if (activeGeneration === null) return;
     cancelProgressTimer();
+    clearBookmark();
     event.newDocument?.body?.setAttribute("data-navigating", "true");
+    setBookmarkVisible(event.newDocument, false);
     setProgressState(event.newDocument, progressWasShown ? "prepared" : undefined);
   });
 
   doc.addEventListener("astro:after-swap", () => {
     cancelProgressTimer();
+    clearBookmark();
+    doc.body?.removeAttribute("data-navigating");
     if (activeGeneration === null || win.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const content = doc.querySelector(CONTENT_SELECTOR);
     if (typeof content?.animate !== "function") return;
 
     const animation = content.animate(
       [
-        { opacity: 0, transform: "translateY(4px)" },
+        { opacity: 0, transform: "translateY(6px)" },
         { opacity: 1, transform: "translateY(0)" }
       ],
       {
-        duration: 220,
+        duration: 240,
         easing: "cubic-bezier(0.2, 0.7, 0.25, 1)",
         fill: "both"
       }
@@ -111,6 +139,7 @@ export function installNavigationFeedback(doc, win) {
   doc.addEventListener("astro:page-load", () => {
     if (activeGeneration === null) return;
     cancelProgressTimer();
+    clearBookmark();
     activeGeneration = null;
     doc.body?.removeAttribute("data-navigating");
     setProgressState(doc, progressWasShown ? "complete" : undefined);
@@ -131,6 +160,7 @@ export function installNavigationFeedback(doc, win) {
     generation += 1;
     activeGeneration = null;
     cancelProgressTimer();
+    clearBookmark();
     progressWasShown = false;
     doc.body?.removeAttribute("data-navigating");
     setProgressState(doc);
