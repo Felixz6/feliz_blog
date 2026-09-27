@@ -76,6 +76,9 @@ body[data-fuyukawa] .nav-links a:hover,
 body[data-fuyukawa] .nav-links a[aria-current="page"] {
   color: var(--accent); background: #edf5fd80; transform: none;
 }
+body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]:hover {
+  color: var(--rose); background: #fceff580;
+}
 body[data-fuyukawa] .nav-links a:where([data-navigation-tone="pink"])[aria-current="page"] {
   color: var(--rose); background: #fceff580;
 }

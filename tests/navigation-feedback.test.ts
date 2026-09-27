@@ -469,6 +469,18 @@ test("destination gradients apply only while pending, not to static or hover bac
 });
 
 
+test("BLOG and ME hover capsules are pink while HOME and WORKS stay blue", () => {
+  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
+  const rule = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]:hover');
+  assert.ok(rule);
+  const declarations = Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+  assert.equal(declarations.background, "#fceff580");
+  assert.equal(declarations.color, "var(--rose)");
+  const defaultHover = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a:hover,\nbody[data-fuyukawa] .nav-links a[aria-current="page"]');
+  assert.ok(defaultHover);
+  assert.equal(defaultHover.nodes.find((node) => node.prop === "background").value, "#edf5fd80");
+});
+
 test("shared theme styles use ordered external URLs across client-side page swaps", () => {
   const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
   const head = layout.match(/<head>([^]*?)<\/head>/)?.[1];
