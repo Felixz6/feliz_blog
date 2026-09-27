@@ -361,6 +361,7 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .site-footer { padding: 40px 24px 76px; }
   body[data-fuyukawa] .footer-inner { grid-template-columns: 1fr; gap: 10px; }
   body[data-fuyukawa] .toy-dock { --dock-top: 86px; }
+  body[data-fuyukawa] .toy-dock-handle svg { width: 16px; height: 16px; }
 }
 @media (max-width: 480px) {
   body[data-fuyukawa] .site-header { padding: 8px 12px; gap: 6px; }
