@@ -363,6 +363,20 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .toy-dock { --dock-top: 86px; }
   body[data-fuyukawa] .toy-dock-handle { right: -30px; width: 30px; height: 48px; }
   body[data-fuyukawa] .toy-dock-handle svg { width: 16px; height: 16px; }
+  /* Compact the opened player while preserving its responsive scroll area. */
+  body[data-fuyukawa] .toy-dock { width: min(320px, calc(100vw - 52px)); }
+  body[data-fuyukawa] .toy-dock-panel { padding: 14px; }
+  body[data-fuyukawa] .music-widget { gap: 12px; }
+  body[data-fuyukawa] .music-player-shell { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; }
+  body[data-fuyukawa] .music-widget .record-player { width: 96px; height: 96px; }
+  body[data-fuyukawa] .music-widget .record-disc { width: 72px; height: 72px; }
+  body[data-fuyukawa] .music-widget .record-label { width: 26px; height: 26px; }
+  body[data-fuyukawa] .music-info-area { gap: 6px; }
+  body[data-fuyukawa] .music-track { font-size: .9rem; }
+  body[data-fuyukawa] .music-bottom-row { grid-template-columns: 112px minmax(0, 1fr); gap: 10px; }
+  body[data-fuyukawa] .music-controls { grid-template-columns: 30px 36px 30px; gap: 6px; }
+  body[data-fuyukawa] .music-controls button { height: 34px; }
+  body[data-fuyukawa] .music-controls svg { width: 15px; height: 15px; }
 }
 @media (max-width: 480px) {
   body[data-fuyukawa] .site-header { padding: 8px 12px; gap: 6px; }

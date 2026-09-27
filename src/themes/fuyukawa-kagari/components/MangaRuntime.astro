@@ -1,5 +1,5 @@
 <script>
-  import { mountMangaScene, mountChapterRail, mountAlbum, mountArchive } from "../lib/manga-runtime.mjs";
+  import { mountMangaScene, mountChapterRail, mountAlbum, mountArchive, mountArticleToc } from "../lib/manga-runtime.mjs";
   let cleanup: (() => void)[] = [];
   let mountedRoots: HTMLElement[] = [];
   const dispose = () => {
@@ -15,7 +15,8 @@
       ["[data-manga-scene]", mountMangaScene],
       ["[data-manga-rail]", mountChapterRail],
       ["[data-manga-album]", mountAlbum],
-      ["[data-manga-archive]", mountArchive]
+      ["[data-manga-archive]", mountArchive],
+      ["[data-article-shell]", mountArticleToc]
     ] as const;
     const rootsByTarget = targets.map(([selector, mount]) => ({
       mount,

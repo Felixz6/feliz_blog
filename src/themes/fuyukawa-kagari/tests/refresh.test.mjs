@@ -48,6 +48,23 @@ test("mobile music drawer handle and play triangle are compact", () => {
   assert.deepEqual(handleIcon, { width: "16px", height: "16px" });
 });
 
+test("mobile opened music player uses compact grid tracks and controls", () => {
+  const rules = new Map();
+  postcss.parse(css).walkAtRules("media", (rule) => {
+    if (rule.params !== "(max-width: 760px)") return;
+    rule.walkRules((child) => {
+      if (child.selector?.startsWith("body[data-fuyukawa]")) {
+        rules.set(child.selector, Object.fromEntries(child.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value])));
+      }
+    });
+  });
+  assert.equal(rules.get("body[data-fuyukawa] .toy-dock").width, "min(320px, calc(100vw - 52px))");
+  assert.equal(rules.get("body[data-fuyukawa] .music-player-shell")["grid-template-columns"], "96px minmax(0, 1fr)");
+  assert.equal(rules.get("body[data-fuyukawa] .music-bottom-row")["grid-template-columns"], "112px minmax(0, 1fr)");
+  assert.equal(rules.get("body[data-fuyukawa] .music-controls")["grid-template-columns"], "30px 36px 30px");
+  assert.equal(rules.get("body[data-fuyukawa] .music-controls button").height, "34px");
+});
+
 test("home and archive preserve complete covers in stable portrait frames", () => {
   const rules = new Map();
   postcss.parse(css).walkRules((rule) => {
@@ -88,6 +105,24 @@ test("header stays transparent with symmetric centered navigation", () => {
   assert.equal(nav["grid-column"], "2");
   assert.equal(nav["justify-self"], "center");
   assert.match(css, /max-width: 760px[^]*?\.nav-links \{ grid-column: 1;[^}]*justify-content: center/);
+});
+
+test("active article TOC keeps chapter labels aligned", () => {
+  const activeRules = [];
+  postcss.parse(css).walkRules((rule) => {
+    if (!rule.selector.includes('.article-toc a[aria-current="location"]')
+      && !rule.selector.includes('.article-mobile-toc nav a[aria-current="location"]')) return;
+    const declarations = Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+    assert.equal("padding" in declarations, false, rule.selector);
+    if ("padding-left" in declarations || "margin-left" in declarations) {
+      assert.equal(declarations["padding-left"], "10px", rule.selector);
+      assert.equal(declarations["margin-left"], "-10px", rule.selector);
+      assert.equal(parseFloat(declarations["padding-left"]) + parseFloat(declarations["margin-left"]), 0, rule.selector);
+    }
+    activeRules.push(declarations);
+  });
+  assert.ok(activeRules.some((declarations) => declarations.color === "var(--rose)" && declarations.background === "#f7eaf080"));
+  assert.ok(activeRules.some((declarations) => declarations["box-shadow"] === "inset 2px 0 0 var(--rose)"));
 });
 
 test("all theme templates parse without errors", async () => {
@@ -156,17 +191,27 @@ function node(dataset = {}) {
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-function searchFixture(pagefind) {
+function searchFixture(pagefind, href = "https://example.test/blog/") {
   const input = node();
   const output = node();
+  const searchMeta = node();
+  searchMeta.hidden = true;
+  const summary = node();
+  const moreButton = node();
+  moreButton.hidden = true;
   const prefix = node({ themeRoutePrefix: "/themes/fuyukawa-kagari" });
   const documentEvents = new Map();
+  const windowEvents = new Map();
   const timers = new Map();
+  const location = new URL(href);
   let timerId = 0;
   const document = {
     querySelector: (selector) => ({
       "[data-blog-search]": input,
       "[data-blog-search-results]": output,
+      "[data-blog-search-meta]": searchMeta,
+      "[data-blog-search-summary]": summary,
+      "[data-blog-search-more]": moreButton,
       "[data-theme-route-prefix]": prefix
     })[selector],
     querySelectorAll: () => [],
@@ -174,7 +219,16 @@ function searchFixture(pagefind) {
     removeEventListener: (key, value) => { if (documentEvents.get(key) === value) documentEvents.delete(key); }
   };
   const window = {
-    location: { origin: "https://example.test" },
+    location,
+    history: {
+      state: null,
+      replaceState(state, _title, target) {
+        this.state = state;
+        location.href = new URL(target, location.href).href;
+      }
+    },
+    addEventListener: (key, value) => windowEvents.set(key, value),
+    removeEventListener: (key, value) => { if (windowEvents.get(key) === value) windowEvents.delete(key); },
     setTimeout: (callback) => { timers.set(++timerId, callback); return timerId; },
     clearTimeout: (id) => timers.delete(id)
   };
@@ -183,16 +237,19 @@ function searchFixture(pagefind) {
     Function: function () { return () => Promise.resolve(pagefind); }
   });
   const run = () => vm.runInContext(inlineScript("pages/BlogIndexPage.astro"), context);
+  const flush = async () => {
+    const callbacks = [...timers.values()];
+    timers.clear();
+    callbacks.forEach((callback) => callback());
+    await settle();
+  };
   const type = async (value) => {
     input.value = value;
     input.events.get("input")();
-    const callbacks = [...timers.values()];
-    timers.clear();
-    for (const callback of callbacks) callback();
-    await settle();
+    await flush();
   };
   run();
-  return { input, output, window, timers, type, run, documentEvents };
+  return { input, output, searchMeta, summary, moreButton, window, windowEvents, timers, type, flush, run, documentEvents };
 }
 
 test("search ignores stale asynchronous results and clears pending results", async () => {
@@ -245,6 +302,74 @@ test("search failure renders a usable empty fallback", async () => {
   await fixture.type("missing");
   assert.match(fixture.output.innerHTML, /没有找到相关笔记/);
   assert.doesNotMatch(fixture.output.innerHTML, /正在翻页/);
+});
+
+test("search reports total matches, loads more than five, and preserves category/query URL state", async () => {
+  let searchedQuery = "";
+  const fixture = searchFixture({
+    options: async () => {},
+    search: async (query) => {
+      searchedQuery = query;
+      return { results: Array.from({ length: 7 }, (_, index) => ({
+        data: async () => ({
+          url: `/blog/note-${index + 1}/`,
+          meta: { title: `Note ${index + 1}` },
+          excerpt: "A note"
+        })
+      })) };
+    }
+  }, "https://example.test/blog/?category=tech");
+
+  await fixture.type("CTF");
+  assert.equal(searchedQuery, "CTF");
+  assert.equal(fixture.searchMeta.hidden, false);
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 5 篇");
+  assert.equal((fixture.output.innerHTML.match(/class=\"blog-search-result\"/g) ?? []).length, 5);
+  assert.equal(fixture.moreButton.hidden, false);
+  assert.equal(new URL(fixture.window.location.href).searchParams.get("q"), "CTF");
+  assert.equal(new URL(fixture.window.location.href).searchParams.get("category"), "tech");
+
+  await fixture.moreButton.events.get("click")();
+  assert.equal((fixture.output.innerHTML.match(/class=\"blog-search-result\"/g) ?? []).length, 7);
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 7 篇");
+  assert.equal(fixture.moreButton.hidden, true);
+
+  await fixture.type("");
+  assert.equal(fixture.searchMeta.hidden, true);
+  assert.equal(fixture.summary.textContent, "");
+  assert.equal(new URL(fixture.window.location.href).searchParams.has("q"), false);
+  assert.equal(new URL(fixture.window.location.href).searchParams.get("category"), "tech");
+});
+
+test("search restores shared query URLs on load and popstate", async () => {
+  const queries = [];
+  const fixture = searchFixture({
+    options: async () => {},
+    search: async (query) => {
+      queries.push(query);
+      return { results: [] };
+    }
+  }, "https://example.test/blog/?q=Steam&category=tech");
+
+  assert.equal(fixture.input.value, "Steam");
+  await fixture.flush();
+  assert.deepEqual(queries, ["Steam"]);
+  assert.equal(fixture.summary.textContent, "共找到 0 篇笔记");
+
+  fixture.window.location.href = "https://example.test/blog/?q=RISC-V&category=life";
+  fixture.windowEvents.get("popstate")();
+  assert.equal(fixture.input.value, "RISC-V");
+  await fixture.flush();
+  assert.deepEqual(queries, ["Steam", "RISC-V"]);
+});
+
+test("blog archive and article tags and categories are linked to shareable search URLs", () => {
+  const archive = read("pages/BlogIndexPage.astro");
+  const article = read("layouts/ArticleLayout.astro");
+  assert.match(archive, /class=\"blog-tag-link\" href=\{getBlogTagHref\(tag\)\}/);
+  assert.match(archive, /class=\"blog-category-filter-link\" href=\{getBlogCategoryHref\(post\.data\.category\)\}/);
+  assert.match(article, /class=\"blog-tag-link\" href=\{getThemePath\([^\n]+\?q=\$\{encodeURIComponent\(tag\)\}/);
+  assert.match(article, /\?category=\$\{encodeURIComponent\(frontmatter\.category\)\}/);
 });
 
 test("project filters remain functional with status always visible", () => {

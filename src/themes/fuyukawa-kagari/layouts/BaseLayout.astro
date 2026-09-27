@@ -41,7 +41,7 @@ const {
 const canonicalPath = getCanonicalPath(Astro.url.pathname);
 const canonical = new URL(canonicalPath, Astro.site ?? Astro.url);
 // Bypass the stale CDN 404 entries cached during the shared-CSS rollout.
-const sharedStylesheetVersion = "20260927-nav-glass";
+const sharedStylesheetVersion = "20260928-blog-search-toc";
 const themeHomePath = getThemePath("fuyukawa-kagari", "/");
 const heroCharacter = mangaArt("hero-character");
 const heroManga = mangaArt("hero-manga");

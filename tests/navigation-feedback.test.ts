@@ -495,7 +495,7 @@ test("shared theme styles use ordered external URLs across client-side page swap
 
 test("shared stylesheet requests bypass stale CDN 404 entries without changing the palette", () => {
   const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
-  assert.match(layout, /const sharedStylesheetVersion = "20260927-nav-glass";/);
+  assert.match(layout, /const sharedStylesheetVersion = "20260928-blog-search-toc";/);
   for (const name of ["theme", "refresh", "manga"]) {
     assert.ok(layout.includes('<link rel="stylesheet" href={`${' + name + 'Href}?v=${sharedStylesheetVersion}`} />'));
   }

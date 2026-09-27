@@ -188,19 +188,92 @@ export function mountArchive(root) {
   const tabs = [...root.querySelectorAll("[data-archive-category]")];
   const entries = [...root.querySelectorAll("[data-entry-category]")];
   const count = root.querySelector("[data-archive-count]");
+  const view = root.ownerDocument?.defaultView ?? globalThis.window;
+  const validCategories = new Set(tabs.map((tab) => tab.dataset.archiveCategory));
+  const renderCategory = (category) => {
+    const selected = validCategories.has(category) ? category : "all";
+    let visible = 0;
+    tabs.forEach((tab) => tab.setAttribute("aria-pressed", String(tab.dataset.archiveCategory === selected)));
+    entries.forEach((entry) => {
+      entry.hidden = selected !== "all" && entry.dataset.entryCategory !== selected;
+      if (!entry.hidden) visible++;
+    });
+    if (count) count.textContent = `${visible} 篇笔记`;
+  };
+  const writeCategoryToUrl = (category) => {
+    if (!view?.location || !view?.history) return;
+    const url = new URL(view.location.href);
+    if (category === "all") url.searchParams.delete("category");
+    else url.searchParams.set("category", category);
+    view.history.replaceState(view.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  };
+  const readCategoryFromUrl = () => {
+    if (!view?.location) return "all";
+    return new URL(view.location.href).searchParams.get("category") ?? "all";
+  };
   const handlers = tabs.map((tab) => {
     const choose = () => {
-      const category = tab.dataset.archiveCategory;
-      let visible = 0;
-      tabs.forEach((item) => item.setAttribute("aria-pressed", String(item === tab)));
-      entries.forEach((entry) => {
-        entry.hidden = category !== "all" && entry.dataset.entryCategory !== category;
-        if (!entry.hidden) visible++;
-      });
-      if (count) count.textContent = `${visible} 篇笔记`;
+      const category = tab.dataset.archiveCategory ?? "all";
+      renderCategory(category);
+      writeCategoryToUrl(category);
     };
     tab.addEventListener("click", choose);
     return () => tab.removeEventListener("click", choose);
   });
-  return () => handlers.forEach((remove) => remove());
+  const restoreCategoryFromUrl = () => renderCategory(readCategoryFromUrl());
+  view?.addEventListener?.("popstate", restoreCategoryFromUrl);
+  restoreCategoryFromUrl();
+  return () => {
+    handlers.forEach((remove) => remove());
+    view?.removeEventListener?.("popstate", restoreCategoryFromUrl);
+  };
+}
+
+export function mountArticleToc(root, win = globalThis.window) {
+  const navigationRoots = [...root.querySelectorAll("[data-article-toc]")];
+  const headingById = new Map(
+    [...root.querySelectorAll(".prose h2[id], .prose h3[id]")].map((heading) => [heading.id, heading])
+  );
+  const groups = navigationRoots.map((navigation) =>
+    [...navigation.querySelectorAll('a[href^="#"]')]
+      .map((link) => {
+        const href = link.getAttribute("href") ?? "";
+        let id = href.slice(1);
+        try { id = decodeURIComponent(id); } catch {}
+        return { link, heading: headingById.get(id) };
+      })
+      .filter((entry) => entry.heading)
+  ).filter((group) => group.length);
+  if (!groups.length || !win) return () => {};
+
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    // Account for the combined root scroll-padding and heading scroll-margin on hash jumps.
+    const activationLine = Math.max(220, Math.min(360, (win.innerHeight || 0) * 0.32));
+    for (const group of groups) {
+      let active = group[0];
+      for (const entry of group) {
+        if (entry.heading.getBoundingClientRect().top <= activationLine) active = entry;
+        else break;
+      }
+      for (const entry of group) {
+        if (entry === active) entry.link.setAttribute("aria-current", "location");
+        else entry.link.removeAttribute("aria-current");
+      }
+    }
+  };
+  const schedule = () => {
+    if (!frame) frame = win.requestAnimationFrame(update);
+  };
+  win.addEventListener("scroll", schedule, { passive: true });
+  win.addEventListener("resize", schedule, { passive: true });
+  win.addEventListener("hashchange", schedule);
+  schedule();
+  return () => {
+    win.cancelAnimationFrame(frame);
+    win.removeEventListener("scroll", schedule);
+    win.removeEventListener("resize", schedule);
+    win.removeEventListener("hashchange", schedule);
+  };
 }
