@@ -1,22 +1,36 @@
 <script>
   import { mountMangaScene, mountChapterRail, mountAlbum, mountArchive } from "../lib/manga-runtime.mjs";
   let cleanup: (() => void)[] = [];
-  const dispose = () => { cleanup.splice(0).forEach((stop) => stop()); };
+  let mountedRoots: HTMLElement[] = [];
+  const dispose = () => {
+    cleanup.splice(0).forEach((stop) => stop());
+    mountedRoots = [];
+  };
   const start = () => {
-    dispose();
-    if (!document.body.hasAttribute("data-fuyukawa")) return;
-    for (const [selector, mount] of [
+    if (!document.body.hasAttribute("data-fuyukawa")) {
+      dispose();
+      return;
+    }
+    const targets = [
       ["[data-manga-scene]", mountMangaScene],
       ["[data-manga-rail]", mountChapterRail],
       ["[data-manga-album]", mountAlbum],
       ["[data-manga-archive]", mountArchive]
-    ] as const) {
-      document.querySelectorAll<HTMLElement>(selector).forEach((root) => cleanup.push(mount(root)));
-    }
+    ] as const;
+    const rootsByTarget = targets.map(([selector, mount]) => ({
+      mount,
+      roots: [...document.querySelectorAll<HTMLElement>(selector)]
+    }));
+    const roots = rootsByTarget.flatMap(({ roots }) => roots);
+    if (roots.length === mountedRoots.length && roots.every((root, index) => root === mountedRoots[index])) return;
+    dispose();
+    rootsByTarget.forEach(({ mount, roots }) => roots.forEach((root) => cleanup.push(mount(root))));
+    mountedRoots = roots;
   };
   document.addEventListener("astro:page-load", start);
   document.addEventListener("astro:before-swap", () => {
     dispose();
     window.__yuimiHomeRainCleanup?.();
   });
+  start();
 </script>

@@ -1,0 +1,33 @@
+Branch/field: about anime shelf CLANNAD image assets.
+MODIFIED_FILE=/Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/clannad.webp
+DIFF_FILE=/Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-refresh/DIFF_FILE.txt
+VERIFICATION.txt=/Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-refresh/VERIFICATION.txt
+ROLLBACK.sh=/Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-refresh/ROLLBACK.sh
+
+BASELINE command: node - <<'NODE' (sharp metadata/byte-size check for the three CLANNAD assets; before replacement)
+BASELINE input: original clannad.webp, clannad-640.webp, clannad-320.webp
+BASELINE literal output:
+clannad.webp: 900x506, 76764 bytes
+responsive/clannad-640.webp: 640x360, 29612 bytes
+responsive/clannad-320.webp: 320x180, 12536 bytes
+BASELINE exit status: 0
+
+MODIFIED command: node - <<'NODE' (same sharp metadata/byte-size check; after replacement)
+MODIFIED input: regenerated clannad.webp, clannad-640.webp, clannad-320.webp
+MODIFIED literal output:
+clannad.webp: 900x506, 236500 bytes
+responsive/clannad-640.webp: 640x360, 131386 bytes
+responsive/clannad-320.webp: 320x180, 38026 bytes
+MODIFIED exit status: 0
+MODIFIED visual inspection: scene shows crisp outlines and details in main 900x506 asset.
+
+ROLLBACK command: .codex-artifacts/clannad-refresh/ROLLBACK.sh "$PWD/.codex-artifacts/clannad-refresh/rollback-test" && cmp -s .codex-artifacts/clannad-refresh/original/clannad.webp .codex-artifacts/clannad-refresh/rollback-test/clannad.webp && cmp -s .codex-artifacts/clannad-refresh/original/clannad-640.webp .codex-artifacts/clannad-refresh/rollback-test/responsive/clannad-640.webp && cmp -s .codex-artifacts/clannad-refresh/original/clannad-320.webp .codex-artifacts/clannad-refresh/rollback-test/responsive/clannad-320.webp && echo 'ROLLBACK MATCH: 3/3 originals restored'
+ROLLBACK input: copy of the three modified files, not the live files
+ROLLBACK literal output:
+Restored CLANNAD original images in /Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-refresh/rollback-test
+ROLLBACK MATCH: 3/3 originals restored
+ROLLBACK exit status: 0
+ROLLBACK restored behavior/status: test copy matches all three original image files byte-for-byte; live MODIFIED_FILE remains changed.
+
+Generator: built-in image_gen edit, source /Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/clannad.webp (original backup retained).
+Prompt: Faithfully recreate the same five-character CLANNAD grass-and-trees scene as a crisp high-resolution anime illustration; preserve composition, poses, clothing colors and nostalgic mood; no text, logo, watermark, or extra people.

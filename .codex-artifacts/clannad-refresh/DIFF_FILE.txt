@@ -1,0 +1,10 @@
+Branch/field: about anime shelf CLANNAD image assets; no page markup changed.
+MODIFIED_FILE: /Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/clannad.webp
+Also replaced: /Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/responsive/clannad-640.webp
+Also replaced: /Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/responsive/clannad-320.webp
+Original SHA256 (main): 9dc3bb3db2c2868e79ff99321c530ecce98ecf18f84aab70edc2d2254b44b25e
+Modified SHA256 (main): 7bb146b108a3d8801da3e070aeca146db79e5cd5b7c300f4d4b4ff161fc88067
+Main: 900x506, 76764 -> 236500 bytes
+640 variant: 640x360, 29612 -> 131386 bytes
+320 variant: 320x180, 12536 -> 38026 bytes
+Visual delta: regenerated clean anime linework and detail while preserving the group-on-grass composition.

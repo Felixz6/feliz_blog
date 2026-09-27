@@ -1,6 +1,6 @@
 ---
 import { getCollection, render } from "astro:content";
-import { ArticlePage } from "@/themes/fuyukawa-kagari";
+import ArticlePage from "@/themes/fuyukawa-kagari/pages/ArticlePage.astro";
 
 export async function getStaticPaths() {
   const notes = await getCollection("riscVNotes");

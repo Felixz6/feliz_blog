@@ -1,0 +1,49 @@
+Branch/field: About page anime shelf / CLANNAD cover assets.
+MODIFIED_FILE=/Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/clannad.webp
+DIFF_FILE=/Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-soften/DIFF_FILE.txt
+VERIFICATION.txt=/Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-soften/VERIFICATION.txt
+ROLLBACK.sh=/Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-soften/ROLLBACK.sh
+
+BASELINE command: node - <<'NODE' (Sharp metadata/bytes/SHA256 for the three live CLANNAD assets, before change)
+BASELINE input: prior crisp clannad.webp, responsive/clannad-640.webp, responsive/clannad-320.webp
+BASELINE literal output:
+clannad.webp: 900x506, 236500 bytes, sha256 7bb146b108a3d8801da3e070aeca146db79e5cd5b7c300f4d4b4ff161fc88067
+responsive/clannad-640.webp: 640x360, 131386 bytes, sha256 cbd7aa2ab675317aba04704df010289db7fe9d0cb87fd43dfae5bd08a45f2afd
+responsive/clannad-320.webp: 320x180, 38026 bytes, sha256 fcf4ebe81b47cae5da5ee57b7761b6a0df1e1a4cb1d18fbf884e2b136d0d6850
+BASELINE exit status: 0
+
+MODIFIED command: node - <<'NODE' (same Sharp metadata/bytes/SHA256 for the three live CLANNAD assets, after change)
+MODIFIED input: softer clannad.webp, responsive/clannad-640.webp, responsive/clannad-320.webp
+MODIFIED literal output:
+clannad.webp: 900x506, 189260 bytes, sha256 2861c7f524d1b12cb3699c73cdb53e68dac5f7a3a60ea0156d91b5768d5781e4
+responsive/clannad-640.webp: 640x360, 111340 bytes, sha256 b7caca19d3dea696a882df2089cc4938e6d337d2fede45efff10dabb1efa04e0
+responsive/clannad-320.webp: 320x180, 32788 bytes, sha256 1f2343b7c6fb058a5657668f9fd88ffb9743ece678fee8c5bb29c20dc915ae27
+MODIFIED exit status: 0
+MODIFIED visual inspection: five characters and composition preserved; softer colors and light; faces and contours readable.
+
+ROLLBACK command: .codex-artifacts/clannad-soften/ROLLBACK.sh "$PWD/.codex-artifacts/clannad-soften/rollback-test" && cmp -s .codex-artifacts/clannad-soften/previous/clannad.webp .codex-artifacts/clannad-soften/rollback-test/clannad.webp && cmp -s .codex-artifacts/clannad-soften/previous/clannad-640.webp .codex-artifacts/clannad-soften/rollback-test/responsive/clannad-640.webp && cmp -s .codex-artifacts/clannad-soften/previous/clannad-320.webp .codex-artifacts/clannad-soften/rollback-test/responsive/clannad-320.webp && echo 'ROLLBACK MATCH: 3/3 prior images restored'
+ROLLBACK input: separate copy of all three modified image files
+ROLLBACK literal output:
+Restored prior CLANNAD images in /Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-soften/rollback-test
+ROLLBACK MATCH: 3/3 prior images restored
+ROLLBACK exit status: 0
+ROLLBACK restored behavior/status: test copy byte-identical to previous crisp assets; live MODIFIED_FILE remains softer.
+
+Generator: built-in image_gen edit.
+Prompt: Make current CLANNAD image subtly softer and more nostalgic, with gentle diffused daylight, less harsh micro-contrast and saturation, while preserving all five characters, poses, framing, sharp readable faces and outlines; no text or extras. Oregairu image used only as softness reference.
+
+Exact repeatable smoke commands (working directory /Users/feliz/Documents/feliz_blog):
+BASELINE command: shasum -a 256 .codex-artifacts/clannad-soften/previous/clannad.webp
+BASELINE input: copied prior main asset
+BASELINE literal output: 7bb146b108a3d8801da3e070aeca146db79e5cd5b7c300f4d4b4ff161fc88067  .codex-artifacts/clannad-soften/previous/clannad.webp
+BASELINE exit status: 0
+MODIFIED command: shasum -a 256 public/themes/fuyukawa-kagari/assets/about/clannad.webp
+MODIFIED input: live softer main asset
+MODIFIED literal output: 2861c7f524d1b12cb3699c73cdb53e68dac5f7a3a60ea0156d91b5768d5781e4  public/themes/fuyukawa-kagari/assets/about/clannad.webp
+MODIFIED exit status: 0
+ROLLBACK command: .codex-artifacts/clannad-soften/ROLLBACK.sh "$PWD/.codex-artifacts/clannad-soften/rollback-test" && cmp -s .codex-artifacts/clannad-soften/previous/clannad.webp .codex-artifacts/clannad-soften/rollback-test/clannad.webp && echo 'ROLLBACK MATCH: main restored'
+ROLLBACK input: separate copy of modified image
+ROLLBACK literal output:
+Restored prior CLANNAD images in /Users/feliz/Documents/feliz_blog/.codex-artifacts/clannad-soften/rollback-test
+ROLLBACK MATCH: main restored
+ROLLBACK exit status: 0

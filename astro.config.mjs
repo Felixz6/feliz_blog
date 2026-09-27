@@ -8,9 +8,12 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExpressiveCode from "rehype-expressive-code";
 import * as pagefind from "pagefind";
 import { fileURLToPath } from "node:url";
+import expressiveCodeDomCopyPlugin from "./src/core/expressive-code-dom-copy-plugin.mjs";
+import rehypeRemoveExpressiveCodeCopyData from "./src/core/rehype-remove-expressive-code-copy-data.mjs";
 
 const expressiveCodeOptions = {
   themes: ["github-dark"],
+  plugins: [expressiveCodeDomCopyPlugin],
   defaultProps: {
     wrap: true,
     overridesByLang: {
@@ -192,7 +195,8 @@ export default defineConfig({
           }
         }
       ],
-      [rehypeExpressiveCode, expressiveCodeOptions]
+      [rehypeExpressiveCode, expressiveCodeOptions],
+      rehypeRemoveExpressiveCodeCopyData
     ]
   },
   devToolbar: {
