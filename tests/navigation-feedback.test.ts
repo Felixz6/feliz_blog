@@ -420,5 +420,79 @@ test("the paper bookmark stays anchored, non-blocking and uses only transform/op
   assert.ok(keyframes);
   keyframes.walkDecls((decl) => assert.ok(["transform", "opacity"].includes(decl.prop)));
   const pending = css.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
-  assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--pink-soft)");
+  assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--nav-fill)");
+});
+
+
+test("navigation routes explicitly assign pink to blog/me and blue to home/works", () => {
+  const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
+  const mapping = layout.match(/tone: (\[[^\]]+\])\.includes\(item\.href\) \? "pink" : "blue"/);
+  assert.ok(mapping);
+  const pinkRoutes = JSON.parse(mapping[1]);
+  assert.deepEqual(pinkRoutes, ["/blog/", "/about/"]);
+  for (const [path, tone] of [["/", "blue"], ["/blog/", "pink"], ["/projects/", "blue"], ["/about/", "pink"]]) {
+    assert.equal(pinkRoutes.includes(path) ? "pink" : "blue", tone);
+  }
+  assert.match(layout, /data-navigation-tone=\{item\.tone\}/);
+});
+
+test("destination gradients apply only while pending, not to static or hover backgrounds", () => {
+  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
+  const declarationsFor = (selector) => {
+    const rule = css.nodes.find((node) => node.type === "rule" && node.selector === selector);
+    assert.ok(rule, selector);
+    return Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+  };
+  const blue = declarationsFor('body[data-fuyukawa] .nav-links a');
+  assert.equal(blue["--nav-ink"], "var(--accent)");
+  assert.equal(blue["--nav-tint"], "#edf5fd80");
+  assert.equal(blue["--nav-fill"], "linear-gradient(180deg, #ffffff45 0%, var(--nav-tint) 100%)");
+  const pink = declarationsFor('body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]');
+  assert.equal(pink["--nav-ink"], "var(--rose)");
+  assert.equal(pink["--nav-tint"], "#fceff580");
+  const selected = declarationsFor('body[data-fuyukawa] .nav-links a[aria-current="page"]');
+  assert.equal(selected["box-shadow"], "inset 0 -2px 0 #a9cbe4");
+  const states = declarationsFor('body[data-fuyukawa] .nav-links a:hover,\nbody[data-fuyukawa] .nav-links a[aria-current="page"]');
+  assert.equal(states.background, "#edf5fd80");
+  assert.equal(states.color, "var(--accent)");
+  const pinkSelected = declarationsFor('body[data-fuyukawa] .nav-links a:where([data-navigation-tone="pink"])[aria-current="page"]');
+  assert.equal(pinkSelected.background, "#fceff580");
+  assert.equal(pinkSelected.color, "var(--rose)");
+  assert.equal(blue["--nav-tint"], states.background);
+  assert.equal(pink["--nav-tint"], pinkSelected.background);
+  assert.doesNotMatch(css.toString(), /nav-links a:nth-child\(even\)/);
+  const theme = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
+  const pending = theme.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--nav-fill)");
+  assert.equal(pending.nodes.find((node) => node.prop === "color").value, "var(--nav-ink)");
+  css.walkDecls("background", (decl) => assert.notEqual(decl.value, "var(--nav-fill)", decl.parent.selector));
+});
+
+
+test("shared theme styles use ordered external URLs across client-side page swaps", () => {
+  const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
+  const head = layout.match(/<head>([^]*?)<\/head>/)?.[1];
+  assert.ok(head);
+  const hrefs = [...head.matchAll(/<link rel="stylesheet" href=\{(\w+)\}/g)].map((match) => match[1]);
+  assert.deepEqual(hrefs, ["themeHref", "refreshHref", "mangaHref", "refreshPagesHref", "mangaPagesHref"]);
+  for (const name of ["theme", "refresh", "manga"]) {
+    assert.ok(layout.includes(`import ${name}Href from "../styles/${name}.css?url";`));
+  }
+  assert.doesNotMatch(layout, /import\s+["'][^"']*\/(?:theme|refresh|manga)\.css["']/);
+});
+
+test("idle glass capsule retains its original transparency, blur, radius and dimensions", () => {
+  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
+  const nav = css.nodes.find((node) => node.type === "rule" && node.selector === "body[data-fuyukawa] .nav-links");
+  const values = Object.fromEntries(nav.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+  assert.equal(values.background, "#ffffff45");
+  assert.equal(values["backdrop-filter"], "blur(8px)");
+  assert.equal(values["-webkit-backdrop-filter"], "blur(8px)");
+  assert.equal(values["border-radius"], "999px");
+  assert.equal(values.padding, "5px");
+  const link = css.nodes.find((node) => node.type === "rule" && node.selector === "body[data-fuyukawa] .nav-links a");
+  const styles = Object.fromEntries(link.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+  assert.equal(styles.background, "transparent");
+  assert.equal(styles["min-height"], "46px");
+  assert.equal(styles.padding, "7px 13px");
 });

@@ -1,7 +1,7 @@
 ---
-import "../styles/theme.css";
-import "@/themes/fuyukawa-kagari/styles/refresh.css";
-import "@/themes/fuyukawa-kagari/styles/manga.css";
+import themeHref from "../styles/theme.css?url";
+import refreshHref from "../styles/refresh.css?url";
+import mangaHref from "../styles/manga.css?url";
 import refreshPagesHref from "../styles/refresh-pages.css?url";
 import mangaPagesHref from "../styles/manga-pages.css?url";
 import { site } from "@/lib/site";
@@ -45,6 +45,7 @@ const heroCharacter = mangaArt("hero-character");
 const heroManga = mangaArt("hero-manga");
 const navItems = site.nav.map((item) => ({
   ...item,
+  tone: ["/blog/", "/about/"].includes(item.href) ? "pink" : "blue",
   href: getThemePath("fuyukawa-kagari", item.href)
 }));
 const voyagerOneStart = new Date("1977-09-05T12:56:00Z");
@@ -126,6 +127,10 @@ const themedNotFoundRedirectScript = `(() => {
         />
       </>
     )}
+    <!-- Shared URLs avoid stale dev inline CSS replacing current styles during page swaps. -->
+    <link rel="stylesheet" href={themeHref} />
+    <link rel="stylesheet" href={refreshHref} />
+    <link rel="stylesheet" href={mangaHref} />
     {canonicalPath !== "/" && <link rel="stylesheet" href={refreshPagesHref} />}
     {canonicalPath !== "/" && <link rel="stylesheet" href={mangaPagesHref} />}
     <ClientRouter />
@@ -226,7 +231,7 @@ const themedNotFoundRedirectScript = `(() => {
         <nav class="nav-links" aria-label="Main navigation">
           {
             navItems.map((item) => (
-              <a href={item.href} data-astro-prefetch="hover" aria-label={`${item.label}: ${item.hint}`} aria-current={(item.href === themeHomePath ? Astro.url.pathname === item.href : Astro.url.pathname.startsWith(item.href)) ? "page" : undefined}>
+              <a href={item.href} data-navigation-tone={item.tone} data-astro-prefetch="hover" aria-label={`${item.label}: ${item.hint}`} aria-current={(item.href === themeHomePath ? Astro.url.pathname === item.href : Astro.url.pathname.startsWith(item.href)) ? "page" : undefined}>
                 <span class="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
                 <span class="nav-label">{item.label}</span>
                 <span class="nav-hint">{item.hint}</span>
