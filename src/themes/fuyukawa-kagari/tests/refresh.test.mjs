@@ -32,6 +32,17 @@ test("refresh uses bounded typography, reduced motion, and compact-screen layout
   assert.match(css, /\.post-cover-frame[^}]*aspect-ratio: 7 \/ 10/);
 });
 
+test("mobile music drawer handle uses a smaller play triangle", () => {
+  let handleIcon;
+  postcss.parse(css).walkAtRules("media", (rule) => {
+    if (rule.params !== "(max-width: 760px)") return;
+    rule.walkRules("body[data-fuyukawa] .toy-dock-handle svg", (iconRule) => {
+      handleIcon = Object.fromEntries(iconRule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+    });
+  });
+  assert.deepEqual(handleIcon, { width: "16px", height: "16px" });
+});
+
 test("home and archive preserve complete covers in stable portrait frames", () => {
   const rules = new Map();
   postcss.parse(css).walkRules((rule) => {
