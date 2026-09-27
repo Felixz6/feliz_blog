@@ -1,22 +1,16 @@
-const PROGRESS_SELECTOR = "[data-navigation-progress]";
 const CONTENT_SELECTOR = "#page-content";
-const PROGRESS_DELAY = 100;
-const BOOKMARK_DELAY = 600;
+const BOOKMARK_DELAY = 500;
 
 export function installNavigationFeedback(doc, win) {
   let generation = 0;
   let activeGeneration = null;
-  let progressTimer = null;
   let bookmarkTimer = null;
-  let progressWasShown = false;
+  let pendingLink = null;
   let contentAnimation = null;
 
-  const progressFor = (root) => root?.querySelector(PROGRESS_SELECTOR);
-  const setProgressState = (root, state) => {
-    const progress = progressFor(root);
-    if (!progress) return;
-    if (state) progress.dataset.state = state;
-    else delete progress.dataset.state;
+  const clearPendingLink = () => {
+    if (pendingLink) delete pendingLink.dataset.navigationPending;
+    pendingLink = null;
   };
   const setBookmarkVisible = (root, visible) => {
     const bookmark = root?.querySelector("[data-navigation-bookmark]");
@@ -24,44 +18,31 @@ export function installNavigationFeedback(doc, win) {
     if (visible) bookmark.dataset.visible = "true";
     else delete bookmark.dataset.visible;
     const message = bookmark.querySelector("[data-navigation-message]");
-    if (message) message.textContent = visible ? "正在翻到下一页" : "";
+    if (message) message.textContent = visible ? "次の頁をめくる…" : "";
   };
   const clearBookmark = () => {
     if (bookmarkTimer !== null) win.clearTimeout(bookmarkTimer);
     bookmarkTimer = null;
     setBookmarkVisible(doc, false);
   };
-  const cancelProgressTimer = () => {
-    if (progressTimer === null) return;
-    win.clearTimeout(progressTimer);
-    progressTimer = null;
-  };
   const clearGeneration = (id) => {
     if (activeGeneration !== id) return;
-    cancelProgressTimer();
     clearBookmark();
+    clearPendingLink();
     activeGeneration = null;
-    progressWasShown = false;
     doc.body?.removeAttribute("data-navigating");
-    setProgressState(doc);
   };
 
   doc.addEventListener("astro:before-preparation", (event) => {
-    cancelProgressTimer();
     clearBookmark();
+    clearPendingLink();
     contentAnimation?.cancel();
     contentAnimation = null;
     const id = ++generation;
     activeGeneration = id;
-    progressWasShown = false;
     doc.body?.setAttribute("data-navigating", "true");
-    setProgressState(doc);
-    progressTimer = win.setTimeout(() => {
-      if (activeGeneration !== id) return;
-      progressTimer = null;
-      progressWasShown = true;
-      setProgressState(doc, "loading");
-    }, PROGRESS_DELAY);
+    pendingLink = event.sourceElement?.closest?.(".nav-links a") ?? null;
+    if (pendingLink) pendingLink.dataset.navigationPending = "true";
 
     bookmarkTimer = win.setTimeout(() => {
       if (activeGeneration !== id) return;
@@ -92,23 +73,20 @@ export function installNavigationFeedback(doc, win) {
 
   doc.addEventListener("astro:after-preparation", () => {
     if (activeGeneration === null) return;
-    cancelProgressTimer();
     clearBookmark();
-    if (progressWasShown) setProgressState(doc, "prepared");
   });
 
   doc.addEventListener("astro:before-swap", (event) => {
     if (activeGeneration === null) return;
-    cancelProgressTimer();
     clearBookmark();
     event.newDocument?.body?.setAttribute("data-navigating", "true");
     setBookmarkVisible(event.newDocument, false);
-    setProgressState(event.newDocument, progressWasShown ? "prepared" : undefined);
+    clearPendingLink();
   });
 
   doc.addEventListener("astro:after-swap", () => {
-    cancelProgressTimer();
     clearBookmark();
+    clearPendingLink();
     doc.body?.removeAttribute("data-navigating");
     if (activeGeneration === null || win.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const content = doc.querySelector(CONTENT_SELECTOR);
@@ -138,19 +116,10 @@ export function installNavigationFeedback(doc, win) {
 
   doc.addEventListener("astro:page-load", () => {
     if (activeGeneration === null) return;
-    cancelProgressTimer();
     clearBookmark();
+    clearPendingLink();
     activeGeneration = null;
     doc.body?.removeAttribute("data-navigating");
-    setProgressState(doc, progressWasShown ? "complete" : undefined);
-    progressWasShown = false;
-  });
-
-  doc.addEventListener("animationend", (event) => {
-    const progress = progressFor(doc);
-    if (event.target === progress && event.animationName === "navigation-progress-fade-out" && progress.dataset.state === "complete") {
-      delete progress.dataset.state;
-    }
   });
 
   win.addEventListener("pageshow", (event) => {
@@ -159,10 +128,8 @@ export function installNavigationFeedback(doc, win) {
     contentAnimation = null;
     generation += 1;
     activeGeneration = null;
-    cancelProgressTimer();
     clearBookmark();
-    progressWasShown = false;
+    clearPendingLink();
     doc.body?.removeAttribute("data-navigating");
-    setProgressState(doc);
   });
 }
