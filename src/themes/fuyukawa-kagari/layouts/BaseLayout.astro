@@ -72,7 +72,7 @@ const themedNotFoundRedirectScript = `(() => {
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" transition:animate="none">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -143,9 +143,6 @@ const themedNotFoundRedirectScript = `(() => {
       <div class="scroll-progress-track">
         <div class="scroll-progress-fill"></div>
       </div>
-    </div>
-    <div class="navigation-progress" data-navigation-progress aria-hidden="true">
-      <div class="navigation-progress-fill" data-navigation-progress-fill></div>
     </div>
     <aside class="toy-dock" aria-label="Music controls" transition:persist="yuimi-toy-dock">
       <button class="toy-dock-handle" type="button" aria-label="打开音乐工具" title="音乐播放器" aria-expanded="false" aria-controls="toy-dock-panel">
@@ -236,6 +233,16 @@ const themedNotFoundRedirectScript = `(() => {
               </a>
             ))
           }
+          <span class="navigation-progress" data-navigation-progress aria-hidden="true">
+            <span class="navigation-progress-fill" data-navigation-progress-fill></span>
+          </span>
+          <span class="navigation-bookmark" data-navigation-bookmark role="status" aria-live="polite" aria-atomic="true">
+            <svg class="navigation-bookmark-petal" viewBox="0 0 20 24" fill="none" aria-hidden="true">
+              <path d="M10 21C2 17 1 9 5 3l5 3 5-3c4 6 3 14-5 18Z" fill="currentColor" />
+              <path d="M10 10v8" stroke="var(--paper)" stroke-width="1" stroke-linecap="round" />
+            </svg>
+            <span data-navigation-message></span>
+          </span>
         </nav>
       </header>
       <main id="page-content" tabindex="-1">
