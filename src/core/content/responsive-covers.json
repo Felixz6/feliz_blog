@@ -307,34 +307,6 @@
       }
     ]
   },
-  "/blog-covers/cover-12.webp": {
-    "width": 900,
-    "height": 1600,
-    "hash": "844b0b59",
-    "opaque": true,
-    "variants": [
-      {
-        "width": 320,
-        "src": "/blog-covers/responsive/cover-12-320-f2885830.webp",
-        "bytes": 47754
-      },
-      {
-        "width": 480,
-        "src": "/blog-covers/responsive/cover-12-480-f2885830.webp",
-        "bytes": 88530
-      },
-      {
-        "width": 640,
-        "src": "/blog-covers/responsive/cover-12-640-f2885830.webp",
-        "bytes": 134336
-      },
-      {
-        "width": 768,
-        "src": "/blog-covers/responsive/cover-12-768-f2885830.webp",
-        "bytes": 167666
-      }
-    ]
-  },
   "/blog-covers/cover-13.webp": {
     "width": 1080,
     "height": 1392,
