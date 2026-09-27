@@ -122,65 +122,12 @@ img {
   border-radius: inherit;
 }
 
-/* Loading belongs to the glass navigation, never to a full-screen overlay. */
-.navigation-progress {
-  position: absolute;
-  inset: auto 24px -1px;
-  height: 2px;
-  border-radius: 999px;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease-out;
-}
-
-.navigation-progress[data-state="loading"],
-.navigation-progress[data-state="prepared"],
-.navigation-progress[data-state="complete"] {
-  opacity: 1;
-}
-
-.navigation-progress-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--rose), var(--pink) 72%, var(--pink-soft));
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.25, 1);
-}
-
-.navigation-progress[data-state="loading"] .navigation-progress-fill {
-  transform: scaleX(0.8);
-}
-
-.navigation-progress[data-state="prepared"] .navigation-progress-fill {
-  transform: scaleX(0.84);
-}
-
-.navigation-progress[data-state="complete"] .navigation-progress-fill {
-  transform: scaleX(1);
-}
-
-.navigation-progress[data-state="complete"] {
-  animation: navigation-progress-fade-out 140ms ease-out 80ms forwards;
-  transition: none;
-}
-
-.navigation-progress[data-state="complete"] .navigation-progress-fill {
-  animation: navigation-progress-finish 80ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
-  transition: none;
-}
-
-@keyframes navigation-progress-finish {
-  from { transform: scaleX(0.84); }
-  to { transform: scaleX(1); }
-}
-
-@keyframes navigation-progress-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+/* A quiet paper bookmark replaces the loading bar; the current page stays usable. */
+body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"] {
+  color: var(--rose);
+  background: var(--pink-soft);
+  box-shadow: none;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
 }
 
 .navigation-bookmark {
@@ -226,21 +173,34 @@ img {
   transition-delay: 0s;
 }
 
-.navigation-bookmark-petal {
+.navigation-book {
   flex: none;
-  width: 14px;
-  height: 18px;
-  color: var(--pink);
-  transform-origin: 50% 85%;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
 }
 
-.navigation-bookmark[data-visible="true"] .navigation-bookmark-petal {
-  animation: navigation-petal-sway 1600ms ease-in-out infinite;
+.navigation-book-page {
+  fill: var(--paper);
+  stroke: var(--pink);
+  opacity: 0;
+  transform-box: view-box;
+  transform-origin: 12px 12px;
 }
 
-@keyframes navigation-petal-sway {
-  0%, 100% { transform: rotate(-9deg); }
-  50% { transform: rotate(9deg); }
+.navigation-bookmark[data-visible="true"] .navigation-book-page {
+  animation: navigation-page-turn 1800ms cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+.navigation-bookmark[data-visible="true"] .navigation-book-page--second {
+  animation-delay: 280ms;
+}
+
+@keyframes navigation-page-turn {
+  0%, 12% { transform: scaleX(1); opacity: 0; }
+  22% { transform: scaleX(1); opacity: 1; }
+  68% { transform: scaleX(-1); opacity: 1; }
+  82%, 100% { transform: scaleX(-1); opacity: 0; }
 }
 
 /* Keep the old page readable while fetching; only the new paper lifts into place. */
@@ -268,19 +228,12 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
     transform: translateX(-50%);
   }
 
-  .navigation-bookmark[data-visible="true"] .navigation-bookmark-petal {
+  .navigation-bookmark[data-visible="true"] .navigation-book-page {
     animation: none;
   }
 
-  .navigation-progress,
-  .navigation-progress-fill {
-    transition-duration: 1ms;
-  }
-
-  .navigation-progress[data-state="complete"],
-  .navigation-progress[data-state="complete"] .navigation-progress-fill {
-    animation-duration: 1ms;
-    animation-delay: 0ms;
+  body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"] {
+    transition: none;
   }
 }
 

@@ -46,25 +46,18 @@ class FakeElement {
 
 function makePage() {
   const body = new FakeElement();
-  const progress = new FakeElement();
-  const fill = new FakeElement();
   const content = new FakeElement();
   const bookmark = new FakeElement();
   const message = new FakeElement();
   bookmark.children.set("[data-navigation-message]", message);
-  progress.children.set("[data-navigation-progress-fill]", fill);
-  body.children.set("[data-navigation-progress]", progress);
   body.children.set("#page-content", content);
   return {
     body,
-    progress,
-    fill,
     content,
     bookmark,
     message,
     querySelector(selector) {
       if (selector === "[data-navigation-bookmark]") return bookmark;
-      if (selector === "[data-navigation-progress]") return progress;
       if (selector === "#page-content") return content;
       return null;
     }
@@ -122,30 +115,47 @@ function makeWindow(reducedMotion = false) {
   };
 }
 
-function preparationEvent({ signal = new AbortController().signal, loader = async () => {}, type = "push" } = {}) {
-  return { signal, loader, navigationType: type, defaultPrevented: false };
+function preparationEvent({ signal = new AbortController().signal, loader = async () => {}, type = "push", sourceElement } = {}) {
+  return { signal, loader, navigationType: type, sourceElement, defaultPrevented: false };
 }
 
-test("Astro lifecycle paints immediate feedback, completes progress, and fades the swapped main only", async () => {
+function navLink() {
+  const link = new FakeElement();
+  link.closest = (selector) => selector === ".nav-links a" ? link : null;
+  return link;
+}
+
+function setup(reducedMotion = false) {
   const doc = makeDocument();
-  const win = makeWindow();
+  const win = makeWindow(reducedMotion);
   installNavigationFeedback(doc, win);
+  return { doc, win };
+}
 
-  const start = preparationEvent();
+function assertCleared(doc, win, link) {
+  assert.equal(doc.page.bookmark.dataset.visible, undefined);
+  assert.equal(doc.page.message.textContent, "");
+  assert.equal(doc.body.dataset.navigating, undefined);
+  assert.equal(win.pendingTimerCount, 0);
+  if (link) assert.equal(link.dataset.navigationPending, undefined);
+}
+
+test("Astro lifecycle acknowledges the link immediately and animates only incoming content", async () => {
+  const { doc, win } = setup();
+  const link = navLink();
+  const start = preparationEvent({ sourceElement: link });
   doc.dispatch("astro:before-preparation", start);
+  assert.equal(link.dataset.navigationPending, "true");
   assert.equal(doc.body.dataset.navigating, "true");
-  assert.equal(doc.page.progress.dataset.state, undefined);
-  win.advance(100);
-  assert.equal(doc.page.progress.dataset.state, "loading");
+  assert.equal(doc.page.bookmark.dataset.visible, undefined);
   await start.loader();
-
   doc.dispatch("astro:after-preparation");
-  assert.equal(doc.page.progress.dataset.state, "prepared");
+  assert.equal(win.pendingTimerCount, 0);
+  assert.equal(link.dataset.navigationPending, "true");
 
   const incoming = makePage();
   doc.dispatch("astro:before-swap", { newDocument: incoming });
-  assert.equal(incoming.body.dataset.navigating, "true");
-  assert.equal(incoming.progress.dataset.state, "prepared");
+  assert.equal(link.dataset.navigationPending, undefined);
   doc.swapTo(incoming);
   doc.dispatch("astro:after-swap");
   assert.deepEqual(incoming.content.animations[0], {
@@ -155,323 +165,177 @@ test("Astro lifecycle paints immediate feedback, completes progress, and fades t
     ],
     options: { duration: 240, easing: "cubic-bezier(0.2, 0.7, 0.25, 1)", fill: "both" }
   });
+  assert.equal(incoming.body.animations.length, 0);
   incoming.content.animationHandle.finish();
   assert.equal(incoming.content.animationHandle.cancelled, true);
-
   doc.dispatch("astro:page-load");
-  assert.equal(incoming.body.dataset.navigating, undefined);
-  assert.equal(incoming.progress.dataset.state, "complete");
-  doc.dispatch("animationend", { target: incoming.progress, animationName: "navigation-progress-fade-out" });
-  assert.equal(incoming.progress.dataset.state, undefined);
-
-  const back = preparationEvent({ type: "traverse" });
-  doc.dispatch("astro:before-preparation", back);
-  win.advance(100);
-  assert.equal(doc.page.progress.dataset.state, "loading");
-  assert.equal(doc.body.dataset.navigating, "true");
+  assertCleared(doc, win, link);
 });
 
-test("aborted, rejected, and prevented preparations clear the active loading state", async () => {
-  const doc = makeDocument();
-  installNavigationFeedback(doc, makeWindow());
-
-  const controller = new AbortController();
-  doc.dispatch("astro:before-preparation", preparationEvent({ signal: controller.signal }));
-  controller.abort();
-  assert.equal(doc.body.dataset.navigating, undefined);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-
-  const rejected = preparationEvent({ loader: async () => { throw new Error("network failure"); } });
-  doc.dispatch("astro:before-preparation", rejected);
-  await assert.rejects(rejected.loader(), /network failure/);
-  assert.equal(doc.body.dataset.navigating, undefined);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-
-  const prevented = preparationEvent({ loader: async () => { prevented.defaultPrevented = true; } });
-  doc.dispatch("astro:before-preparation", prevented);
-  await prevented.loader();
-  assert.equal(doc.body.dataset.navigating, undefined);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-});
-
-test("a late abort from an older rapid click cannot clear the newer navigation", async () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-
-  const oldController = new AbortController();
-  let releaseOldLoader;
-  const oldLoaderWait = new Promise((resolve) => { releaseOldLoader = resolve; });
-  const oldNavigation = preparationEvent({ signal: oldController.signal, loader: () => oldLoaderWait });
-  doc.dispatch("astro:before-preparation", oldNavigation);
-  const oldLoader = oldNavigation.loader();
-
-  const newController = new AbortController();
-  doc.dispatch("astro:before-preparation", preparationEvent({ signal: newController.signal }));
-  oldController.abort();
-  releaseOldLoader();
-  await oldLoader;
-  win.advance(100);
-  assert.equal(doc.body.dataset.navigating, "true");
-  assert.equal(doc.page.progress.dataset.state, "loading");
-
-  newController.abort();
-  assert.equal(doc.body.dataset.navigating, undefined);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-});
-
-test("a new navigation cancels a finished-page animation before dimming the outgoing main", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(100);
-
-  const incoming = makePage();
-  doc.dispatch("astro:before-swap", { newDocument: incoming });
-  doc.swapTo(incoming);
-  doc.dispatch("astro:after-swap");
-  const oldContentAnimation = incoming.content.animationHandle;
-  assert.equal(oldContentAnimation.cancelled, false);
-
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(100);
-  assert.equal(oldContentAnimation.cancelled, true);
-  assert.equal(doc.body.dataset.navigating, "true");
-  assert.equal(doc.page.progress.dataset.state, "loading");
-});
-
-test("reduced motion skips content translation while retaining the lightweight progress indicator", () => {
-  const doc = makeDocument();
-  const win = makeWindow(true);
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(100);
-  const incoming = makePage();
-  doc.dispatch("astro:before-swap", { newDocument: incoming });
-  doc.swapTo(incoming);
-  doc.dispatch("astro:after-swap");
-  assert.equal(incoming.content.animations.length, 0);
-  assert.equal(incoming.progress.dataset.state, "prepared");
-
-  const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
-  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
-  const progressRule = css.nodes.find((node) => node.type === "rule" && node.selector === ".navigation-progress");
-  const declarations = Object.fromEntries(progressRule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
-  assert.equal(declarations.position, "absolute");
-  assert.equal(declarations.inset, "auto 24px -1px");
-  assert.equal(declarations.height, "2px");
-  assert.equal(declarations["pointer-events"], "none");
-  assert.match(css.toString(), /navigation-progress-fill[^}]*transform: scaleX\(0\)/);
-  assert.match(css.toString(), /navigation-progress\[data-state="loading"\][^]*?scaleX\(0\.8\)/);
-  assert.match(css.toString(), /prefers-reduced-motion: reduce[^]*?#page-content[^]*?transition: none/);
-  assert.match(css.toString(), /prefers-reduced-motion: reduce[^]*?opacity: 1;[^]*?transform: none/);
-  assert.match(layout, /data-navigation-progress/);
-  assert.match(layout, /installNavigationFeedback\(document, window\)/);
-});
-
-test("a 50ms navigation keeps immediate main feedback but never shows the progress bar", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-
-  assert.equal(doc.body.dataset.navigating, "true");
-  win.advance(50);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-  doc.dispatch("astro:after-preparation");
-  assert.equal(win.pendingTimerCount, 0);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-
-  const incoming = makePage();
-  doc.dispatch("astro:before-swap", { newDocument: incoming });
-  doc.swapTo(incoming);
-  doc.dispatch("astro:after-swap");
-  doc.dispatch("astro:page-load");
-  assert.equal(incoming.progress.dataset.state, undefined);
-  assert.equal(incoming.body.dataset.navigating, undefined);
-});
-
-test("a 150ms preparation shows progress and completes it through Astro page-load", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(150);
-  assert.equal(doc.page.progress.dataset.state, "loading");
-
-  doc.dispatch("astro:after-preparation");
-  assert.equal(doc.page.progress.dataset.state, "prepared");
-  const incoming = makePage();
-  doc.dispatch("astro:before-swap", { newDocument: incoming });
-  doc.swapTo(incoming);
-  doc.dispatch("astro:after-swap");
-  doc.dispatch("astro:page-load");
-  assert.equal(incoming.progress.dataset.state, "complete");
-});
-
-test("cancelling before the threshold clears the pending progress timer", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  const controller = new AbortController();
-  doc.dispatch("astro:before-preparation", preparationEvent({ signal: controller.signal }));
-  win.advance(50);
-  assert.equal(win.pendingTimerCount, 2);
-
-  controller.abort();
-  assert.equal(win.pendingTimerCount, 0);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-  win.advance(150);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-  assert.equal(doc.body.dataset.navigating, undefined);
-});
-
-test("consecutive navigations replace the old threshold timer without stale effects", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  const oldController = new AbortController();
-  doc.dispatch("astro:before-preparation", preparationEvent({ signal: oldController.signal }));
-  win.advance(50);
-
-  const currentController = new AbortController();
-  doc.dispatch("astro:before-preparation", preparationEvent({ signal: currentController.signal }));
-  oldController.abort();
-  assert.equal(win.pendingTimerCount, 2);
-  win.advance(50);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-  win.advance(50);
-  assert.equal(doc.page.progress.dataset.state, "loading");
-  assert.equal(doc.body.dataset.navigating, "true");
-
-  currentController.abort();
-  assert.equal(win.pendingTimerCount, 0);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-});
-
-test("page-load before 100ms cancels the timer without flashing 100 percent", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(50);
-  doc.dispatch("astro:after-swap");
-  doc.dispatch("astro:page-load");
-
-  assert.equal(win.pendingTimerCount, 0);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-  win.advance(150);
-  assert.equal(doc.page.progress.dataset.state, undefined);
-});
-
-
-test("the paper bookmark appears at 600ms, then leaves as soon as preparation is ready", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(599);
-  assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  assert.equal(doc.page.message.textContent, "");
-  win.advance(1);
-  assert.equal(doc.page.bookmark.dataset.visible, "true");
-  assert.equal(doc.page.message.textContent, "正在翻到下一页");
-  assert.equal(doc.page.progress.dataset.state, "loading");
-  doc.dispatch("astro:after-preparation");
-  assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  assert.equal(doc.page.message.textContent, "");
-  assert.equal(win.pendingTimerCount, 0);
-  const incoming = makePage();
-  doc.dispatch("astro:before-swap", { newDocument: incoming });
-  doc.swapTo(incoming);
-  doc.dispatch("astro:after-swap");
-  assert.equal(doc.body.dataset.navigating, undefined);
-  doc.dispatch("astro:page-load");
-  win.advance(1000);
-  assert.equal(incoming.bookmark.dataset.visible, undefined);
-  assert.equal(incoming.message.textContent, "");
-});
-
-test("fast navigation never flashes or announces the slow-load bookmark", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(50);
-  doc.dispatch("astro:after-preparation");
-  win.advance(1000);
-  assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  assert.equal(doc.page.message.textContent, "");
-  assert.equal(win.pendingTimerCount, 0);
-});
-
-test("abort, rejection and prevented navigation each remove a visible bookmark", async () => {
-  for (const outcome of ["abort", "reject", "prevent"]) {
-    const doc = makeDocument();
-    const win = makeWindow();
-    const controller = new AbortController();
-    installNavigationFeedback(doc, win);
-    const event = preparationEvent({ signal: controller.signal, loader: async () => {
-      if (outcome === "reject") throw new Error("network failure");
-      if (outcome === "prevent") event.defaultPrevented = true;
-    } });
+test("50ms, 150ms and 499ms navigations never show or announce a loading label", async () => {
+  for (const delay of [50, 150, 499]) {
+    const { doc, win } = setup();
+    const event = preparationEvent({ loader: async () => "ready" });
     doc.dispatch("astro:before-preparation", event);
-    win.advance(600);
-    assert.equal(doc.page.bookmark.dataset.visible, "true", outcome);
-    if (outcome === "abort") controller.abort();
-    else if (outcome === "reject") await assert.rejects(event.loader(), /network failure/);
-    else await event.loader();
-    assert.equal(doc.page.bookmark.dataset.visible, undefined, outcome);
-    assert.equal(doc.page.message.textContent, "", outcome);
-    assert.equal(doc.body.dataset.navigating, undefined, outcome);
-    assert.equal(win.pendingTimerCount, 0, outcome);
+    win.advance(delay);
+    assert.equal(doc.page.bookmark.dataset.visible, undefined);
+    assert.equal(doc.page.message.textContent, "");
+    assert.equal(await event.loader(), "ready");
+    doc.dispatch("astro:after-preparation");
+    doc.dispatch("astro:after-swap");
+    doc.dispatch("astro:page-load");
+    win.advance(1000);
+    assertCleared(doc, win);
   }
 });
 
-test("rapid navigation replaces the bookmark deadline and ignores a stale loader failure", async () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  let rejectOld;
-  const oldWait = new Promise((resolve, reject) => { rejectOld = reject; });
-  const oldEvent = preparationEvent({ loader: () => oldWait });
-  doc.dispatch("astro:before-preparation", oldEvent);
-  const oldRun = oldEvent.loader();
-  win.advance(600);
-  assert.equal(doc.page.bookmark.dataset.visible, "true");
-  const current = new AbortController();
-  doc.dispatch("astro:before-preparation", preparationEvent({ signal: current.signal }));
-  assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  win.advance(599);
+test("at 500ms the bookmark announces the exact Japanese text and disappears on readiness", () => {
+  const { doc, win } = setup();
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(499);
   assert.equal(doc.page.bookmark.dataset.visible, undefined);
   win.advance(1);
   assert.equal(doc.page.bookmark.dataset.visible, "true");
-  rejectOld(new Error("old request failed"));
-  await assert.rejects(oldRun, /old request failed/);
-  assert.equal(doc.page.bookmark.dataset.visible, "true");
-  current.abort();
-  assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  assert.equal(win.pendingTimerCount, 0);
-});
-
-test("back-forward cache restoration clears timers, bookmarks and content animations", () => {
-  const doc = makeDocument();
-  const win = makeWindow();
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(600);
-  win.dispatch("pageshow", { persisted: true });
+  assert.equal(doc.page.message.textContent, "次の頁をめくる…");
+  doc.dispatch("astro:after-preparation");
   assert.equal(doc.page.bookmark.dataset.visible, undefined);
   assert.equal(doc.page.message.textContent, "");
-  assert.equal(doc.body.dataset.navigating, undefined);
-  assert.equal(doc.page.progress.dataset.state, undefined);
   assert.equal(win.pendingTimerCount, 0);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.dispatch("pageshow", { persisted: true });
+  const incoming = makePage();
+  doc.dispatch("astro:before-swap", { newDocument: incoming });
+  doc.swapTo(incoming);
+  doc.dispatch("astro:after-swap");
+  doc.dispatch("astro:page-load");
   win.advance(1000);
+  assertCleared(doc, win);
+});
+
+test("abort, rejection and prevention each clear the bookmark, pending link and timer", async () => {
+  for (const delay of [50, 550]) {
+    for (const outcome of ["abort", "reject", "prevent"]) {
+      const { doc, win } = setup();
+      const link = navLink();
+      const controller = new AbortController();
+      const event = preparationEvent({ sourceElement: link, signal: controller.signal, loader: async () => {
+        if (outcome === "reject") throw new Error("network failure");
+        if (outcome === "prevent") event.defaultPrevented = true;
+      } });
+      doc.dispatch("astro:before-preparation", event);
+      win.advance(delay);
+      if (delay >= 500) assert.equal(doc.page.bookmark.dataset.visible, "true");
+      if (outcome === "abort") controller.abort();
+      else if (outcome === "reject") await assert.rejects(event.loader(), /network failure/);
+      else await event.loader();
+      win.advance(1000);
+      assertCleared(doc, win, link);
+    }
+  }
+});
+
+test("preventDefault without running the loader also clears click feedback", async () => {
+  const { doc, win } = setup();
+  const link = navLink();
+  const event = preparationEvent({ sourceElement: link });
+  doc.dispatch("astro:before-preparation", event);
+  event.defaultPrevented = true;
+  await Promise.resolve();
+  win.advance(1000);
+  assertCleared(doc, win, link);
+});
+
+test("a late abort and loader completion from an older click cannot clear the new request", async () => {
+  const { doc, win } = setup();
+  const oldController = new AbortController();
+  let release;
+  const wait = new Promise((resolve) => { release = resolve; });
+  const old = preparationEvent({ signal: oldController.signal, loader: () => wait });
+  doc.dispatch("astro:before-preparation", old);
+  const run = old.loader();
+  const link = navLink();
+  const controller = new AbortController();
+  doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement: link, signal: controller.signal }));
+  oldController.abort();
+  release();
+  await run;
+  win.advance(500);
+  assert.equal(doc.page.bookmark.dataset.visible, "true");
+  assert.equal(link.dataset.navigationPending, "true");
+  controller.abort();
+  assertCleared(doc, win, link);
+});
+
+test("late rejection from an older click cannot dismiss the current Japanese bookmark", async () => {
+  const { doc, win } = setup();
+  let rejectOld;
+  const wait = new Promise((resolve, reject) => { rejectOld = reject; });
+  const event = preparationEvent({ loader: () => wait });
+  doc.dispatch("astro:before-preparation", event);
+  const run = event.loader();
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(500);
+  rejectOld(new Error("old request failed"));
+  await assert.rejects(run, /old request failed/);
+  assert.equal(doc.page.bookmark.dataset.visible, "true");
+  assert.equal(doc.page.message.textContent, "次の頁をめくる…");
+});
+
+test("consecutive clicks reset the 500ms deadline and move the pending highlight", () => {
+  const { doc, win } = setup();
+  const oldLink = navLink();
+  const currentLink = navLink();
+  const oldController = new AbortController();
+  const currentController = new AbortController();
+  doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement: oldLink, signal: oldController.signal }));
+  win.advance(450);
+  doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement: currentLink, signal: currentController.signal }));
+  oldController.abort();
+  assert.equal(oldLink.dataset.navigationPending, undefined);
+  assert.equal(currentLink.dataset.navigationPending, "true");
+  assert.equal(win.pendingTimerCount, 1);
+  win.advance(499);
   assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  assert.equal(win.pendingTimerCount, 0);
+  win.advance(1);
+  assert.equal(doc.page.bookmark.dataset.visible, "true");
+  currentController.abort();
+  assertCleared(doc, win, currentLink);
+});
+
+test("a new navigation cancels the previous content entrance without retaining transforms", () => {
+  const { doc, win } = setup();
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  doc.dispatch("astro:after-swap");
+  const animation = doc.page.content.animationHandle;
+  assert.equal(animation.cancelled, false);
+  doc.dispatch("astro:page-load");
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  assert.equal(animation.cancelled, true);
+  assert.equal(win.pendingTimerCount, 1);
+});
+
+test("reduced motion retains a static Japanese message without content or book animation", () => {
+  const { doc, win } = setup(true);
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(500);
+  assert.equal(doc.page.message.textContent, "次の頁をめくる…");
+  doc.dispatch("astro:after-swap");
+  assert.equal(doc.page.content.animations.length, 0);
+  assertCleared(doc, win);
+  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
+  const reduced = css.nodes.find((node) => node.type === "atrule" && node.params === "(prefers-reduced-motion: reduce)");
+  const pages = reduced.nodes.find((node) => node.selector === '.navigation-bookmark[data-visible="true"] .navigation-book-page');
+  assert.equal(pages.nodes.find((node) => node.prop === "animation").value, "none");
+});
+
+test("back-forward cache restores without a stuck label, pending highlight or animation", () => {
+  const { doc, win } = setup();
+  const link = navLink();
+  for (const delay of [100, 500]) {
+    doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement: link }));
+    win.advance(delay);
+    win.dispatch("pageshow", { persisted: true });
+    win.advance(1000);
+    assertCleared(doc, win, link);
+  }
   doc.dispatch("astro:before-preparation", preparationEvent());
   doc.dispatch("astro:after-swap");
   const animation = doc.page.content.animationHandle;
@@ -479,31 +343,82 @@ test("back-forward cache restoration clears timers, bookmarks and content animat
   assert.equal(animation.cancelled, true);
 });
 
-test("reduced motion retains a static slow-load message without content motion", () => {
-  const doc = makeDocument();
-  const win = makeWindow(true);
-  installNavigationFeedback(doc, win);
-  doc.dispatch("astro:before-preparation", preparationEvent());
-  win.advance(600);
-  assert.equal(doc.page.message.textContent, "正在翻到下一页");
-  doc.dispatch("astro:after-swap");
-  assert.equal(doc.page.content.animations.length, 0);
-  assert.equal(doc.body.dataset.navigating, undefined);
-  assert.equal(doc.page.bookmark.dataset.visible, undefined);
-  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
-  const reduced = css.nodes.find((node) => node.type === "atrule" && node.params === "(prefers-reduced-motion: reduce)");
-  const petal = reduced.nodes.find((node) => node.selector === '.navigation-bookmark[data-visible="true"] .navigation-bookmark-petal');
-  assert.equal(petal.nodes.find((node) => node.prop === "animation").value, "none");
+test("page-load alone clears timers and pending links without waiting for animationend", () => {
+  const { doc, win } = setup();
+  const link = navLink();
+  doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement: link }));
+  win.advance(100);
+  doc.dispatch("astro:page-load");
+  win.advance(1000);
+  assertCleared(doc, win, link);
 });
 
-test("navigation markup embeds feedback in the capsule and disables whole-page crossfading", () => {
+test("nested navigation icons resolve to their link without changing aria-current", () => {
+  const { doc, win } = setup();
+  const link = navLink();
+  link.setAttribute("aria-current", "page");
+  const sourceElement = { closest: (selector) => selector === ".nav-links a" ? link : null };
+  doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement }));
+  assert.equal(link.dataset.navigationPending, "true");
+  assert.equal(link.attributes.get("aria-current"), "page");
+  doc.dispatch("astro:page-load");
+  assertCleared(doc, win, link);
+  assert.equal(link.attributes.get("aria-current"), "page");
+});
+
+test("article links and browser-back navigation still get the delayed bookmark", () => {
+  for (const event of [preparationEvent({ sourceElement: { closest: () => null } }), preparationEvent({ type: "traverse" })]) {
+    const { doc, win } = setup();
+    doc.dispatch("astro:before-preparation", event);
+    win.advance(500);
+    assert.equal(doc.page.message.textContent, "次の頁をめくる…");
+    doc.dispatch("astro:page-load");
+    assertCleared(doc, win);
+  }
+});
+
+test("optional nodes or unsupported animate API do not prevent navigation completion", () => {
+  const { doc, win } = setup();
+  doc.querySelector = () => null;
+  doc.dispatch("astro:before-preparation", preparationEvent());
+  win.advance(500);
+  doc.dispatch("astro:after-swap");
+  doc.dispatch("astro:page-load");
+  assert.equal(win.pendingTimerCount, 0);
+  assert.equal(doc.body.dataset.navigating, undefined);
+  const next = setup();
+  next.doc.page.content.animate = undefined;
+  next.doc.dispatch("astro:before-preparation", preparationEvent());
+  next.doc.dispatch("astro:after-swap");
+  next.doc.dispatch("astro:page-load");
+  assertCleared(next.doc, next.win);
+});
+
+test("the loading bar is gone from layout, styling and runtime, not merely hidden", () => {
+  for (const path of ["layouts/BaseLayout.astro", "styles/theme.css", "lib/navigation-feedback.mjs"]) {
+    assert.doesNotMatch(read("../src/themes/fuyukawa-kagari/" + path), /navigation-progress|PROGRESS_DELAY|progressTimer/);
+  }
   const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
   const nav = layout.match(/<nav class="nav-links"[^]*?<\/nav>/)?.[0];
   assert.ok(nav);
-  assert.match(nav, /data-navigation-progress aria-hidden="true"/);
-  assert.match(nav, /data-navigation-bookmark role="status" aria-live="polite" aria-atomic="true"/);
+  assert.match(nav, /data-navigation-bookmark role="status" aria-live="polite" aria-atomic="true" lang="ja"/);
   assert.match(nav, /<span data-navigation-message><\/span>/);
+  assert.match(nav, /navigation-book-page--second/);
   assert.match(layout, /<html lang="zh-CN" transition:animate="none">/);
   assert.match(layout, /transition:persist="yuimi-toy-dock"/);
-  assert.equal((layout.match(/data-navigation-progress aria-hidden/g) ?? []).length, 1);
+  assert.match(layout, /<SakuraRain \/>/);
+});
+
+test("the paper bookmark stays anchored, non-blocking and uses only transform/opacity keyframes", () => {
+  const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
+  const rule = css.nodes.find((node) => node.type === "rule" && node.selector === ".navigation-bookmark");
+  const values = Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+  assert.equal(values.position, "absolute");
+  assert.equal(values["pointer-events"], "none");
+  assert.equal(values["max-width"], "calc(100vw - 32px)");
+  const keyframes = css.nodes.find((node) => node.type === "atrule" && node.name === "keyframes" && node.params === "navigation-page-turn");
+  assert.ok(keyframes);
+  keyframes.walkDecls((decl) => assert.ok(["transform", "opacity"].includes(decl.prop)));
+  const pending = css.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--pink-soft)");
 });
