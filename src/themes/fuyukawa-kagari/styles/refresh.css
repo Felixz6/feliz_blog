@@ -62,14 +62,21 @@ body[data-fuyukawa] .nav-links {
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 999px;
 }
 body[data-fuyukawa] .nav-links a {
+  --nav-ink: var(--accent);
+  --nav-tint: #edf5fd80;
+  --nav-fill: linear-gradient(180deg, #ffffff45 0%, var(--nav-tint) 100%);
   min-height: 46px; padding: 7px 13px; border: 0; border-radius: 999px;
   color: var(--ink-soft); background: transparent; box-shadow: none;
+}
+body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"] {
+  --nav-ink: var(--rose);
+  --nav-tint: #fceff580;
 }
 body[data-fuyukawa] .nav-links a:hover,
 body[data-fuyukawa] .nav-links a[aria-current="page"] {
   color: var(--accent); background: #edf5fd80; transform: none;
 }
-body[data-fuyukawa] .nav-links a:nth-child(even)[aria-current="page"] {
+body[data-fuyukawa] .nav-links a:where([data-navigation-tone="pink"])[aria-current="page"] {
   color: var(--rose); background: #fceff580;
 }
 body[data-fuyukawa] .nav-links a[aria-current="page"] { box-shadow: inset 0 -2px 0 #a9cbe4; }
