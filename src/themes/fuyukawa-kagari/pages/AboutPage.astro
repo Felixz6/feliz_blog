@@ -31,11 +31,14 @@ const techPresentation = {
   ai: { icon: "tabler:sparkles", tone: "pink" }
 } as const;
 const techStack = profileTech.map((tech) => ({ ...tech, ...techPresentation[tech.key] }));
+// CLANNAD was replaced in place; version its URLs to bypass immutable asset caches.
+const animeCoverAsset = (key: string, path: string) =>
+  `${kagariAsset(path)}${key === "clannad" ? "?v=2861c7f5" : ""}`;
 const animeShelf = animeFavorites.map((item) => ({
   ...item,
-  image: kagariAsset(`about/${item.key}.webp`),
-  image320: kagariAsset(`about/responsive/${item.key}-320.webp`),
-  image640: kagariAsset(`about/responsive/${item.key}-640.webp`)
+  image: animeCoverAsset(item.key, `about/${item.key}.webp`),
+  image320: animeCoverAsset(item.key, `about/responsive/${item.key}-320.webp`),
+  image640: animeCoverAsset(item.key, `about/responsive/${item.key}-640.webp`)
 }));
 const nowDoing = currentSignals;
 ---
