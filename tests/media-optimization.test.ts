@@ -43,7 +43,8 @@ test("responsive covers keep accepted sources unchanged and use smaller, same-as
       previous = variant.width;
     }
   }
-  assert.equal(Object.keys(manifest).length, 24);
+  assert.equal(Object.keys(manifest).length, 23);
+  assert.equal(manifest["/blog-covers/cover-12.webp"], undefined);
   assert.ok(smallBytes < originalBytes * .4, "Small-cover total must save at least 60% without lowering quality");
   assert.ok(totalVariants < 6_500_000, "Derivative files have a bounded publishing cost");
 });
