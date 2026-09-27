@@ -60,19 +60,20 @@ test("built pages request MangaRuntime exactly where its interaction roots exist
   }
 });
 
-test("MangaRuntime mounts after page-load and disposes across repeated soft navigations", () => {
+test("MangaRuntime initializes cold pages once and cleans up across repeated soft navigations", () => {
   const component = readFileSync(new URL("components/MangaRuntime.astro", theme), "utf8");
   const script = component.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script);
   const runnable = script
     .replace(/^\s*import .*?;\s*/m, "")
     .replace("let cleanup: (() => void)[] = [];", "let cleanup = [];")
+    .replace("let mountedRoots: HTMLElement[] = [];", "let mountedRoots = [];")
     .replace(" as const", "")
     .replace("querySelectorAll<HTMLElement>", "querySelectorAll");
 
   const listeners = new Map<string, Set<() => void>>();
   const events: string[] = [];
-  let currentRoots: Record<string, string[]> = {};
+  let currentRoots: Record<string, string[]> = { "[data-manga-archive]": ["blog-cold"] };
   const document = {
     body: { hasAttribute: () => true },
     addEventListener(name: string, listener: () => void) {
@@ -97,18 +98,28 @@ test("MangaRuntime mounts after page-load and disposes across repeated soft navi
   assert.equal(listeners.get("astro:page-load")?.size, 1);
   assert.equal(listeners.get("astro:before-swap")?.size, 1);
 
-  // ARTICLE -> BLOG -> ARTICLE -> HOME -> ARTICLE -> HOME.
+  // Cold BLOG mount happens during module evaluation; the first page-load is idempotent.
+  assert.equal(events.filter((event) => event === "mount:archive:blog-cold").length, 1);
   fire("astro:page-load");
-  currentRoots = { "[data-manga-archive]": ["blog"] };
-  fire("astro:before-swap"); fire("astro:page-load");
-  assert.equal(events.filter((event) => event === "mount:archive:blog").length, 1);
+  assert.equal(events.filter((event) => event === "mount:archive:blog-cold").length, 1);
+
+  // BLOG -> ARTICLE -> BLOG.
   currentRoots = {};
   fire("astro:before-swap"); fire("astro:page-load");
-  assert.equal(events.filter((event) => event === "dispose:archive:blog").length, 1);
+  assert.equal(events.filter((event) => event === "dispose:archive:blog-cold").length, 1);
+  currentRoots = { "[data-manga-archive]": ["blog-from-article"] };
+  fire("astro:before-swap"); fire("astro:page-load");
+  assert.equal(events.filter((event) => event === "mount:archive:blog-from-article").length, 1);
+
+  // BLOG -> HOME -> BLOG.
   currentRoots = { "[data-manga-scene]": ["home-scene"], "[data-manga-rail]": ["home-rail"] };
   fire("astro:before-swap"); fire("astro:page-load");
-  currentRoots = {};
+  assert.equal(events.filter((event) => event === "dispose:archive:blog-from-article").length, 1);
+  currentRoots = { "[data-manga-archive]": ["blog-from-home"] };
   fire("astro:before-swap"); fire("astro:page-load");
+  fire("astro:page-load");
+  assert.equal(events.filter((event) => event === "mount:archive:blog-from-home").length, 1);
+
   currentRoots = { "[data-manga-scene]": ["home-scene"], "[data-manga-rail]": ["home-rail"] };
   fire("astro:before-swap"); fire("astro:page-load");
   assert.equal(events.filter((event) => event === "mount:scene:home-scene").length, 2);

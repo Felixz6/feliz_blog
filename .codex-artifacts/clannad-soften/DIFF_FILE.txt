@@ -1,0 +1,8 @@
+Branch/field: About page anime shelf / CLANNAD cover assets.
+MODIFIED_FILE=/Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/clannad.webp
+Also modified=/Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/responsive/clannad-640.webp
+Also modified=/Users/feliz/Documents/feliz_blog/public/themes/fuyukawa-kagari/assets/about/responsive/clannad-320.webp
+Change: soften harsh contrast and saturated greens, add gentle diffused daylight; preserve character outlines and composition.
+Main SHA256: 7bb146b108a3d8801da3e070aeca146db79e5cd5b7c300f4d4b4ff161fc88067 -> 2861c7f524d1b12cb3699c73cdb53e68dac5f7a3a60ea0156d91b5768d5781e4
+640 SHA256: cbd7aa2ab675317aba04704df010289db7fe9d0cb87fd43dfae5bd08a45f2afd -> b7caca19d3dea696a882df2089cc4938e6d337d2fede45efff10dabb1efa04e0
+320 SHA256: fcf4ebe81b47cae5da5ee57b7761b6a0df1e1a4cb1d18fbf884e2b136d0d6850 -> 1f2343b7c6fb058a5657668f9fd88ffb9743ece678fee8c5bb29c20dc915ae27
