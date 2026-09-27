@@ -40,6 +40,8 @@ const {
 } = Astro.props;
 const canonicalPath = getCanonicalPath(Astro.url.pathname);
 const canonical = new URL(canonicalPath, Astro.site ?? Astro.url);
+// Bypass the stale CDN 404 entries cached during the shared-CSS rollout.
+const sharedStylesheetVersion = "20260927-nav-glass";
 const themeHomePath = getThemePath("fuyukawa-kagari", "/");
 const heroCharacter = mangaArt("hero-character");
 const heroManga = mangaArt("hero-manga");
@@ -128,9 +130,9 @@ const themedNotFoundRedirectScript = `(() => {
       </>
     )}
     <!-- Shared URLs avoid stale dev inline CSS replacing current styles during page swaps. -->
-    <link rel="stylesheet" href={themeHref} />
-    <link rel="stylesheet" href={refreshHref} />
-    <link rel="stylesheet" href={mangaHref} />
+    <link rel="stylesheet" href={`${themeHref}?v=${sharedStylesheetVersion}`} />
+    <link rel="stylesheet" href={`${refreshHref}?v=${sharedStylesheetVersion}`} />
+    <link rel="stylesheet" href={`${mangaHref}?v=${sharedStylesheetVersion}`} />
     {canonicalPath !== "/" && <link rel="stylesheet" href={refreshPagesHref} />}
     {canonicalPath !== "/" && <link rel="stylesheet" href={mangaPagesHref} />}
     <ClientRouter />

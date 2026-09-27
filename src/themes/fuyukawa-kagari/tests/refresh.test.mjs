@@ -19,7 +19,7 @@ test("refresh selectors cannot style another theme", () => {
   });
   assert.match(read("layouts/BaseLayout.astro"), /data-fuyukawa/);
   assert.match(read("layouts/BaseLayout.astro"), /import refreshHref from "\.\.\/styles\/refresh\.css\?url"/);
-  assert.match(read("layouts/BaseLayout.astro"), /<link rel="stylesheet" href=\{refreshHref\} \/>/);
+  assert.ok(read("layouts/BaseLayout.astro").includes('<link rel="stylesheet" href={`${refreshHref}?v=${sharedStylesheetVersion}`} />'));
 });
 
 test("refresh uses bounded typography, reduced motion, and compact-screen layouts", () => {

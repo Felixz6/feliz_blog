@@ -473,12 +473,20 @@ test("shared theme styles use ordered external URLs across client-side page swap
   const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
   const head = layout.match(/<head>([^]*?)<\/head>/)?.[1];
   assert.ok(head);
-  const hrefs = [...head.matchAll(/<link rel="stylesheet" href=\{(\w+)\}/g)].map((match) => match[1]);
+  const hrefs = [...head.matchAll(/<link rel="stylesheet" href=\{(?:`\$\{)?(\w+)/g)].map((match) => match[1]);
   assert.deepEqual(hrefs, ["themeHref", "refreshHref", "mangaHref", "refreshPagesHref", "mangaPagesHref"]);
   for (const name of ["theme", "refresh", "manga"]) {
     assert.ok(layout.includes(`import ${name}Href from "../styles/${name}.css?url";`));
   }
   assert.doesNotMatch(layout, /import\s+["'][^"']*\/(?:theme|refresh|manga)\.css["']/);
+});
+
+test("shared stylesheet requests bypass stale CDN 404 entries without changing the palette", () => {
+  const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
+  assert.match(layout, /const sharedStylesheetVersion = "20260927-nav-glass";/);
+  for (const name of ["theme", "refresh", "manga"]) {
+    assert.ok(layout.includes('<link rel="stylesheet" href={`${' + name + 'Href}?v=${sharedStylesheetVersion}`} />'));
+  }
 });
 
 test("idle glass capsule retains its original transparency, blur, radius and dimensions", () => {
