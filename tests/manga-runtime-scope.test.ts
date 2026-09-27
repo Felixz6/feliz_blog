@@ -17,7 +17,7 @@ const builtHome = new URL("index.html", dist);
 const builtOutputIsCurrent = existsSync(builtHome)
   && sourceFiles.every((file) => statSync(builtHome).mtimeMs >= statSync(file).mtimeMs);
 
-const markers = ["data-manga-scene", "data-manga-rail", "data-manga-album", "data-manga-archive"];
+const markers = ["data-manga-scene", "data-manga-rail", "data-manga-album", "data-manga-archive", "data-article-shell"];
 const moduleUrls = (html: string) => [...html.matchAll(/<script\b(?=[^>]*\btype="module")(?=[^>]*\bsrc="([^"]+)")[^>]*>/g)]
   .map((match) => match[1]);
 
@@ -32,7 +32,7 @@ test("built pages request MangaRuntime exactly where its interaction roots exist
     ["themes/fuyukawa-kagari/blog/index.html", ["data-manga-archive"]],
     ["themes/fuyukawa-kagari/about/index.html", ["data-manga-album"]],
     ["projects/index.html", []],
-    ["blog/anime-tech-notes/index.html", []],
+    ["blog/anime-tech-notes/index.html", ["data-article-shell"]],
     ["projects/ctf-notes/index.html", []],
     ["projects/ctf-notes/ssrf/index.html", []]
   ] as const;
@@ -92,7 +92,8 @@ test("MangaRuntime initializes cold pages once and cleans up across repeated sof
     mountMangaScene: mount("scene"),
     mountChapterRail: mount("rail"),
     mountAlbum: mount("album"),
-    mountArchive: mount("archive")
+    mountArchive: mount("archive"),
+    mountArticleToc: mount("article-toc")
   });
   const fire = (name: string) => { for (const listener of listeners.get(name) ?? []) listener(); };
   assert.equal(listeners.get("astro:page-load")?.size, 1);

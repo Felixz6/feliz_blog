@@ -7,7 +7,7 @@ import test from "node:test";
 import sharp from "sharp";
 import postcss from "postcss";
 import { parse } from "@astrojs/compiler";
-import { springStep, layerOffsets, nearestRailIndex, mountMangaScene, mountAlbum, mountArchive, mountChapterRail } from "../lib/manga-runtime.mjs";
+import { springStep, layerOffsets, nearestRailIndex, mountMangaScene, mountAlbum, mountArchive, mountChapterRail, mountArticleToc } from "../lib/manga-runtime.mjs";
 
 const root = process.cwd();
 const theme = path.join(root, "src/themes/fuyukawa-kagari");
@@ -45,28 +45,28 @@ test("artwork derivatives have correct dimensions, transparent stickers and boun
   }
   assert.ok(Object.keys(publishedOptimized).every((file) => manifest.outputs.some((output) => output.file === file)));
   assert.ok(bytes < 3_500_000);
-  assert.equal(manifest.sourceFiles.length, 55);
   assert.ok(manifest.outputs.every((output) => output.sources.every((source) => !source.endsWith(".mp4"))));
 });
 
-const availableSourceFiles = await Promise.all(manifest.sourceFiles.map(async (source) => {
-  try {
-    await fs.access(path.join(root, source.file));
-    return true;
-  } catch (error) {
-    if (error.code === "ENOENT" || error.code === "ENOTDIR") return false;
-    throw error;
-  }
-}));
-const sourceArtworkSkipReason = availableSourceFiles.every((available) => !available)
-  ? "Original source artwork is not included in this checkout; generated derivatives are verified separately"
-  : false;
-
-test("all 55 source artworks remain byte-identical", { skip: sourceArtworkSkipReason }, async () => {
+test("source artwork inventory has valid hashes and included originals remain byte-identical", async () => {
+  assert.equal(manifest.sourceFiles.length, 55);
+  const seen = new Set();
   for (const source of manifest.sourceFiles) {
-    const bytes = await fs.readFile(path.join(root, source.file));
+    assert.match(source.file, /^fuyukawa\/[^/]+$/);
+    assert.match(source.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(seen.has(source.file), false, `duplicate source ${source.file}`);
+    seen.add(source.file);
+
+    let bytes;
+    try {
+      bytes = await fs.readFile(path.join(root, source.file));
+    } catch (error) {
+      if (error.code === "ENOENT" || error.code === "ENOTDIR") continue;
+      throw error;
+    }
     assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), source.sha256, source.file);
   }
+  assert.equal(seen.size, 55);
 });
 
 test("the published transparent hero preserves the original mask and bounded colour fidelity", async () => {
@@ -142,6 +142,8 @@ function element(dataset = {}) {
     removeEventListener(event, handler) { events.get(event)?.delete(handler); },
     dispatch(event, value = {}) { for (const handler of events.get(event) ?? []) handler(value); },
     setAttribute(key, value) { this.attributes[key] = value; },
+    removeAttribute(key) { delete this.attributes[key]; },
+    getAttribute(key) { return this.attributes[key] ?? null; },
     querySelector() {}, querySelectorAll() { return []; },
     getBoundingClientRect() { return { left: 0, top: 0, width: 1200, height: 700 }; }
   };
@@ -279,6 +281,94 @@ test("archive filters include empty categories and restore every entry", () => {
   tabs[0].dispatch("click");
   assert.ok(entries.every((entry) => !entry.hidden));
   cleanup();
+});
+
+test("archive category filters restore from and update shareable URL state", () => {
+  const root = element();
+  const tabs = ["all", "tech", "anime", "life"].map((archiveCategory) => element({ archiveCategory }));
+  const entries = ["tech", "life", "tech"].map((entryCategory) => element({ entryCategory }));
+  const count = element();
+  const events = new Map();
+  const location = new URL("https://example.test/blog/?q=CTF&category=life");
+  const view = {
+    location,
+    history: {
+      state: { source: "test" },
+      replaceState(state, _title, target) {
+        this.state = state;
+        location.href = new URL(target, location.href).href;
+      }
+    },
+    addEventListener: (name, listener) => events.set(name, listener),
+    removeEventListener: (name, listener) => { if (events.get(name) === listener) events.delete(name); }
+  };
+  root.ownerDocument = { defaultView: view };
+  root.querySelectorAll = (selector) => selector.includes("archive-category") ? tabs : entries;
+  root.querySelector = () => count;
+
+  const cleanup = mountArchive(root);
+  assert.deepEqual(entries.map((entry) => entry.hidden), [true, false, true]);
+  assert.deepEqual(tabs.map((tab) => tab.attributes["aria-pressed"]), ["false", "false", "false", "true"]);
+  tabs[1].dispatch("click");
+  assert.equal(new URL(location.href).searchParams.get("category"), "tech");
+  assert.equal(new URL(location.href).searchParams.get("q"), "CTF");
+  assert.deepEqual(entries.map((entry) => entry.hidden), [false, true, false]);
+
+  location.href = "https://example.test/blog/?q=Steam&category=anime";
+  events.get("popstate")();
+  assert.deepEqual(entries.map((entry) => entry.hidden), [true, true, true]);
+  assert.equal(count.textContent, "0 篇笔记");
+  cleanup();
+  assert.equal(events.has("popstate"), false);
+});
+
+test("article TOC highlights the current chapter in every navigation and cleans up", () => {
+  const first = Object.assign(element(), { id: "start", top: 500 });
+  const second = Object.assign(element(), { id: "details", top: 900 });
+  first.getBoundingClientRect = () => ({ top: first.top });
+  second.getBoundingClientRect = () => ({ top: second.top });
+  const link = (id) => Object.assign(element(), {
+    getAttribute: (name) => name === "href" ? `#${id}` : null
+  });
+  const mobileLinks = [link("start"), link("details")];
+  const desktopLinks = [link("start"), link("details")];
+  const mobileNav = element(), desktopNav = element();
+  mobileNav.querySelectorAll = () => mobileLinks;
+  desktopNav.querySelectorAll = () => desktopLinks;
+  const root = element();
+  root.querySelectorAll = (selector) => selector === "[data-article-toc]"
+    ? [mobileNav, desktopNav]
+    : [first, second];
+  const win = element();
+  const frames = new Map();
+  let frameId = 0;
+  Object.assign(win, {
+    requestAnimationFrame(callback) { frames.set(++frameId, callback); return frameId; },
+    cancelAnimationFrame(id) { frames.delete(id); }
+  });
+
+  const cleanup = mountArticleToc(root, win);
+  const flush = () => {
+    const pending = [...frames.values()];
+    frames.clear();
+    pending.forEach((callback) => callback());
+  };
+  flush();
+  assert.equal(mobileLinks[0].attributes["aria-current"], "location");
+  assert.equal(desktopLinks[0].attributes["aria-current"], "location");
+
+  first.top = 80;
+  // CSS combines a 100px root scroll padding and a 100px heading scroll margin,
+  // so a hash jump can leave the target heading around 200px below the viewport top.
+  second.top = 200;
+  win.dispatch("scroll");
+  flush();
+  assert.equal(mobileLinks[1].attributes["aria-current"], "location");
+  assert.equal(desktopLinks[1].attributes["aria-current"], "location");
+  assert.equal(mobileLinks[0].attributes["aria-current"], undefined);
+
+  cleanup();
+  assert.ok([...win.events.values()].every((handlers) => handlers.size === 0));
 });
 
 test("chapter controls target real leaf positions and account for track ends", () => {
