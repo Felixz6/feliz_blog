@@ -39,11 +39,10 @@ test("Cloudflare Pages keeps HTML revalidatable and transformable for edge compr
   assert.doesNotMatch(headers, /^\s+Cache-Control:.*\bno-transform\b/m);
 });
 
-test("long-lived asset caching is retained when the HTML Cache-Control rule is detached", () => {
+test("long-lived caching remains for Astro bundles, generic WebP, and static fonts", () => {
   const headers = readSource("public/_headers");
   const expectedCacheGroups = [
     "/_astro/*",
-    "/themes/fuyukawa-kagari/assets/*",
     "/*.webp",
     "/*.woff2"
   ];
@@ -56,4 +55,15 @@ test("long-lived asset caching is retained when the HTML Cache-Control rule is d
       `${group} should keep the one-year immutable cache policy`
     );
   }
+});
+
+test("fixed-name Fuyukawa theme assets revalidate after the generic WebP cache rule", () => {
+  const headers = readSource("public/_headers");
+  const themeRule = headers.match(/^\/themes\/fuyukawa-kagari\/assets\/\*\n((?:[ \t].*\n?)+)/m);
+
+  assert.ok(themeRule, "the fixed-name theme asset rule should exist");
+  assert.match(themeRule[1], /^  ! Cache-Control$/m);
+  assert.match(themeRule[1], /^  Cache-Control: public, max-age=0, must-revalidate$/m);
+  assert.ok(headers.indexOf("/themes/fuyukawa-kagari/assets/*") > headers.indexOf("/*.webp"),
+    "the specific theme rule must follow the greedy generic WebP rule");
 });
