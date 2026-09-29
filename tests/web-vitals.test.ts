@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { installWebVitals, webVitalsTargets } from "../src/core/web-vitals.mjs";
@@ -7,97 +11,88 @@ import { evaluateMobileReports } from "../scripts/check-vitals-report.mjs";
 
 const source = (relativePath: string) => readFileSync(fileURLToPath(new URL(`../${relativePath}`, import.meta.url)), "utf8");
 
-function createHarness(endpoint = "/rum") {
-  const observers: any[] = [];
+function createHarness(endpoint = "", deliver?: (url: string, body: string) => Promise<any>, path = "/blog/example/") {
   const listeners = new Map<string, Set<(event?: any) => void>>();
+  const callbacks: Record<string, (metric: any) => void> = {};
+  const registrations: Array<{ name: string; options: any }> = [];
   const sent: Array<{ endpoint: string; body: string }> = [];
-  class FakeObserver {
-    callback: (list: any) => void;
-    type = "";
-    disconnected = false;
-    constructor(callback: (list: any) => void) { this.callback = callback; observers.push(this); }
-    observe(options: any) { this.type = options.type; }
-    disconnect() { this.disconnected = true; }
-    takeRecords() { return []; }
-  }
+  const pendingDeliveries: Promise<any>[] = [];
+  const recordListener = (name: string, listener: (event?: any) => void) => {
+    const set = listeners.get(name) || new Set();
+    set.add(listener);
+    listeners.set(name, set);
+  };
   const win: any = {
-    PerformanceObserver: FakeObserver,
     CustomEvent: class { type: string; detail: any; constructor(type: string, init: any) { this.type = type; this.detail = init.detail; } },
-    location: { pathname: "/blog/example/", search: "?q=private", hash: "#chapter" },
+    location: { pathname: path, search: "?q=private", hash: "#chapter" },
     innerWidth: 390,
-    performance: { now: () => win.clockNow || 0 },
-    navigator: { connection: { effectiveType: "4g", saveData: false }, sendBeacon: (url: string, body: string) => { sent.push({ endpoint: url, body }); return true; } },
+    navigator: { connection: { effectiveType: "4g", saveData: false }, sendBeacon: (url: string, body: string) => {
+      sent.push({ endpoint: url, body });
+      if (deliver) pendingDeliveries.push(deliver(url, body));
+      return true;
+    } },
     matchMedia: () => ({ matches: true }),
     dispatchEvent: (event: any) => { win.lastEvent = event; return true; },
-    addEventListener: (name: string, listener: (event?: any) => void) => { const set = listeners.get(name) || new Set(); set.add(listener); listeners.set(name, set); },
+    addEventListener: recordListener,
     removeEventListener: (name: string, listener: (event?: any) => void) => listeners.get(name)?.delete(listener)
   };
   const doc: any = {
     visibilityState: "visible",
-    documentElement: { dataset: { yuimiPerformance: "mobile" } },
-    addEventListener: win.addEventListener,
+    addEventListener: recordListener,
     removeEventListener: win.removeEventListener
   };
-  const notify = (type: string, entries: any[]) => {
-    observers.find((observer) => observer.type === type)?.callback({ getEntries: () => entries });
+  const webVitals = Object.fromEntries(["LCP", "INP", "CLS"].map((name) => [`on${name}`, (callback: (metric: any) => void, options: any) => {
+    callbacks[name] = callback;
+    registrations.push({ name, options });
+  }]));
+  const emit = (name: string, value: number, rating?: string) => callbacks[name]?.({
+    name, value, rating: rating || "good", id: `${name.toLowerCase()}-sample-id`, navigationType: "navigate"
+  });
+  const fire = (name: string, target: Map<string, Set<(event?: any) => void>> = listeners) => {
+    for (const listener of target.get(name) || []) listener();
   };
-  const hide = () => {
-    doc.visibilityState = "hidden";
-    for (const listener of listeners.get("visibilitychange") || []) listener();
-  };
-  const cleanup = installWebVitals({ window: win, document: doc, endpoint });
-  const dispatchDocument = (name: string) => { for (const listener of listeners.get(name) || []) listener(); };
-  return { win, doc, observers, sent, notify, hide, cleanup, dispatchDocument };
+  const hide = () => { doc.visibilityState = "hidden"; fire("visibilitychange"); };
+  const cleanup = installWebVitals({ window: win, document: doc, endpoint, webVitals });
+  return { win, doc, callbacks, registrations, sent, pendingDeliveries, emit, hide, fire, cleanup };
 }
 
-test("collects LCP, session-window CLS, and grouped interaction latency for a mobile route", () => {
+test("registers official web-vitals callbacks and publishes mobile metric snapshots", () => {
   const h = createHarness();
-  h.notify("largest-contentful-paint", [{ startTime: 1890 }, { startTime: 2470 }]);
-  h.notify("layout-shift", [
-    { startTime: 0, value: 0.02, hadRecentInput: false },
-    { startTime: 500, value: 0.03, hadRecentInput: false },
-    { startTime: 900, value: 0.5, hadRecentInput: true },
-    { startTime: 2200, value: 0.04, hadRecentInput: false }
-  ]);
-  h.notify("event", [
-    { interactionId: 1, duration: 82 },
-    { interactionId: 1, duration: 96 },
-    { interactionId: 2, duration: 141 },
-    { interactionId: 0, duration: 900 }
-  ]);
-  h.hide();
+  assert.deepEqual(h.registrations.map(({ name }) => name), ["LCP", "INP", "CLS"]);
+  assert.ok(h.registrations.every(({ options }) => options.reportAllChanges === true && options.reportSoftNavs === true));
 
-  assert.equal(h.sent.length, 1);
-  assert.equal(h.sent[0].endpoint, "/rum");
-  const report = JSON.parse(h.sent[0].body);
-  assert.equal(report.path, "/blog/example/");
-  assert.equal(report.deviceClass, "mobile");
-  assert.deepEqual(Object.keys(report.metrics).sort(), ["CLS", "INP", "LCP"]);
-  assert.deepEqual([report.metrics.LCP.value, report.metrics.INP.value, report.metrics.CLS.value], [2470, 141, 0.05]);
-  assert.equal(report.metrics.LCP.rating, "good");
-  assert.equal(h.win.__yuimiWebVitals.path, "/blog/example/");
+  h.emit("LCP", 2471);
+  h.emit("INP", 176);
+  h.emit("CLS", 0.04326);
+  const snapshot = h.win.__yuimiWebVitals;
+  assert.equal(snapshot.path, "/blog/example/");
+  assert.equal(snapshot.deviceClass, "mobile");
+  assert.deepEqual([snapshot.metrics.LCP.value, snapshot.metrics.INP.value, snapshot.metrics.CLS.value], [2471, 176, 0.0433]);
+  assert.equal(snapshot.metrics.LCP.metricId, "lcp-sample-id");
+  assert.equal(snapshot.metrics.LCP.navigationType, "navigate");
+  assert.equal(h.win.lastEvent.type, "yuimi:web-vitals");
   h.cleanup();
-  assert.ok(h.observers.every((observer) => observer.disconnected));
 });
 
-test("keeps local snapshots when no endpoint is configured and emits no beacon", () => {
+test("keeps local snapshots and emits no request when the endpoint is empty", () => {
   const h = createHarness("");
+  h.emit("LCP", 1890);
   h.hide();
   assert.equal(h.sent.length, 0);
+  assert.equal(h.win.__yuimiWebVitals.metrics.LCP.value, 1890);
   assert.equal(h.win.__yuimiWebVitals.metrics.CLS.value, 0);
   h.cleanup();
 });
 
-test("finishes and resets a Core Web Vitals sample across Astro soft navigations", () => {
-  const h = createHarness();
-  h.notify("largest-contentful-paint", [{ startTime: 1800 }]);
-  h.dispatchDocument("astro:before-swap");
+test("finalizes and resets route attribution across Astro soft navigations", () => {
+  const h = createHarness("https://rum.invalid/collect");
+  h.emit("LCP", 1800);
+  h.fire("astro:before-swap");
   h.win.location.pathname = "/projects/";
-  h.win.clockNow = 2200;
-  h.dispatchDocument("astro:after-swap");
-  h.notify("largest-contentful-paint", [{ startTime: 1800 }, { startTime: 3100 }]);
-  h.notify("event", [{ interactionId: 3, duration: 176, startTime: 2400 }]);
-  h.dispatchDocument("pagehide");
+  h.fire("astro:after-swap");
+  h.emit("LCP", 3100);
+  h.emit("INP", 176);
+  h.fire("pagehide");
 
   assert.equal(h.sent.length, 2);
   assert.equal(JSON.parse(h.sent[0].body).path, "/blog/example/");
@@ -105,6 +100,73 @@ test("finishes and resets a Core Web Vitals sample across Astro soft navigations
   assert.equal(nextView.path, "/projects/");
   assert.deepEqual([nextView.metrics.LCP.value, nextView.metrics.INP.value, nextView.metrics.CLS.value], [3100, 176, 0]);
   h.cleanup();
+});
+
+test("delivers mobile reports to an HTTP receiver and computes route-level p75", {
+  skip: process.env.VITALS_HTTP_E2E !== "1" && "set VITALS_HTTP_E2E=1 to bind the temporary loopback receiver"
+}, async () => {
+  const received: any[] = [];
+  const server = createServer((request, response) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => { body += chunk; });
+    request.on("end", () => {
+      assert.equal(request.method, "POST");
+      assert.match(request.headers["content-type"] || "", /^text\/plain/);
+      received.push(JSON.parse(body));
+      response.writeHead(204).end();
+    });
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const endpoint = `http://127.0.0.1:${address.port}/rum`;
+  const tempDirectory = mkdtempSync(join(tmpdir(), "yuimi-vitals-e2e-"));
+  try {
+    const visits = [
+      { path: "/", values: [2200, 180, 0.04] },
+      { path: "/slow/", values: [2800, 240, 0.12] }
+    ];
+    const harnesses = visits.map(({ path, values }) => {
+      const h = createHarness(endpoint, (url, body) => fetch(url, {
+        method: "POST", headers: { "content-type": "text/plain;charset=UTF-8" }, body
+      }), path);
+      h.emit("LCP", values[0]);
+      h.emit("INP", values[1]);
+      h.emit("CLS", values[2]);
+      h.hide();
+      return h;
+    });
+    const responses = await Promise.all(harnesses.flatMap((h) => h.pendingDeliveries));
+    assert.deepEqual(responses.map((response) => response.status), [204, 204]);
+    assert.equal(received.length, 2);
+    assert.deepEqual(received.map((report) => report.path).sort(), ["/", "/slow/"]);
+    assert.ok(received.every((report) => report.deviceClass === "mobile" && report.schema === "yuimi-web-vitals/v1"));
+
+    const reportFile = join(tempDirectory, "reports.json");
+    writeFileSync(reportFile, JSON.stringify(received));
+    const cli = spawnSync(process.execPath, ["scripts/check-vitals-report.mjs", reportFile, "--min-samples=1"], { encoding: "utf8" });
+    assert.equal(cli.status, 1, cli.stderr);
+    assert.match(cli.stdout, /PASS \/ LCP: p75 2200 ms \/ 2500 ms \(n=1\)/);
+    assert.match(cli.stdout, /PASS \/ INP: p75 180 ms \/ 200 ms \(n=1\)/);
+    assert.match(cli.stdout, /PASS \/ CLS: p75 0\.040 \/ 0\.1 \(n=1\)/);
+    assert.match(cli.stdout, /FAIL \/slow\/ LCP: p75 2800 ms \/ 2500 ms \(n=1\)/);
+    assert.match(cli.stdout, /FAIL \/slow\/ INP: p75 240 ms \/ 200 ms \(n=1\)/);
+    assert.match(cli.stdout, /FAIL \/slow\/ CLS: p75 0\.120 \/ 0\.1 \(n=1\)/);
+
+    const rows = evaluateMobileReports(received, { minimumSamples: 1 }).results;
+    assert.deepEqual(rows.map(({ path, name, status }) => [path, name, status]), [
+      ["/", "CLS", "PASS"], ["/", "INP", "PASS"], ["/", "LCP", "PASS"],
+      ["/slow/", "CLS", "FAIL"], ["/slow/", "INP", "FAIL"], ["/slow/", "LCP", "FAIL"]
+    ]);
+    harnesses.forEach((h) => h.cleanup());
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(tempDirectory, { recursive: true, force: true });
+  }
 });
 
 test("evaluates nearest-rank mobile p75 by route and leaves sparse samples inconclusive", () => {
@@ -122,9 +184,10 @@ test("evaluates nearest-rank mobile p75 by route and leaves sparse samples incon
   assert.equal(evaluateMobileReports(rows, { minimumSamples: 5 }).results[0].status, "INCONCLUSIVE");
 });
 
-test("the shared layout loads the opt-in RUM collector and package exposes the report checker", () => {
+test("the shared layout loads the opt-in RUM collector and exposes the report checker", () => {
   const layout = source("src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
-  const scripts = JSON.parse(source("package.json")).scripts;
+  const packageJson = JSON.parse(source("package.json"));
   assert.match(layout, /installWebVitals\(\{ endpoint: import\.meta\.env\.PUBLIC_WEB_VITALS_ENDPOINT/);
-  assert.equal(scripts["check:vitals-report"], "node scripts/check-vitals-report.mjs");
+  assert.equal(packageJson.scripts["check:vitals-report"], "node scripts/check-vitals-report.mjs");
+  assert.equal(packageJson.dependencies["web-vitals"], "^6.2.2");
 });
