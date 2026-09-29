@@ -417,10 +417,17 @@ test("offscreen home chapter artwork stays lazy, asynchronously decoded, and low
   assert.doesNotMatch(hero, /fetchpriority="low"|loading="lazy"/);
 });
 
-test("home fallback and split foreground keep the original contained character size", async () => {
+test("home static scene paints before JavaScript and avoids the duplicate mobile wallpaper", async () => {
   const manga = await read("styles/manga.css");
   const refresh = await read("styles/refresh.css");
-  assert.match(refresh, /background:\s*url\(["']?[^)]*hero-wallpaper\.webp["']?\)\s*center\s*\/\s*cover\s+no-repeat/);
+  const layout = await read("layouts/BaseLayout.astro");
+  const hero = await read("components/LayeredHero.astro");
+  assert.match(refresh, /\.hero\s*\{[^}]*background:\s*#f5f6f6/);
+  assert.doesNotMatch(refresh, /hero-wallpaper(?:-mobile)?\.webp/);
+  assert.doesNotMatch(layout, /mobileHeroWallpaper|hero-wallpaper-mobile\.webp/);
+  assert.match(hero, /<picture>[\s\S]*data-manga-back[\s\S]*data-manga-front/);
+  assert.doesNotMatch(manga, /\.manga-scene\s*\{[^}]*opacity:\s*0/);
+  assert.doesNotMatch(manga, /\.manga-scene\[data-ready="true"\]\s*\{[^}]*opacity/);
   assert.match(manga, /\.hero::before\s*\{[^}]*background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
   assert.match(manga, /\.hero::before\s*\{[^}]*inset:\s*0 0 16px[^}]*background-size:\s*contain,\s*cover/);
   assert.match(manga, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)::before\s*\{\s*display:\s*none/);
@@ -429,6 +436,14 @@ test("home fallback and split foreground keep the original contained character s
   const mobileRule = manga.match(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
   assert.ok(mobileRule, "mobile foreground sizing remains explicitly tuned");
   assert.match(mobileRule[1], /object-fit:\s*contain/);
+});
+
+test("below-the-fold homepage background is lazy and no longer a stylesheet background request", async () => {
+  const home = await read("pages/HomePage.astro");
+  const refresh = await read("styles/refresh.css");
+  assert.match(home, /<img class="home-content-bg__image"[^>]*src=\{kagariAssets\.pageBackground\}[^>]*loading="lazy"[^>]*decoding="async"[^>]*fetchpriority="low"/);
+  assert.doesNotMatch(refresh, /fuyukawa-kagari-bg\.webp/);
+  assert.match(refresh, /\.home-content-bg__image\s*\{[^}]*position:\s*absolute[^}]*object-fit:\s*cover/);
 });
 
 test("manga CSS stays theme-local, responsive, and never crops article covers", async () => {

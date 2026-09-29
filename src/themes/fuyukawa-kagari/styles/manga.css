@@ -19,7 +19,6 @@ body[data-fuyukawa] .manga-rail-controls button:disabled { opacity: .32; cursor:
 /* Match the split scene from the first desktop paint while its layers decode. */
 body[data-fuyukawa] .hero-stage { height: calc(100svh - 82px); }
 body[data-fuyukawa] .hero { isolation: isolate; justify-content: flex-start; padding-inline: max(48px, calc((100% - 1240px) / 2)); }
-body[data-fuyukawa] .hero:has(.manga-scene[data-ready="true"]) { background-image: none; }
 @media (min-width: 761px) {
   /* Keep the fallback at the same contained figure size as the decoded scene. */
   body[data-fuyukawa] .hero::before {
@@ -29,8 +28,8 @@ body[data-fuyukawa] .hero:has(.manga-scene[data-ready="true"]) { background-imag
   }
   body[data-fuyukawa] .hero:has(.manga-scene[data-ready="true"])::before { display: none; }
 }
-body[data-fuyukawa] .manga-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; }
-body[data-fuyukawa] .manga-scene[data-ready="true"] { opacity: 1; }
+/* Static layers paint as soon as their images arrive; the runtime only gates parallax on decode. */
+body[data-fuyukawa] .manga-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 body[data-fuyukawa] .manga-scene-camera { position: absolute; inset: -24px; }
 body[data-fuyukawa] .manga-scene-camera img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; pointer-events: none; backface-visibility: hidden; }
 /* Preserve the former smaller profile scale and match its fallback placement. */

@@ -45,22 +45,13 @@ test("static homepage and widget markup starts with useful defaults before JavaS
   assert.doesNotMatch(layoutSource, /计算中\.\.\.|待播放|lofi sakura loop|打开音乐工具时读取歌单/);
 });
 
-test("homepage preloads the split desktop scene and only the smaller mobile wallpaper", () => {
-  const mobileSize = statSync(fileURLToPath(new URL(
-    "../public/themes/fuyukawa-kagari/assets/hero-wallpaper-mobile.webp",
-    import.meta.url
-  ))).size;
-  const desktopSize = statSync(fileURLToPath(new URL(
-    "../public/themes/fuyukawa-kagari/assets/hero-wallpaper.webp",
-    import.meta.url
-  ))).size;
-
-  assert.match(layoutSource, /href=\{kagariAssets\.mobileHeroWallpaper\}[\s\S]*?media="\(max-width: 760px\)"/);
+test("homepage prioritizes the comic hero scene and defers the below-fold background", () => {
+  assert.match(layoutSource, /href=\{kagariAssets\.mobileHeroManga\}[\s\S]*?media="\(max-width: 760px\) and \(orientation: portrait\) and \(max-aspect-ratio: 3\/5\)"/);
   assert.match(layoutSource, /href=\{heroCharacter\.src\}[\s\S]*?media="\(min-width: 761px\)"/);
   assert.match(layoutSource, /href=\{heroManga\.src\}[\s\S]*?media="\(min-width: 761px\)"/);
-  assert.doesNotMatch(layoutSource, /href=\{kagariAssets\.heroWallpaper\}/);
-  assert.match(refreshStyles, /@media \(max-width: 760px\)[\s\S]*?hero-wallpaper-mobile\.webp/);
-  assert.ok(mobileSize < desktopSize * 0.6, `mobile hero (${mobileSize}) should be at least 40% smaller than desktop hero (${desktopSize})`);
+  assert.doesNotMatch(layoutSource, /mobileHeroWallpaper|hero-wallpaper-mobile\.webp/);
+  assert.doesNotMatch(refreshStyles, /hero-wallpaper(?:-mobile)?\.webp|fuyukawa-kagari-bg\.webp/);
+  assert.match(homeSource, /class="home-content-bg__image"[^>]*src=\{kagariAssets\.pageBackground\}[^>]*loading="lazy"[^>]*decoding="async"[^>]*fetchpriority="low"/);
 });
 
 test("mobile homepage cards use separate grid rows in a right-top to left-bottom diagonal", () => {

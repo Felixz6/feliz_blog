@@ -9,7 +9,6 @@ export const kagariAssets = {
   appleTouchIcon: kagariAsset("avatar-sigil.png"),
   profile: kagariAsset("profile.webp"),
   heroWallpaper: kagariAsset("hero-wallpaper.webp"),
-  mobileHeroWallpaper: kagariAsset("hero-wallpaper-mobile.webp"),
   mobileHeroManga: kagariAsset("manga/hero-manga-mobile.webp"),
   pageBackground: kagariAsset("fuyukawa-kagari-bg.webp"),
   notFound: kagariAsset("legacy/404.webp"),
