@@ -502,6 +502,8 @@ test("extracted profile reveal still docks, releases scrolling, resets and clean
     scrollY: 0, innerHeight: 800,
     setTimeout: (callback, delay) => { timers.set(++id, { callback, delay }); return id; },
     clearTimeout: (timer) => timers.delete(timer),
+    requestAnimationFrame: (callback) => { frames.set(++id, callback); return id; },
+    cancelAnimationFrame: (frame) => frames.delete(frame),
     scrollTo() {}
   });
   const context = vm.createContext({
@@ -515,18 +517,135 @@ test("extracted profile reveal still docks, releases scrolling, resets and clean
     window.dispatch("wheel", event);
     return event;
   };
+  const flushFrames = () => {
+    const scheduled = [...frames.values()];
+    frames.clear();
+    scheduled.forEach((callback) => callback(16));
+  };
   assert.equal(wheel(200).prevented, true);
   assert.ok(classes.has("is-pulling"));
   const settleTimer = [...timers.values()].find((timer) => timer.delay === 260);
   settleTimer.callback();
+  flushFrames();
   assert.ok(classes.has("is-docked"));
   assert.equal(styles["--profile-opacity"], "1");
   assert.equal(wheel(60).prevented, true);
   [...timers.values()].find((timer) => timer.delay === 120).callback();
   assert.equal(wheel(60).prevented, false);
   assert.equal(wheel(-60).prevented, true);
+  flushFrames();
   assert.equal(styles["--profile-opacity"], "0");
   context.cleanup();
   assert.equal(timers.size, 0);
   assert.ok([...window.events.values()].every((handlers) => handlers.size === 0));
+});
+
+test("home typing pauses offscreen and hidden, while scroll and pointer work batch per frame", async () => {
+  const makeNode = (rect = { top: 0, bottom: 700, left: 0, width: 1200, height: 700 }) => {
+    const events = new Map(), classes = new Set(), styles = {};
+    return {
+      events, styles, dataset: {}, textContent: "", isConnected: true,
+      style: { setProperty: (key, value) => { styles[key] = value; } },
+      classList: {
+        add: (...names) => names.forEach((name) => classes.add(name)),
+        remove: (...names) => names.forEach((name) => classes.delete(name)),
+        toggle: (name, force) => force ? classes.add(name) : classes.delete(name),
+        contains: (name) => classes.has(name)
+      },
+      addEventListener(name, handler) {
+        if (!events.has(name)) events.set(name, new Set());
+        events.get(name).add(handler);
+      },
+      removeEventListener(name, handler) { events.get(name)?.delete(handler); },
+      dispatch(name, event = {}) { for (const handler of events.get(name) ?? []) handler(event); },
+      getBoundingClientRect: () => rect,
+      querySelector() {}
+    };
+  };
+  const hero = makeNode(), stage = makeNode(), terminal = makeNode(), name = makeNode();
+  const avatar = makeNode({ top: 0, bottom: 100, left: 10, width: 100, height: 100 });
+  const bubble = makeNode(), document = makeNode(), window = makeNode();
+  stage.querySelector = () => hero;
+  name.dataset.nameLines = JSON.stringify(["Feliz"]);
+  document.visibilityState = "visible";
+  document.documentElement = { dataset: {} };
+  document.querySelector = (selector) => ({
+    "[data-hero-stage]": stage,
+    "[data-terminal-typing]": terminal,
+    "[data-name-typing]": name,
+    "[data-poke-avatar]": avatar,
+    "[data-poke-bubble]": bubble
+  })[selector] ?? null;
+
+  const timers = new Map(), frames = new Map();
+  let nextId = 0, observer;
+  Object.assign(window, {
+    innerHeight: 800, scrollY: 0,
+    setTimeout(callback, delay) { timers.set(++nextId, { callback, delay }); return nextId; },
+    clearTimeout(id) { timers.delete(id); },
+    requestAnimationFrame(callback) { frames.set(++nextId, callback); return nextId; },
+    cancelAnimationFrame(id) { frames.delete(id); },
+    scrollTo() {},
+    IntersectionObserver: class {
+      constructor(callback) { observer = { callback, disconnected: false, disconnect() { this.disconnected = true; } }; }
+      observe() {}
+      disconnect() { observer.disconnected = true; }
+    }
+  });
+  const context = vm.createContext({
+    window, document, history: {}, location: { hash: "#keep-position" },
+    requestAnimationFrame: window.requestAnimationFrame,
+    cancelAnimationFrame: window.cancelAnimationFrame
+  });
+  vm.runInContext((await read("lib/home-hero.mjs")).replace("export function", "function") + "\nvar cleanup = mountHomeHero();", context);
+
+  assert.equal(timers.size, 2, "both hero typewriters start while the hero is visible");
+  observer.callback([{ target: hero, isIntersecting: false }]);
+  assert.equal(timers.size, 0, "offscreen hero clears its typing timers");
+  observer.callback([{ target: hero, isIntersecting: true }]);
+  assert.equal(timers.size, 2, "typing resumes when the hero returns");
+  const initialTicks = [...timers.entries()].filter(([, timer]) => timer.delay === 0);
+  initialTicks.forEach(([id, timer]) => { timers.delete(id); timer.callback(); });
+  const secondTicks = [...timers.entries()];
+  secondTicks.forEach(([id, timer]) => { timers.delete(id); timer.callback(); });
+  const textBeforeHide = [terminal.textContent, name.textContent];
+  document.visibilityState = "hidden";
+  document.dispatch("visibilitychange");
+  assert.equal(timers.size, 0, "background tabs clear their typing timers");
+  document.visibilityState = "visible";
+  document.dispatch("visibilitychange");
+  assert.equal(timers.size, 2, "typing resumes when the tab becomes visible");
+  assert.deepEqual([terminal.textContent, name.textContent], textBeforeHide, "resuming does not advance either typewriter immediately");
+  const resumedDelays = [...timers.values()].map((timer) => timer.delay).sort((a, b) => a - b);
+  assert.deepEqual(resumedDelays, [58, 96], "resuming restores the pending typing cadence");
+  const nextTerminalTick = [...timers.entries()].find(([, timer]) => timer.delay === 58);
+  timers.delete(nextTerminalTick[0]);
+  nextTerminalTick[1].callback();
+  assert.equal(terminal.textContent, "pi", "typing continues after the normal write delay");
+
+  const initialFrames = [...frames.values()];
+  frames.clear();
+  initialFrames.forEach((callback) => callback(16));
+  window.dispatch("scroll");
+  window.dispatch("scroll");
+  avatar.dispatch("pointermove", { clientX: 20 });
+  avatar.dispatch("pointermove", { clientX: 90 });
+  assert.equal(frames.size, 2, "a scroll burst and pointer burst each schedule one frame");
+  const scheduled = [...frames.values()];
+  frames.clear();
+  scheduled.forEach((callback) => callback(16));
+  assert.match(avatar.styles["--flower-sway"], /^5\.4/ , "pointer frame uses the latest coalesced position");
+
+  avatar.dispatch("pointermove", { clientX: 10 });
+  assert.equal(frames.size, 1);
+  avatar.dispatch("pointerleave");
+  assert.equal(frames.size, 0, "pointerleave cancels a pending stale sway update");
+  assert.equal(avatar.styles["--flower-sway"], "0deg");
+
+  context.cleanup();
+  assert.equal(timers.size, 0);
+  assert.equal(frames.size, 0);
+  assert.ok(observer.disconnected);
+  assert.ok([...window.events.values()].every((handlers) => handlers.size === 0));
+  assert.ok([...document.events.values()].every((handlers) => handlers.size === 0));
 });

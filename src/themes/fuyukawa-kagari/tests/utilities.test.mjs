@@ -8,6 +8,7 @@ import sharp from "sharp";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const layout = read("layouts/BaseLayout.astro");
+const themeLongPressMenu = readFileSync(new URL("../../../core/themes/ThemeLongPressMenu.astro", import.meta.url), "utf8");
 const css = postcss.parse(read("styles/refresh.css"));
 const declarations = (root, selector) => {
   const values = {};
@@ -18,6 +19,13 @@ const declarations = (root, selector) => {
   return values;
 };
 const section = (start, end) => layout.slice(layout.indexOf(start), layout.indexOf(end));
+
+test("long-press menu uses a bundled module and follows Astro page lifecycle", () => {
+  assert.match(themeLongPressMenu, /^<script>\s*import \{ isNativeContextTarget \}/);
+  assert.doesNotMatch(themeLongPressMenu, /data-astro-rerun|is:inline/);
+  assert.match(themeLongPressMenu, /astro:before-swap[\s\S]*__yuimiThemeLongPressCleanup/);
+  assert.match(themeLongPressMenu, /longPressDelay[\s\S]*astro:page-load\", mountThemeLongPressMenu/);
+});
 
 class Element {
   constructor() {
@@ -251,6 +259,20 @@ test("footer counters update at minute boundaries and pause while hidden", () =>
   doc.dispatch("visibilitychange");
   assert.equal(queryCount, 3);
   assert.equal(timers.size, 1);
+});
+
+test("article image viewer stays out of homepage code and loads only when its dialog exists", () => {
+  assert.doesNotMatch(layout, /import\s*\{\s*installArticleImageViewer\s*\}\s*from/);
+  assert.match(layout, /const loadArticleImageViewer = \(\) => \{[\s\S]*?if \(!document\.querySelector\("\[data-article-image-viewer\]"\)\) return;[\s\S]*?import\("\.\.\/lib\/article-image-viewer\.mjs"\)/);
+  assert.match(layout, /loadArticleImageViewer\(\);\s*document\.addEventListener\("astro:page-load", loadArticleImageViewer\);/);
+});
+
+test("home scroll handlers batch layout work through requestAnimationFrame", () => {
+  const homePage = read("pages/HomePage.astro");
+  const homeHero = read("lib/home-hero.mjs");
+  assert.match(homePage, /const onScroll = \(\) => \{\s*if \(state\.scrollFrame\) return;\s*state\.scrollFrame = window\.requestAnimationFrame/);
+  assert.match(homeHero, /const handleHeroScroll = \(\) => \{\s*if \(heroScrollFrame\) return;\s*heroScrollFrame = window\.requestAnimationFrame/);
+  assert.match(homeHero, /const handlePokeMove = \(event\) => \{\s*pokeClientX = event\.clientX;\s*if \(pokePointerFrame\) return;\s*pokePointerFrame = window\.requestAnimationFrame/);
 });
 
 test("music manifest and audio wait for music-dock intent, then playback loads one track", async () => {

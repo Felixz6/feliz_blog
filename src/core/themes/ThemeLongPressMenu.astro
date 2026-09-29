@@ -1,7 +1,11 @@
-<script data-astro-rerun>
+<script>
   import { isNativeContextTarget } from "./context-menu-routing.mjs";
 
-  (() => {
+  document.addEventListener("astro:before-swap", () => {
+    window.__yuimiThemeLongPressCleanup?.();
+  });
+
+  const mountThemeLongPressMenu = () => (() => {
     window.__yuimiThemeLongPressCleanup?.();
 
     const lifecycle = new AbortController();
@@ -147,4 +151,5 @@
     };
     window.__yuimiThemeLongPressCleanup = cleanup;
   })();
+  document.addEventListener("astro:page-load", mountThemeLongPressMenu);
 </script>
