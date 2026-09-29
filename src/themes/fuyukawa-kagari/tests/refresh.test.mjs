@@ -29,6 +29,17 @@ test("refresh uses bounded typography, reduced motion, and compact-screen layout
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(css, /max-width: 480px/);
   assert.match(css, /max-width: 760px/);
+  const articleTocAtTablet = new Map();
+  root.walkAtRules("media", (rule) => {
+    if (rule.params !== "(max-width: 900px)") return;
+    rule.walkRules((child) => {
+      if (child.selector?.startsWith("body[data-fuyukawa] .article-")) {
+        articleTocAtTablet.set(child.selector, Object.fromEntries(child.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value])));
+      }
+    });
+  });
+  assert.equal(articleTocAtTablet.get("body[data-fuyukawa] .article-toc").display, "none");
+  assert.equal(articleTocAtTablet.get("body[data-fuyukawa] .article-mobile-toc").display, "block");
   assert.match(css, /\.post-cover-frame[^}]*aspect-ratio: 7 \/ 10/);
 });
 
@@ -130,7 +141,8 @@ test("all theme templates parse without errors", async () => {
     "layouts/BaseLayout.astro", "layouts/ArticleLayout.astro",
     "pages/HomePage.astro", "pages/BlogIndexPage.astro", "pages/GamesPage.astro",
     "pages/ProjectsPage.astro", "pages/AboutPage.astro", "pages/NotFoundPage.astro",
-    "components/GameCover.astro", "components/SakuraRain.astro"
+    "components/GameCover.astro", "components/SakuraRain.astro",
+    "components/ArticleMobileToc.astro", "components/ArticleTocLinks.astro"
   ]) {
     const result = await parse(read(path));
     assert.deepEqual(result.diagnostics.filter((diagnostic) => diagnostic.severity === 1), [], path);
@@ -140,7 +152,8 @@ test("all theme templates parse without errors", async () => {
 test("navigation, mobile article index and fixed project status expose their state", () => {
   assert.match(read("layouts/BaseLayout.astro"), /aria-current=/);
   assert.match(read("layouts/BaseLayout.astro"), /href="#page-content"/);
-  assert.match(read("layouts/ArticleLayout.astro"), /<details class="article-mobile-toc"/);
+  assert.match(read("layouts/ArticleLayout.astro"), /<ArticleMobileToc headings=\{headings\}/);
+  assert.match(read("components/ArticleMobileToc.astro"), /<details class="article-mobile-toc"/);
   assert.match(read("pages/ProjectsPage.astro"), /class="works-card-status"/);
   assert.match(read("pages/ProjectsPage.astro"), /\{project\.status\}/);
   assert.doesNotMatch(read("pages/ProjectsPage.astro"), /相关内容已整理发布/);

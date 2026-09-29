@@ -4,6 +4,8 @@ import { categoryLabel } from "@/lib/site";
 import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
 import { Icon } from "astro-icon/components";
 import MangaArt from "../components/MangaArt.astro";
+import ArticleMobileToc from "../components/ArticleMobileToc.astro";
+import ArticleTocLinks from "../components/ArticleTocLinks.astro";
 import { site } from "@/lib/site";
 
 const { frontmatter, archiveHref, archiveLabel, footerLabel } = Astro.props;
@@ -24,14 +26,7 @@ const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pa
 
 <BaseLayout title={title} description={description} isArticlePage article={frontmatter} needsMangaRuntime>
   <div class="article-shell" data-article-shell>
-    {headings.length > 0 && (
-      <details class="article-mobile-toc" data-pagefind-ignore>
-        <summary><Icon name="tabler:book-2" aria-hidden="true" />这篇笔记的目录<Icon name="tabler:chevron-down" aria-hidden="true" /></summary>
-        <nav aria-label="移动端文章导航" data-article-toc>
-          {headings.map((heading) => <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>{heading.text}</a>)}
-        </nav>
-      </details>
-    )}
+    <ArticleMobileToc headings={headings} />
     <article class="article" data-pagefind-body={shouldIndexArticle ? true : undefined}>
       <a class="back-link" href={returnHref}><Icon name="tabler:arrow-left" aria-hidden="true" />{returnLabel}</a>
       <header class="article-header">
@@ -57,13 +52,7 @@ const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pa
       tocHeadings.length > 0 && (
         <aside class="article-toc" aria-label="文章导航" data-pagefind-ignore>
           <p>这篇笔记的目录</p>
-          <nav data-article-toc>
-            {tocHeadings.map((heading) => (
-              <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>
-                {heading.text}
-              </a>
-            ))}
-          </nav>
+          <ArticleTocLinks headings={tocHeadings} ariaLabel="桌面端文章导航" />
           <MangaArt image="kagari-thinking" class="article-margin-character" />
         </aside>
       )

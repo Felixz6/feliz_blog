@@ -8,10 +8,15 @@ const dist = new URL("dist/", root);
 const theme = new URL("src/themes/fuyukawa-kagari/", root);
 const sourceFiles = [
   "layouts/BaseLayout.astro",
+  "layouts/ArticleLayout.astro",
   "components/MangaRuntime.astro",
+  "components/ArticleMobileToc.astro",
+  "components/ArticleTocLinks.astro",
   "pages/HomePage.astro",
   "pages/BlogIndexPage.astro",
-  "pages/AboutPage.astro"
+  "pages/AboutPage.astro",
+  "../../pages/projects/ctf-notes/[slug].astro",
+  "../../pages/projects/[project]/docs/[slug].astro"
 ].map((file) => new URL(file, theme));
 const builtHome = new URL("index.html", dist);
 const builtOutputIsCurrent = existsSync(builtHome)
@@ -34,7 +39,8 @@ test("built pages request MangaRuntime exactly where its interaction roots exist
     ["projects/index.html", []],
     ["blog/anime-tech-notes/index.html", ["data-article-shell"]],
     ["projects/ctf-notes/index.html", []],
-    ["projects/ctf-notes/ssrf/index.html", []]
+    ["projects/ctf-notes/ssrf/index.html", ["data-article-shell"]],
+    ["projects/src-skill/docs/deployment/index.html", ["data-article-shell"]]
   ] as const;
 
   for (const [path, expectedMarkers] of pages) {

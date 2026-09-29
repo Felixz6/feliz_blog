@@ -34,6 +34,34 @@ test("CTF Notes project is published and exposes its eight Web notes", () => {
   assert.match(detailPage, /render\(note\)/);
 });
 
+test("all CTF Notes have a single optional embedded title and visible, gap-free section levels", () => {
+  const notesDir = new URL("../src/content/ctf-notes/", import.meta.url);
+  const noteFiles = readdirSync(notesDir).filter((file) => file.endsWith(".md"));
+
+  for (const file of noteFiles) {
+    const source = readFileSync(new URL(file, notesDir), "utf8");
+    const headings: number[] = [];
+    let inFence = false;
+
+    for (const line of source.split(/\r?\n/)) {
+      if (/^\s*(```|~~~)/.test(line)) {
+        inFence = !inFence;
+        continue;
+      }
+      if (inFence) continue;
+      const heading = /^(#{1,6})\s+/.exec(line);
+      if (heading) headings.push(heading[1].length);
+    }
+
+    assert.ok(headings.length > 0, `${file} needs headings`);
+    assert.ok(headings.filter((level) => level === 1).length <= 1, `${file} has duplicate page-level headings`);
+    assert.ok(headings.every((level) => [1, 2, 3].includes(level)), `${file} contains headings hidden from the CTF TOC`);
+    for (let index = 1; index < headings.length; index += 1) {
+      assert.ok(headings[index] <= headings[index - 1] + 1, `${file} skips a heading level at item ${index + 1}`);
+    }
+  }
+});
+
 test("the Open Source line contains four detailed GitHub project cards instead of its placeholder", () => {
   const expected = [
     ["open-source-eisland-lite", "https://github.com/Felixz6/eisland-lite"],
