@@ -27,51 +27,82 @@ export function mountHomeHero() {
     let state = "idle";
     let resetTimer = 0;
     let releaseTimer = 0;
+    let heroScrollFrame = 0;
+    let progressFrame = 0;
+    let pendingProgress = 0;
+    let pokePointerFrame = 0;
+    let pokeClientX = 0;
     const typingTimers = new Set();
+    const typingLoops = [];
+    let typingActive = false;
+    const heroRect = hero?.getBoundingClientRect();
+    let heroIsVisible = Boolean(heroRect && heroRect.bottom > 0 && heroRect.top < (window.innerHeight || 0));
+    let heroVisibilityObserver;
 
     const setTypingTimer = (callback, delay) => {
+      if (!typingActive) return;
       const timer = window.setTimeout(() => {
         typingTimers.delete(timer);
+        if (!typingActive) return;
         callback();
       }, delay);
       typingTimers.add(timer);
     };
 
+    const syncTypingActivity = () => {
+      const shouldRun = heroIsVisible && document.visibilityState === "visible";
+      if (typingActive === shouldRun) return;
+      typingActive = shouldRun;
+      if (!typingActive) {
+        typingTimers.forEach((timer) => window.clearTimeout(timer));
+        typingTimers.clear();
+        return;
+      }
+      typingLoops.forEach((tick) => tick());
+    };
+
     const runTypingLoop = (target, lines, writeDelay = 58, eraseDelay = 32, holdDelay = 1250) => {
-      if (!target) return;
+      if (!target || lines.length === 0) return;
 
       let lineIndex = 0;
       let charIndex = 0;
       let deleting = false;
+      let nextDelay = 0;
+
+      const scheduleTick = (delay) => {
+        nextDelay = delay;
+        setTypingTimer(tick, delay);
+      };
 
       const tick = () => {
+        if (!typingActive) return;
         const line = lines[lineIndex];
         target.textContent = line.slice(0, charIndex);
 
         if (!deleting && charIndex < line.length) {
           charIndex += 1;
-          setTypingTimer(tick, writeDelay);
+          scheduleTick(writeDelay);
           return;
         }
 
         if (!deleting && charIndex === line.length) {
           deleting = true;
-          setTypingTimer(tick, holdDelay);
+          scheduleTick(holdDelay);
           return;
         }
 
         if (deleting && charIndex > 0) {
           charIndex -= 1;
-          setTypingTimer(tick, eraseDelay);
+          scheduleTick(eraseDelay);
           return;
         }
 
         deleting = false;
         lineIndex = (lineIndex + 1) % lines.length;
-        setTypingTimer(tick, 360);
+        scheduleTick(360);
       };
 
-      tick();
+      typingLoops.push(() => scheduleTick(nextDelay));
     };
 
     if ("scrollRestoration" in history) {
@@ -94,6 +125,15 @@ export function mountHomeHero() {
       hero.style.setProperty("--cue-opacity", `${1 - clamp(value / 0.48)}`);
     };
 
+    const scheduleProgress = (progress) => {
+      pendingProgress = progress;
+      if (progressFrame) return;
+      progressFrame = window.requestAnimationFrame(() => {
+        progressFrame = 0;
+        setProgress(pendingProgress);
+      });
+    };
+
     const resetPull = () => {
       if (state === "passed") return;
       window.clearTimeout(resetTimer);
@@ -101,7 +141,7 @@ export function mountHomeHero() {
       pull = 0;
       state = "idle";
       hero?.classList.remove("is-docked", "is-pulling");
-      setProgress(0);
+      scheduleProgress(0);
     };
 
     const settlePull = () => {
@@ -124,7 +164,7 @@ export function mountHomeHero() {
       state = "docked";
       hero?.classList.remove("is-pulling");
       hero?.classList.add("is-docked");
-      setProgress(1);
+      scheduleProgress(1);
 
       window.clearTimeout(releaseTimer);
       releaseTimer = window.setTimeout(() => {
@@ -149,7 +189,7 @@ export function mountHomeHero() {
           pull = 0;
           state = "idle";
           hero.classList.remove("is-docked", "is-pulling");
-          setProgress(0);
+          scheduleProgress(0);
           return;
         }
 
@@ -157,7 +197,7 @@ export function mountHomeHero() {
         state = pull > 0 ? "pulling" : "idle";
         hero.classList.toggle("is-pulling", state === "pulling");
         hero.classList.remove("is-docked");
-        setProgress(pull / pullDistance);
+        scheduleProgress(pull / pullDistance);
         if (state === "pulling") {
           schedulePullSettle();
         } else {
@@ -182,26 +222,59 @@ export function mountHomeHero() {
       hero.classList.add("is-pulling");
       hero.classList.remove("is-docked");
       state = "pulling";
-      setProgress(progress);
+      scheduleProgress(progress);
       schedulePullSettle();
     };
 
-    const handleHeroScroll = () => {
+    const updateHeroScroll = () => {
       if (!stage || !hero) return;
 
       const nativeProgress = clamp(-stage.getBoundingClientRect().top / (window.innerHeight || 1));
       hero.style.setProperty("--hero-dim", `${0.12 + clamp((nativeProgress - 1.05) / 0.25) * 0.12}`);
 
+      if (!heroVisibilityObserver) {
+        const rect = hero.getBoundingClientRect();
+        const isVisible = rect.bottom > 0 && rect.top < (window.innerHeight || 0);
+        if (isVisible !== heroIsVisible) {
+          heroIsVisible = isVisible;
+          syncTypingActivity();
+        }
+      }
+
       if (window.scrollY <= 2 && state === "passed") {
         pull = pullDistance;
         hero.classList.remove("is-pulling");
         hero.classList.add("is-docked");
-        setProgress(1);
+        scheduleProgress(1);
       }
+    };
+
+    const handleHeroScroll = () => {
+      if (heroScrollFrame) return;
+      heroScrollFrame = window.requestAnimationFrame(() => {
+        heroScrollFrame = 0;
+        updateHeroScroll();
+      });
     };
 
     runTypingLoop(typingTarget, terminalLines);
     runTypingLoop(nameTarget, nameLines, 96, 46, 1500);
+
+    if (hero && typeof window.IntersectionObserver === "function") {
+      heroVisibilityObserver = new window.IntersectionObserver((entries) => {
+        const entry = entries.find((candidate) => candidate.target === hero) ?? entries[0];
+        if (!entry) return;
+        heroIsVisible = entry.isIntersecting;
+        syncTypingActivity();
+      });
+      heroVisibilityObserver.observe(hero);
+    }
+    document.addEventListener("visibilitychange", syncTypingActivity);
+    syncTypingActivity();
+    heroCleanupTasks.push(() => {
+      heroVisibilityObserver?.disconnect();
+      document.removeEventListener("visibilitychange", syncTypingActivity);
+    });
 
     const pokeAvatar = document.querySelector("[data-poke-avatar]");
     const pokeBubble = document.querySelector("[data-poke-bubble]");
@@ -220,12 +293,19 @@ export function mountHomeHero() {
     };
 
     const handlePokeMove = (event) => {
-      const rect = pokeAvatar.getBoundingClientRect();
-      const offset = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      pokeAvatar.style.setProperty("--flower-sway", `${offset * 9}deg`);
+      pokeClientX = event.clientX;
+      if (pokePointerFrame) return;
+      pokePointerFrame = window.requestAnimationFrame(() => {
+        pokePointerFrame = 0;
+        const rect = pokeAvatar.getBoundingClientRect();
+        const offset = ((pokeClientX - rect.left) / rect.width - 0.5) * 2;
+        pokeAvatar.style.setProperty("--flower-sway", `${offset * 9}deg`);
+      });
     };
 
     const handlePokeLeave = () => {
+      window.cancelAnimationFrame(pokePointerFrame);
+      pokePointerFrame = 0;
       pokeAvatar.style.setProperty("--flower-sway", "0deg");
     };
 
@@ -266,6 +346,9 @@ export function mountHomeHero() {
       window.clearTimeout(releaseTimer);
       window.clearTimeout(bubbleTimer);
       window.clearTimeout(pokeTimer);
+      window.cancelAnimationFrame(heroScrollFrame);
+      window.cancelAnimationFrame(progressFrame);
+      window.cancelAnimationFrame(pokePointerFrame);
       typingTimers.forEach((timer) => window.clearTimeout(timer));
       typingTimers.clear();
       window.removeEventListener("wheel", handleHeroWheel);

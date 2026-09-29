@@ -255,14 +255,22 @@ const themedNotFoundRedirectScript = `(() => {
 
     <script>
       import { installNavigationFeedback } from "../lib/navigation-feedback.mjs";
-      import { installArticleImageViewer } from "../lib/article-image-viewer.mjs";
       import { installWebVitals } from "../../../core/web-vitals.mjs";
       import { isNativeContextTarget } from "../../../core/themes/context-menu-routing.mjs";
       import { createSakuraController } from "../lib/sakura-runtime.mjs";
 
       installWebVitals({ endpoint: import.meta.env.PUBLIC_WEB_VITALS_ENDPOINT ?? "" });
       installNavigationFeedback(document, window);
-      installArticleImageViewer(document, window);
+
+      let articleImageViewerLoad;
+      const loadArticleImageViewer = () => {
+        if (!document.querySelector("[data-article-image-viewer]")) return;
+        articleImageViewerLoad ??= import("../lib/article-image-viewer.mjs").then(({ installArticleImageViewer }) => {
+          installArticleImageViewer(document, window);
+        });
+      };
+      loadArticleImageViewer();
+      document.addEventListener("astro:page-load", loadArticleImageViewer);
 
       let scrollProgressFrame = 0;
 
