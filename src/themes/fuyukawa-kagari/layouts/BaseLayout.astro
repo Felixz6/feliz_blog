@@ -141,7 +141,6 @@ const themedNotFoundRedirectScript = `(() => {
   <body
     data-fuyukawa
     data-pagefind-ignore={isAlternateThemeRoute ? true : undefined}
-    data-yuimi-selection-lock={isArticlePage ? undefined : "true"}
     data-yuimi-article-page={isArticlePage ? "true" : undefined}
   >
     <a class="skip-to-content" href="#page-content">跳至正文</a>
@@ -217,13 +216,6 @@ const themedNotFoundRedirectScript = `(() => {
       <button type="button" data-context-action="title">T &#x590D;&#x5236;&#x6807;&#x9898;</button>
       <button type="button" data-context-action="sakura" aria-pressed="true">&#x273F; 樱花雨：开</button>
       <button type="button" data-context-action="music-autoplay" aria-pressed="false">♫ 进站续播：关</button>
-      <div class="context-theme-group" role="group" aria-label="选择前端主题">
-        <span class="context-theme-label">THEME</span>
-        <button type="button" data-theme-select="fuyukawa-kagari" aria-pressed="true">
-          <span class="context-theme-mark" aria-hidden="true">●</span>
-          Fuyukawa Kagari
-        </button>
-      </div>
     </nav>
     <div class="site-shell">
       <header class="site-header" aria-label="Primary">
@@ -273,6 +265,7 @@ const themedNotFoundRedirectScript = `(() => {
       import { installNavigationFeedback } from "../lib/navigation-feedback.mjs";
       import { installArticleImageViewer } from "../lib/article-image-viewer.mjs";
       import { installWebVitals } from "../../../core/web-vitals.mjs";
+      import { isNativeContextTarget } from "../../../core/themes/context-menu-routing.mjs";
       import { createSakuraController } from "../lib/sakura-runtime.mjs";
 
       installWebVitals({ endpoint: import.meta.env.PUBLIC_WEB_VITALS_ENDPOINT ?? "" });
@@ -811,7 +804,6 @@ const themedNotFoundRedirectScript = `(() => {
         const contextMenu = getContextMenu();
         const sakuraButton = contextMenu?.querySelector('[data-context-action="sakura"]');
         const musicAutoplayButton = contextMenu?.querySelector('[data-context-action="music-autoplay"]');
-        const currentTheme = window.__yuimiTheme?.current ?? "fuyukawa-kagari";
         const sakuraEnabled = isSakuraEnabled();
         const musicAutoplayEnabled = window.__yuimiRadio?.isAutoplayEnabled?.() ?? false;
         if (sakuraButton) {
@@ -822,12 +814,6 @@ const themedNotFoundRedirectScript = `(() => {
           musicAutoplayButton.textContent = musicAutoplayEnabled ? "♫ 进站续播：开" : "♫ 进站续播：关";
           musicAutoplayButton.setAttribute("aria-pressed", String(musicAutoplayEnabled));
         }
-        contextMenu?.querySelectorAll("[data-theme-select]").forEach((button) => {
-          const isCurrent = button.dataset.themeSelect === currentTheme;
-          button.setAttribute("aria-pressed", String(isCurrent));
-          const mark = button.querySelector(".context-theme-mark");
-          if (mark) mark.textContent = isCurrent ? "●" : "○";
-        });
       };
 
       sakuraController = createSakuraController({
@@ -869,6 +855,7 @@ const themedNotFoundRedirectScript = `(() => {
       };
 
       window.addEventListener("contextmenu", (event) => {
+        if (isNativeContextTarget(event)) return;
         event.preventDefault();
         showContextMenuAt(event.clientX, event.clientY);
       });
@@ -894,14 +881,6 @@ const themedNotFoundRedirectScript = `(() => {
       window.addEventListener("click", async (event) => {
         const contextMenu = getContextMenu();
         const target = event.target instanceof Element ? event.target : null;
-        const themeButton = target?.closest("[data-theme-select]");
-        if (themeButton) {
-          event.stopPropagation();
-          hideContextMenu();
-          window.__yuimiTheme?.select(themeButton.dataset.themeSelect);
-          return;
-        }
-
         const button = target?.closest("[data-context-action]");
         if (!button || !contextMenu?.contains(button)) {
           hideContextMenu();

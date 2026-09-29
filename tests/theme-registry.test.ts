@@ -22,8 +22,8 @@ test("only Fuyukawa remains registered and selectable", () => {
   const fuyukawa = readFileSync(new URL("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro", import.meta.url), "utf8");
   const preferenceGate = readFileSync(new URL("../src/core/themes/ThemePreferenceGate.astro", import.meta.url), "utf8");
 
-  assert.match(fuyukawa, /data-theme-select="fuyukawa-kagari"/);
-  assert.deepEqual([...fuyukawa.matchAll(/data-theme-select="([^"]+)"/g)].map(([, id]) => id), ["fuyukawa-kagari"]);
+  assert.doesNotMatch(fuyukawa, /data-theme-select=/);
+  assert.doesNotMatch(fuyukawa, /context-theme-group|context-theme-label/);
   assert.match(preferenceGate, /selectableThemeIds: selectableThemes\.map/);
   assert.deepEqual(themes.map((theme) => theme.routePrefix), ["/themes/fuyukawa-kagari"]);
 });

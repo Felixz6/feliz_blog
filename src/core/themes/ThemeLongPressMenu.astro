@@ -1,23 +1,6 @@
-<style is:global>
-  body[data-yuimi-selection-lock="true"],
-  body[data-yuimi-selection-lock="true"] :where(*) {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
+<script data-astro-rerun>
+  import { isNativeContextTarget } from "./context-menu-routing.mjs";
 
-  body[data-yuimi-selection-lock="true"] :where(input, textarea, select, option, [contenteditable="true"]) {
-    -webkit-touch-callout: default;
-    -webkit-user-select: text;
-    user-select: text;
-  }
-
-  body[data-yuimi-selection-lock="true"] :where(img, picture, canvas, video, svg) {
-    -webkit-user-drag: none;
-  }
-</style>
-
-<script is:inline data-astro-rerun>
   (() => {
     window.__yuimiThemeLongPressCleanup?.();
 
@@ -41,8 +24,9 @@
     const isArticleTarget = (target) => document.body?.dataset.yuimiArticlePage === "true"
       && target instanceof Element
       && Boolean(target.closest("article"));
-    const isIgnoredTarget = (target) => isEditableTarget(target) || isArticleTarget(target);
-    const isSelectionLocked = () => document.body?.dataset.yuimiSelectionLock === "true";
+    const isIgnoredTarget = (target, clientX, clientY) => isEditableTarget(target)
+      || isArticleTarget(target)
+      || isNativeContextTarget({ target, clientX, clientY });
 
     const clearPress = () => {
       if (pressTimer) window.clearTimeout(pressTimer);
@@ -65,7 +49,7 @@
     };
 
     const beginPress = (pointerId, clientX, clientY, target) => {
-      if (isIgnoredTarget(target)) return;
+      if (isIgnoredTarget(target, clientX, clientY)) return;
       clearPress();
       activePointerId = pointerId;
       startX = clientX;
@@ -137,16 +121,6 @@
       if (Math.hypot(window.scrollX - startScrollX, window.scrollY - startScrollY) > movementTolerance) clearPress();
     };
 
-    const preventLockedSelection = (event) => {
-      if (!isSelectionLocked() || isEditableTarget(event.target)) return;
-      event.preventDefault();
-    };
-
-    const preventLockedDrag = (event) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (isSelectionLocked() && target?.closest("img, picture, canvas, video, svg")) event.preventDefault();
-    };
-
     if ("PointerEvent" in window) {
       window.addEventListener("pointerdown", handlePointerDown, { capture: true, passive: true, signal });
       window.addEventListener("pointermove", handlePointerMove, { capture: true, passive: true, signal });
@@ -161,13 +135,7 @@
     window.addEventListener("contextmenu", suppressNativeContextMenu, { capture: true, signal });
     window.addEventListener("click", suppressSyntheticClick, { capture: true, signal });
     window.addEventListener("scroll", handleScroll, { passive: true, signal });
-    document.addEventListener("selectstart", preventLockedSelection, { capture: true, signal });
-    document.addEventListener("dragstart", preventLockedDrag, { capture: true, signal });
     document.addEventListener("visibilitychange", clearPress, { signal });
-
-    if (isSelectionLocked()) {
-      document.querySelectorAll("img, video").forEach((asset) => asset.setAttribute("draggable", "false"));
-    }
 
     const cleanup = () => {
       if (pressTimer) window.clearTimeout(pressTimer);
