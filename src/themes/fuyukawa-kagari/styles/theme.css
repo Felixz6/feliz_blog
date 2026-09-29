@@ -2582,3 +2582,166 @@ html[data-yuimi-visibility="hidden"] *::before,
 html[data-yuimi-visibility="hidden"] *::after {
   animation-play-state: paused !important;
 }
+
+.article-print-meta {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 16mm 14mm 18mm;
+  }
+
+  html,
+  body {
+    width: auto !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    color: #171717 !important;
+    background: #fff !important;
+    scroll-behavior: auto !important;
+  }
+
+  body::before,
+  .skip-to-content,
+  .site-header,
+  .site-footer,
+  .sakura-rain,
+  .scroll-progress,
+  .toy-dock,
+  .custom-context-menu,
+  .article-mobile-toc,
+  .article-toc,
+  .article-colophon,
+  .article-margin-character,
+  .manga-art,
+  .article-image-viewer,
+  .heading-anchor,
+  .code-block-copy {
+    display: none !important;
+  }
+
+  .site-shell,
+  .article-shell,
+  .article {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #171717 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .article-header {
+    border-color: #888 !important;
+    color: #171717 !important;
+  }
+
+  .article-header h1,
+  .article-header p,
+  .prose,
+  .prose :where(h2, h3, h4, p, li, blockquote, th, td) {
+    color: #171717 !important;
+  }
+
+  .article-header .meta-row,
+  .article-header .tag-row {
+    display: none !important;
+  }
+
+  .article-print-meta {
+    display: grid !important;
+    gap: 3px;
+    margin-top: 12px;
+    color: #333 !important;
+    font-size: 9pt;
+    overflow-wrap: anywhere;
+  }
+
+  .article-print-meta a,
+  .prose a {
+    color: #171717 !important;
+    border: 0 !important;
+    text-decoration: underline;
+  }
+
+  .prose {
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+
+  .prose h2,
+  .prose h3,
+  .prose h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .prose p,
+  .prose li,
+  .prose blockquote {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .prose table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+    border-collapse: collapse;
+    overflow: visible !important;
+  }
+
+  .prose thead {
+    display: table-header-group;
+  }
+
+  .prose tr,
+  .prose th,
+  .prose td {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-color: #999 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .prose pre,
+  .prose .expressive-code,
+  .prose .expressive-code .frame {
+    max-width: 100% !important;
+    overflow: visible !important;
+    color: #171717 !important;
+    background: #f4f4f4 !important;
+    border-color: #999 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .prose pre,
+  .prose pre code,
+  .prose .expressive-code pre,
+  .prose .expressive-code code,
+  .prose .expressive-code .ec-line {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    color: #171717 !important;
+    text-shadow: none !important;
+  }
+
+  .prose :where(code, pre) {
+    background: #f4f4f4 !important;
+  }
+
+  .prose img,
+  .prose figure,
+  .prose blockquote {
+    max-width: 100% !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
