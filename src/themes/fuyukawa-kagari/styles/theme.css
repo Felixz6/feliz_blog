@@ -778,37 +778,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   text-align: left;
 }
 
-.context-theme-group {
-  display: grid;
-  gap: 5px;
-  margin-top: 2px;
-  padding-top: 7px;
-  border-top: 1px dashed rgba(93, 113, 145, 0.24);
-}
-
-.context-theme-label {
-  padding: 0 8px;
-  color: rgba(49, 66, 95, 0.66);
-  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.context-theme-group button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.context-theme-group button[aria-pressed="true"] {
-  border-color: rgba(215, 130, 156, 0.38);
-}
-
-.context-theme-mark {
-  color: #d75f86;
-  font-size: 0.72rem;
-}
-
 .theme-quick-switch {
   position: fixed;
   right: 78px;
