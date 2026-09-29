@@ -11,7 +11,7 @@ category: "tech"
 
 ## 本章导航
 
-[系统调用](#1-系统调用做什么) · [用户入口](#2-从用户-stub-到-ecall) · [内核处理](#3-trampoline-usertrap-与分派) · [返回路径](#4-返回用户态) · [边界检查](#5-参数与用户内存边界)
+[系统调用](#1-系统调用做什么) · [用户入口](#2-从用户-stub-到-ecall) · [内核处理](#3-trampolineusertrap-与分派) · [返回路径](#4-返回用户态) · [边界检查](#5-参数与用户内存边界)
 
 ## 学习目标
 
@@ -67,4 +67,4 @@ Trap 是更广的概念，包含同步异常、系统调用、外部/定时器�
 
 > **核心结论：** `ecall` 只触发受控的特权转换；真正的安全边界由内核的参数验证、页表权限和数据复制共同建立。
 
-**下一篇：** [12 · xv6 文件系统](/risc-v-notes/risc-v-12-xv6-filesystem/) · [返回索引](/risc-v-notes/risc-v-xv6-learning-notes/)
+**下一篇：** [12 · xv6 文件系统](/risc-v-notes/risc-v-12-xv6-filesystem/) · [返回索引](/blog/risc-v-xv6-learning-notes/)

@@ -11,7 +11,7 @@ category: "tech"
 
 ## 本章导航
 
-[进程结构](#1-进程包含什么) · [状态与调度](#2-进程状态与调度) · [上下文切换](#3-context-与-swtch) · [进程生命周期](#4-fork-exec-exit-wait) · [睡眠唤醒](#5-sleep-与-wakeup)
+[进程结构](#1-进程包含什么) · [状态与调度](#2-进程状态与调度) · [上下文切换](#3-context-与-swtch) · [进程生命周期](#4-forkexecexitwait) · [睡眠唤醒](#5-sleep-与-wakeup)
 
 ## 学习目标
 
