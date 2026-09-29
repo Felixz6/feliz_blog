@@ -271,11 +271,13 @@ const themedNotFoundRedirectScript = `(() => {
 
     <script>
       import { installNavigationFeedback } from "../lib/navigation-feedback.mjs";
+      import { installArticleImageViewer } from "../lib/article-image-viewer.mjs";
       import { installWebVitals } from "../../../core/web-vitals.mjs";
       import { createSakuraController } from "../lib/sakura-runtime.mjs";
 
       installWebVitals({ endpoint: import.meta.env.PUBLIC_WEB_VITALS_ENDPOINT ?? "" });
       installNavigationFeedback(document, window);
+      installArticleImageViewer(document, window);
 
       let scrollProgressFrame = 0;
 

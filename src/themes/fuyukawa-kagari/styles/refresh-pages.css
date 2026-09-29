@@ -171,6 +171,34 @@ body[data-fuyukawa] .prose :is(th, td) { border-color: var(--line); padding: 12p
 body[data-fuyukawa] .prose th { background: #edf4fb; color: var(--ink); }
 body[data-fuyukawa] .prose tr:nth-child(even) { background: #ffffff; }
 body[data-fuyukawa] .prose img { border-radius: 6px; }
+body[data-fuyukawa] .prose .article-image-figure { margin: 2.4rem auto; max-width: 100%; }
+body[data-fuyukawa] .prose .article-image-trigger { display: block; width: fit-content; max-width: 100%; margin: 0 auto; padding: 0; overflow: hidden; border: 1px solid #dce7f0; border-radius: 8px; background: #f5f8fb; box-shadow: 0 8px 24px #273f5d12; cursor: zoom-in; line-height: 0; }
+body[data-fuyukawa] .prose .article-image-trigger img { max-width: 100%; margin: 0 auto; }
+body[data-fuyukawa] .prose .article-image-trigger:hover { border-color: #9dc5b7; box-shadow: 0 10px 28px #273f5d1c; }
+body[data-fuyukawa] .prose .article-image-trigger:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+body[data-fuyukawa] .prose .article-image-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin: 9px auto 0; color: var(--ink-soft); font-size: .78rem; line-height: 1.5; }
+body[data-fuyukawa] .prose .article-image-caption a { flex: 0 0 auto; color: var(--accent); font-weight: 700; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer { width: min(96vw, 1440px); max-width: 96vw; max-height: 96dvh; padding: 0; overflow: visible; border: 0; border-radius: 12px; background: transparent; color: var(--ink); }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer::backdrop { background: #101826d9; backdrop-filter: blur(5px); }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-panel { display: grid; grid-template-rows: auto minmax(160px, 1fr) auto auto; gap: 12px; max-height: 96dvh; padding: 18px; border: 1px solid #ffffffd9; border-radius: 12px; background: #f9fcfd; box-shadow: 0 24px 72px #09111f66; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-header,
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-footer,
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-controls { display: flex; align-items: center; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-header,
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-footer { justify-content: space-between; gap: 16px; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-header h2 { margin: 0; color: var(--ink); font-size: .95rem; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer button { display: inline-grid; min-width: 40px; min-height: 40px; place-items: center; padding: 8px; border: 1px solid #dce7f0; border-radius: 7px; background: white; color: var(--accent); font: inherit; font-size: .78rem; cursor: pointer; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer button:hover { border-color: #9dc5b7; background: #eff8f5; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer button:focus-visible,
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer a:focus-visible,
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-stage:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-stage { display: grid; min-height: 160px; max-height: calc(96dvh - 184px); overflow: hidden; place-items: center; border-radius: 7px; background: #101826; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-stage img { display: block; max-width: 100%; max-height: calc(96dvh - 184px); width: auto; height: auto; margin: 0; border-radius: 0; object-fit: contain; user-select: none; will-change: transform; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-caption { margin: 0; color: var(--ink-soft); font-size: .82rem; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-controls { gap: 8px; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-controls output { min-width: 48px; color: var(--ink); font-size: .78rem; text-align: center; font-variant-numeric: tabular-nums; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-footer > a { display: inline-flex; align-items: center; gap: 6px; padding: 8px 0; color: var(--accent); font-size: .82rem; font-weight: 750; }
+body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-help { margin: 0; color: var(--ink-soft); font-size: .7rem; text-align: center; }
 body[data-fuyukawa] .prose details.article-source-foldout { background: white; border: 1px solid var(--line); box-shadow: none; border-radius: 6px; }
 body[data-fuyukawa] .prose details.article-source-foldout > summary { background: #edf4fb; color: var(--accent); }
 body[data-fuyukawa] .article-toc { position: fixed; top: 106px; right: max(40px, calc((100vw - 1160px) / 2)); z-index: 20; width: 220px; max-height: calc(100svh - 140px); overflow-y: auto; padding: 4px 0 4px 22px; background: none; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: none; backdrop-filter: none; }
@@ -231,6 +259,14 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .not-found-visual { max-width: 500px; }
 }
 @media (max-width: 480px) {
+  body[data-fuyukawa] .prose .article-image-caption { align-items: flex-start; font-size: .74rem; }
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer { width: 96vw; max-width: 96vw; }
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-panel { gap: 10px; padding: 10px; }
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-footer { align-items: flex-start; flex-wrap: wrap; }
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-controls { flex-wrap: wrap; }
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-stage,
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-stage img { max-height: calc(96dvh - 214px); }
+  body[data-fuyukawa][data-yuimi-article-page] .article-image-viewer-help { font-size: .65rem; }
   body[data-fuyukawa] .page-title-en { display: block; padding: 4px 0 0; }
   body[data-fuyukawa] .blog-post-row { grid-template-columns: 1fr; gap: 18px; }
   body[data-fuyukawa] .post-cover-frame { width: 100%; }
