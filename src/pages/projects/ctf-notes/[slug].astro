@@ -2,6 +2,8 @@
 import { getCollection, render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
+import ArticleMobileToc from "@/themes/fuyukawa-kagari/components/ArticleMobileToc.astro";
+import ArticleTocLinks from "@/themes/fuyukawa-kagari/components/ArticleTocLinks.astro";
 
 export async function getStaticPaths() {
   const notes = (await getCollection("ctfNotes")).sort((a, b) => a.data.order - b.data.order);
@@ -17,8 +19,9 @@ const previousNote = notes[noteIndex - 1];
 const nextNote = notes[noteIndex + 1];
 ---
 
-<BaseLayout title={`${note.data.title} | CTF Notes`} description={note.data.description} isArticlePage>
-  <div class="article-shell ctf-note-shell">
+<BaseLayout title={`${note.data.title} | CTF Notes`} description={note.data.description} isArticlePage needsMangaRuntime>
+  <div class="article-shell ctf-note-shell" data-article-shell>
+    <ArticleMobileToc headings={tocHeadings} title="本文目录" />
     <article class="article" data-pagefind-body>
       <a class="back-link" href="/projects/ctf-notes/"><Icon name="tabler:arrow-left" aria-hidden="true" />回到 CTF Notes</a>
       <header class="article-header ctf-note-header">
@@ -33,9 +36,9 @@ const nextNote = notes[noteIndex + 1];
       </nav>
     </article>
     {tocHeadings.length > 0 && (
-      <aside class="article-toc ctf-note-toc" aria-label="文章导航">
+      <aside class="article-toc ctf-note-toc" aria-label="文章导航" data-pagefind-ignore>
         <p>本文目录</p>
-        <nav>{tocHeadings.map((heading) => <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>{heading.text}</a>)}</nav>
+        <ArticleTocLinks headings={tocHeadings} ariaLabel="桌面端文章导航" />
       </aside>
     )}
   </div>
@@ -51,6 +54,6 @@ const nextNote = notes[noteIndex + 1];
   .ctf-note-pager span { color: var(--ink-soft); font-size: .75rem; }
   .ctf-note-pager strong { line-height: 1.55; }
   .ctf-note-pager .ctf-note-pager-next { margin-left: auto; text-align: right; }
-  @media (max-width: 900px) { body[data-fuyukawa] .article-shell.ctf-note-shell { grid-template-columns: 1fr; gap: 20px; } .ctf-note-toc { display: none; } }
+  @media (max-width: 900px) { body[data-fuyukawa] .article-shell.ctf-note-shell { grid-template-columns: 1fr; gap: 20px; } }
   @media (max-width: 680px) { .ctf-note-header h1 { font-size: 1.75rem; } }
 </style>

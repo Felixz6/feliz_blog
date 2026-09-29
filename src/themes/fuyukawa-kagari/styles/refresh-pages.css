@@ -223,6 +223,17 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .works-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body[data-fuyukawa] .game-room { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (max-width: 900px) {
+  body[data-fuyukawa] .article-shell { grid-template-columns: 1fr; gap: 26px; }
+  body[data-fuyukawa] .article-toc { display: none; }
+  body[data-fuyukawa] .article-mobile-toc { display: block; padding: 14px 0; border-block: 1px solid var(--line); }
+  body[data-fuyukawa] .article-mobile-toc summary { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--accent); font-size: .85rem; list-style: none; }
+  body[data-fuyukawa] .article-mobile-toc summary::-webkit-details-marker { display: none; }
+  body[data-fuyukawa] .article-mobile-toc svg { width: 18px; height: 18px; }
+  body[data-fuyukawa] .article-mobile-toc summary svg:last-child { margin-left: auto; }
+  body[data-fuyukawa] .article-mobile-toc[open] summary svg:last-child { transform: rotate(180deg); }
+  body[data-fuyukawa] .article-mobile-toc nav { display: grid; gap: 8px; padding: 16px 0 0; font-size: .8rem; }
+}
 @media (max-width: 760px) {
   body[data-fuyukawa] :is(.page-title, .blog-search-card, .blog-timeline, .game-room, .game-note, .works-shell, .about-profile-shell, .article-shell, .not-found) { width: calc(100% - 48px); }
   body[data-fuyukawa] .page-title { margin-top: 84px; }
@@ -247,14 +258,6 @@ body[data-fuyukawa] .not-found-visual img { object-fit: contain; height: auto; b
   body[data-fuyukawa] .about-tech-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   body[data-fuyukawa] .article-shell { margin-top: 104px; grid-template-columns: 1fr; gap: 26px; }
   body[data-fuyukawa] .article-header h1 { font-size: 1.85rem; }
-  body[data-fuyukawa] .article-toc { display: none; }
-  body[data-fuyukawa] .article-mobile-toc { display: block; padding: 14px 0; border-block: 1px solid var(--line); }
-  body[data-fuyukawa] .article-mobile-toc summary { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--accent); font-size: .85rem; list-style: none; }
-  body[data-fuyukawa] .article-mobile-toc summary::-webkit-details-marker { display: none; }
-  body[data-fuyukawa] .article-mobile-toc svg { width: 18px; height: 18px; }
-  body[data-fuyukawa] .article-mobile-toc summary svg:last-child { margin-left: auto; }
-  body[data-fuyukawa] .article-mobile-toc[open] summary svg:last-child { transform: rotate(180deg); }
-  body[data-fuyukawa] .article-mobile-toc nav { display: grid; gap: 8px; padding: 16px 0 0; font-size: .8rem; }
   body[data-fuyukawa] .not-found { grid-template-columns: 1fr; gap: 26px; }
   body[data-fuyukawa] .not-found-visual { max-width: 500px; }
 }

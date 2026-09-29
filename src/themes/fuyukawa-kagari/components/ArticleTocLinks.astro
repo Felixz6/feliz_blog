@@ -1,0 +1,22 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+  ariaLabel?: string;
+}
+
+const { headings, ariaLabel = "文章章节导航" } = Astro.props;
+---
+
+<nav aria-label={ariaLabel} data-article-toc>
+  {headings.map((heading) => (
+    <a class={`toc-depth-${heading.depth}`} href={`#${heading.slug}`}>
+      {heading.text}
+    </a>
+  ))}
+</nav>

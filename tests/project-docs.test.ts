@@ -49,3 +49,21 @@ test("project document routes render entries and expose a navigable index", () =
   assert.match(detailPage, /回到文档目录/);
   assert.match(detailPage, /project-doc-pager/);
 });
+
+test("CTF notes and project documents reuse the mobile and active-state article TOC", () => {
+  const ctfPage = read("../src/pages/projects/ctf-notes/[slug].astro");
+  const projectDocPage = read("../src/pages/projects/[project]/docs/[slug].astro");
+  const articleLayout = read("../src/themes/fuyukawa-kagari/layouts/ArticleLayout.astro");
+  const mobileToc = read("../src/themes/fuyukawa-kagari/components/ArticleMobileToc.astro");
+  const tocLinks = read("../src/themes/fuyukawa-kagari/components/ArticleTocLinks.astro");
+
+  for (const page of [ctfPage, projectDocPage, articleLayout]) {
+    assert.match(page, /needsMangaRuntime/);
+    assert.match(page, /data-article-shell/);
+    assert.match(page, /<ArticleMobileToc headings=\{/);
+    assert.match(page, /<ArticleTocLinks headings=\{/);
+  }
+  assert.match(mobileToc, /class="article-mobile-toc"/);
+  assert.match(mobileToc, /<ArticleTocLinks headings=\{headings\}/);
+  assert.match(tocLinks, /data-article-toc/);
+});

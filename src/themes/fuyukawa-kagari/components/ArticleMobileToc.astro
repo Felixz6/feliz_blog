@@ -1,0 +1,28 @@
+---
+import { Icon } from "astro-icon/components";
+import ArticleTocLinks from "./ArticleTocLinks.astro";
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+  title?: string;
+}
+
+const { headings, title = "这篇笔记的目录" } = Astro.props;
+---
+
+{headings.length > 0 && (
+  <details class="article-mobile-toc" data-pagefind-ignore>
+    <summary>
+      <Icon name="tabler:book-2" aria-hidden="true" />
+      {title}
+      <Icon name="tabler:chevron-down" aria-hidden="true" />
+    </summary>
+    <ArticleTocLinks headings={headings} ariaLabel={`${title}导航`} />
+  </details>
+)}
