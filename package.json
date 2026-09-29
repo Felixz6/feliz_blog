@@ -28,7 +28,8 @@
     "pagefind": "^1.5.2",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "web-vitals": "^6.2.2"
   },
   "devDependencies": {
     "sharp": "^0.34.5"
