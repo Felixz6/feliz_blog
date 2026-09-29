@@ -40,8 +40,13 @@ test("Blog archive exposes one RISC-V series entrance while all 13 chapters use 
     assert.match(chapter, /category: "tech"/);
     assert.match(chapter, /## /);
     assert.doesNotMatch(chapter, /\]\([^)]*\.md(?:#[^)]*)?\)/);
-    assert.doesNotMatch(chapter, /\/blog\/risc-v-/);
+    assert.doesNotMatch(chapter, /\/blog\/risc-v-\d{2}-/);
   }
+  const syscallChapter = readNote("risc-v-11-xv6-syscalls-and-traps");
+  const filesystemChapter = readNote("risc-v-12-xv6-filesystem");
+  assert.match(syscallChapter, /\[返回索引\]\(\/blog\/risc-v-xv6-learning-notes\/\)/);
+  assert.match(filesystemChapter, /\[学习索引\]\(\/blog\/risc-v-xv6-learning-notes\/\)/);
+  assert.doesNotMatch(syscallChapter + filesystemChapter, /\/risc-v-notes\/risc-v-xv6-learning-notes\//);
 });
 
 test("chapter routes render the separate collection and return readers to the series choices", () => {

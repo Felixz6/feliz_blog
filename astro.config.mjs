@@ -148,6 +148,8 @@ export default defineConfig({
           "chevron-left",
           "chevron-right",
           "external-link",
+          "zoom-in",
+          "zoom-out",
           "blade",
           "blender",
           "chef-hat",

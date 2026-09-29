@@ -11,7 +11,7 @@ category: "tech"
 
 ## 本章导航
 
-[磁盘布局](#1-磁盘上的主要区域) · [inode 与目录](#2-inode-目录和数据块) · [文件描述符](#3-从路径到文件描述符) · [读写路径](#4-readwrite-如何到达磁盘) · [缓存与日志](#5-buffer-cache-与日志)
+[磁盘布局](#1-磁盘上的主要区域) · [inode 与目录](#2-inode目录和数据块) · [文件描述符](#3-从路径到文件描述符) · [读写路径](#4-readwrite-如何到达磁盘) · [缓存与日志](#5-buffer-cache-与日志)
 
 ## 学习目标
 
@@ -103,4 +103,4 @@ Buffer cache 把磁盘块缓存在内存中，减少重复设备 I/O，并协调
 
 > **核心结论：** 路径名经目录项找到 inode，fd 索引的是进程中的打开对象，inode 再把文件偏移映射到块；缓存与日志分别解决访问效率和更新一致性问题。
 
-**下一步：** 回到 [学习索引](/risc-v-notes/risc-v-xv6-learning-notes/)，或对照 [MIT xv6 文件系统章节](https://mit-pdos.github.io/xv6-riscv-book/)逐项阅读源码。
+**下一步：** 回到 [学习索引](/blog/risc-v-xv6-learning-notes/)，或对照 [MIT xv6 文件系统章节](https://mit-pdos.github.io/xv6-riscv-book/)逐项阅读源码。
