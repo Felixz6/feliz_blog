@@ -19,6 +19,7 @@ const date = new Intl.DateTimeFormat("zh-CN", {
   month: "2-digit",
   day: "2-digit"
 }).format(frontmatter.pubDate);
+const articleUrl = new URL(getCanonicalPath(Astro.url.pathname), Astro.site ?? Astro.url).href;
 const headings = (Astro.props.headings ?? []).filter((heading) => heading.depth >= 2 && heading.depth <= 3);
 const tocHeadings = headings.filter((heading) => heading.depth === 2);
 const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pathname;
@@ -38,6 +39,11 @@ const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pa
         <p>{frontmatter.description}</p>
         <div class="tag-row" role="group" aria-label="Tags">
           {frontmatter.tags.map((tag: string) => <a class="blog-tag-link" href={getThemePath("fuyukawa-kagari", `/blog/?q=${encodeURIComponent(tag)}`)}>#{tag}</a>)}
+        </div>
+        <div class="article-print-meta" aria-label="打印信息">
+          <span>作者：{site.author}</span>
+          <time datetime={frontmatter.pubDate.toISOString()}>日期：{date}</time>
+          <span>文章地址：<a href={articleUrl}>{articleUrl}</a></span>
         </div>
       </header>
       <div class="prose">
