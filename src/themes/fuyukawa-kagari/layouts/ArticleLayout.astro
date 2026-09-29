@@ -68,5 +68,29 @@ const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pa
         </aside>
       )
     }
+    <dialog class="article-image-viewer" data-article-image-viewer aria-labelledby="article-image-viewer-title">
+      <div class="article-image-viewer-panel">
+        <header class="article-image-viewer-header">
+          <h2 id="article-image-viewer-title">图片查看</h2>
+          <button type="button" data-image-viewer-close aria-label="关闭图片查看器" title="关闭（Esc）">
+            <Icon name="tabler:x" aria-hidden="true" />
+          </button>
+        </header>
+        <div class="article-image-viewer-stage" data-image-viewer-stage tabindex="0" aria-label="图片预览；滚轮缩放，方向键移动">
+          <img data-image-viewer-image alt="" draggable="false" />
+        </div>
+        <p class="article-image-viewer-caption" data-image-viewer-caption></p>
+        <footer class="article-image-viewer-footer">
+          <div class="article-image-viewer-controls" role="group" aria-label="图片缩放控制">
+            <button type="button" data-image-viewer-zoom="out" aria-label="缩小" title="缩小（−）"><Icon name="tabler:zoom-out" aria-hidden="true" /></button>
+            <output data-image-viewer-zoom-level aria-live="polite">100%</output>
+            <button type="button" data-image-viewer-zoom="in" aria-label="放大" title="放大（+）"><Icon name="tabler:zoom-in" aria-hidden="true" /></button>
+            <button type="button" data-image-viewer-zoom="reset" aria-label="适应窗口" title="适应窗口（0）">适应窗口</button>
+          </div>
+          <a data-image-viewer-original target="_blank" rel="noopener noreferrer">查看原图 <Icon name="tabler:external-link" aria-hidden="true" /></a>
+        </footer>
+        <p class="article-image-viewer-help">Esc 关闭 · + / − 缩放 · 0 适应窗口 · 方向键移动</p>
+      </div>
+    </dialog>
   </div>
 </BaseLayout>
