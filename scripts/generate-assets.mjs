@@ -37,10 +37,10 @@ async function syncMusicLibrary() {
     tracks.map((entry) => copyFile(new URL(entry.name, sourceMusicDir), new URL(entry.name, publicMusicDir)))
   );
 
-  const manifest = tracks.map((entry, index) => {
+  const manifest = tracks.map((entry) => {
     const title = entry.name.replace(/\.[^.]+$/, "");
     return {
-      id: `track-${index + 1}`,
+      id: `track-${encodeURIComponent(entry.name)}`,
       title,
       file: entry.name,
       src: publicMusicPath(entry.name)

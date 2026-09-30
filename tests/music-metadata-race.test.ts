@@ -30,6 +30,7 @@ class MockElement {
   }
 
   setAttribute(name, value) { this.attributes[name] = value; }
+  dispatchEvent(event) { void this.dispatch(event.type, event); return true; }
 }
 
 const tracks = [
@@ -38,7 +39,8 @@ const tracks = [
   { id: 'c', title: 'Track C', src: '/c.mp3' }
 ];
 
-function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = false, initiallyPaused = true } = {}) {
+function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = false, initiallyPaused = true,
+  playlist = tracks, cachedState = { trackId: 'c', paused: true }, storageFailure = null } = {}) {
   const nodes = new Map();
   for (const name of ['toggle', 'prev', 'next', 'volume', 'seek', 'current', 'duration', 'note', 'status', 'volume-label']) {
     nodes.set(`[data-music-${name}]`, new MockElement());
@@ -53,7 +55,7 @@ function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = fals
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => data.set(key, value)
   });
-  const cached = new Map([['yuimi-radio-state-v1', JSON.stringify({ trackId: 'c', paused: true })]]);
+  const cached = new Map([['yuimi-radio-state-v1', JSON.stringify(cachedState)]]);
   const sessionStorage = storage();
   const pendingPlays = [];
 
@@ -108,9 +110,18 @@ function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = fals
   window.queueMicrotask = queueMicrotask;
   window.localStorage = storage(cached);
   window.sessionStorage = sessionStorage;
-  window.fetch = async () => ({ json: async () => tracks.map((track) => ({ ...track })) });
+  if (storageFailure) {
+    for (const name of ['localStorage', 'sessionStorage']) {
+      if (storageFailure === 'getter') {
+        Object.defineProperty(window, name, { get() { throw new Error('storage denied'); } });
+      } else {
+        window[name][storageFailure] = () => { throw new Error('storage denied'); };
+      }
+    }
+  }
+  window.fetch = async () => ({ json: async () => playlist.map((track) => ({ ...track })) });
   const player = installMusicPlayer(document, window);
-  return { player, document, nodes, pendingPlays, sessionStorage };
+  return { player, document, window, cached, nodes, pendingPlays, sessionStorage };
 }
 
 async function next(nodes) { await nodes.get('[data-music-next]').dispatch('click'); }
@@ -284,4 +295,90 @@ test('ended still advances and plays the next track after metadata', async () =>
   assert.equal(player.audio.src, 'https://example.test/a.mp3');
   await player.audio.dispatch('loadedmetadata');
   assert.equal(player.audio.playCount, 1);
+});
+
+test('inserting a track preserves the selected file and its progress', async () => {
+  const playlist = [
+    { id: 'track-0.mp3', title: '0', src: '/0.mp3' },
+    { id: 'track-A.mp3', title: 'A', src: '/A.mp3' },
+    { id: 'track-B.mp3', title: 'B', src: '/B.mp3' }
+  ];
+  const { player, nodes, cached } = fixture({ playlist,
+    cachedState: { trackId: 'track-B.mp3', trackSrc: '/B.mp3', currentTime: 35, paused: true } });
+  await player.init();
+  assert.equal(player.tracks[player.index].src, '/B.mp3');
+  await nodes.get('[data-music-toggle]').dispatch('click');
+  await player.audio.dispatch('loadedmetadata');
+  assert.equal(player.audio.currentTime, 35);
+  assert.equal(JSON.parse(cached.get('yuimi-radio-state-v1')).trackSrc, '/B.mp3');
+});
+
+test('a cached file path overrides an obsolete positional ID', async () => {
+  const { player } = fixture({ cachedState: { trackId: 'a', trackSrc: '/b.mp3', currentTime: 35 } });
+  await player.init();
+  assert.equal(player.tracks[player.index].src, '/b.mp3');
+  assert.equal(player.restoreTime, 35);
+});
+
+test('a deleted file cannot transfer progress or autoplay to another track', async () => {
+  const { player, window } = fixture({
+    cachedState: { trackId: 'a', trackSrc: '/deleted.mp3', currentTime: 35, paused: false } });
+  window.localStorage.setItem('yuimi-radio-autoplay-v1', '1');
+  await player.init();
+  assert.equal(player.index, 0);
+  assert.equal(player.restoreTime, 0);
+  assert.equal(player.restoreAutoplay, false);
+});
+
+test('legacy positional IDs without a path are not trusted', async () => {
+  const { player } = fixture({ playlist: [{ id: 'track-2', title: 'A', src: '/a.mp3' }],
+    cachedState: { trackId: 'track-2', currentTime: 35 } });
+  await player.init();
+  assert.equal(player.restoreTime, 0);
+});
+
+test('stable ID-only caches retain progress and invalid times reset to zero', async () => {
+  for (const [currentTime, expected] of [[35, 35], [-1, 0], ['oops', 0]]) {
+    const { player } = fixture({ cachedState: { trackId: 'b', currentTime } });
+    await player.init();
+    assert.equal(player.index, 1);
+    assert.equal(player.restoreTime, expected);
+  }
+});
+
+test('null and malformed cached JSON do not interrupt initialization', async () => {
+  for (const value of ['null', '{broken', '[]']) {
+    const { player, cached } = fixture();
+    cached.set('yuimi-radio-state-v1', value);
+    assert.equal(await player.init(), true);
+    assert.equal(player.restoreTime, 0);
+  }
+});
+
+for (const storageFailure of ['getter', 'getItem', 'setItem']) {
+  test(`storage ${storageFailure} failures preserve controls and this playback`, async () => {
+    const f = fixture({ storageFailure });
+    assert.doesNotThrow(() => f.player.isAutoplayEnabled());
+    assert.doesNotThrow(() => f.player.setAutoplayEnabled(true));
+    await f.player.init();
+    await f.nodes.get('[data-music-toggle]').dispatch('click');
+    await f.player.audio.dispatch('loadedmetadata');
+    assert.equal(f.player.audio.paused, false);
+    await f.player.audio.dispatch('timeupdate');
+    await f.window.dispatch('pagehide');
+    await next(f.nodes);
+    await f.player.audio.dispatch('loadedmetadata');
+    assert.equal(f.player.audio.paused, false);
+    await f.nodes.get('[data-music-toggle]').dispatch('click');
+    assert.equal(f.player.audio.paused, true);
+  });
+}
+
+test('autoplay preference notifications still fire when persistence fails', async () => {
+  const { player, window } = fixture({ storageFailure: 'setItem' });
+  const events = [];
+  window.dispatchEvent = (event) => events.push(event);
+  player.setAutoplayEnabled(true);
+  assert.equal(events[0].type, 'yuimi:music-autoplay-change');
+  assert.equal(events[0].detail.enabled, true);
 });

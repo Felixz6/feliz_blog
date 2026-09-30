@@ -51,37 +51,43 @@ const pagefindIntegration = () => ({
   name: "site-pagefind",
   hooks: {
     "astro:build:done": async ({ dir, logger }) => {
-      const { index, errors } = await pagefind.createIndex({
-        forceLanguage: "zh",
-        includeCharacters: "_-:"
-      });
+      try {
+        const { index, errors } = await pagefind.createIndex({
+          forceLanguage: "zh",
+          includeCharacters: "_-:"
+        });
 
-      if (!index) {
-        logger.warn(`Pagefind index was not created: ${errors.join(", ")}`);
-        return;
+        if (!index || errors.length) {
+          throw new Error(`Pagefind index was not created: ${errors.join(", ") || "missing index"}`);
+        }
+
+        const distDir = fileURLToPath(dir);
+        const addResult = await index.addDirectory({
+          path: distDir,
+          glob: "**/*.html"
+        });
+
+        if (!Number.isFinite(addResult.page_count) || addResult.page_count <= 0) {
+          throw new Error(`Pagefind indexing failed: ${addResult.errors.join(", ") || "no pages indexed"}`);
+        }
+
+        if (addResult.errors.length) {
+          logger.warn(`Pagefind indexing warnings: ${addResult.errors.join(", ")}`);
+        }
+
+        const writeResult = await index.writeFiles({
+          outputPath: fileURLToPath(new URL("./pagefind", dir))
+        });
+
+        if (writeResult.errors.length) {
+          throw new Error(`Pagefind index write failed: ${writeResult.errors.join(", ")}`);
+        } else {
+          logger.info(`Pagefind indexed ${addResult.page_count} pages.`);
+        }
+
+      } finally {
+        await pagefind.close();
       }
-
-      const distDir = fileURLToPath(dir);
-      const addResult = await index.addDirectory({
-        path: distDir,
-        glob: "**/*.html"
-      });
-
-      if (addResult.errors.length) {
-        logger.warn(`Pagefind indexing warnings: ${addResult.errors.join(", ")}`);
-      }
-
-      const writeResult = await index.writeFiles({
-        outputPath: fileURLToPath(new URL("./pagefind", dir))
-      });
-
-      if (writeResult.errors.length) {
-        logger.warn(`Pagefind write warnings: ${writeResult.errors.join(", ")}`);
-      } else {
-        logger.info(`Pagefind indexed ${addResult.page_count} pages.`);
-      }
-
-      await pagefind.close();
     }
   }
 });
