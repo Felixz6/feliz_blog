@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import test from 'node:test';
 
-const layout = readFileSync(fileURLToPath(new URL('../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro', import.meta.url)), 'utf8');
-const musicScript = layout.slice(layout.indexOf('const musicCacheKey ='), layout.indexOf('const getContextMenu ='));
+const musicModule = readFileSync(fileURLToPath(new URL('../src/themes/fuyukawa-kagari/lib/music-player.mjs', import.meta.url)), 'utf8')
+  .replace(/^export /gm, '');
 
 class MockElement {
   events = new Map();
@@ -101,12 +101,13 @@ function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = fals
     }
   }
 
-  vm.runInNewContext(musicScript, {
+  const sandbox = {
     document, window, Audio: MockAudio, URL, AbortController,
     localStorage: storage(cached), sessionStorage,
     fetch: async () => ({ json: async () => tracks.map((track) => ({ ...track })) })
-  });
-  return { player: window.__yuimiRadio, document, nodes, pendingPlays, sessionStorage };
+  };
+  vm.runInNewContext(`${musicModule}\nglobalThis.__testPlayer = installMusicPlayer(document, window);`, sandbox);
+  return { player: sandbox.__testPlayer, document, nodes, pendingPlays, sessionStorage };
 }
 
 async function next(nodes) { await nodes.get('[data-music-next]').dispatch('click'); }

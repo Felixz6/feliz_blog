@@ -43,27 +43,50 @@ test("previous SRC Skill URLs redirect to the renamed project and documents", ()
 test("project document routes render entries and expose a navigable index", () => {
   const indexPage = read("../src/pages/projects/[project]/docs/index.astro");
   const detailPage = read("../src/pages/projects/[project]/docs/[slug].astro");
+  const documentLayout = read("../src/themes/fuyukawa-kagari/components/DocumentLayout.astro");
   assert.match(indexPage, /getCollection\("projectDocs"\)/);
   assert.match(indexPage, /document\.data\.routeSlug/);
+  assert.match(detailPage, /getCollection\("projectDocs"\)/);
+  assert.match(detailPage, /filter\(\(item\) => item\.data\.project === document\.data\.project\)/);
+  assert.match(detailPage, /sort\(\(a, b\) => a\.data\.order - b\.data\.order\)/);
   assert.match(detailPage, /render\(document\)/);
   assert.match(detailPage, /回到文档目录/);
-  assert.match(detailPage, /project-doc-pager/);
+  assert.match(detailPage, /previousDocument\.data\.routeSlug/);
+  assert.match(detailPage, /nextDocument\.data\.routeSlug/);
+  assert.match(detailPage, /<DocumentLayout[\s\S]*kind="project-doc"/);
+  assert.match(documentLayout, /document-pager/);
 });
 
 test("CTF notes and project documents reuse the mobile and active-state article TOC", () => {
   const ctfPage = read("../src/pages/projects/ctf-notes/[slug].astro");
   const projectDocPage = read("../src/pages/projects/[project]/docs/[slug].astro");
   const articleLayout = read("../src/themes/fuyukawa-kagari/layouts/ArticleLayout.astro");
+  const documentLayout = read("../src/themes/fuyukawa-kagari/components/DocumentLayout.astro");
   const mobileToc = read("../src/themes/fuyukawa-kagari/components/ArticleMobileToc.astro");
   const tocLinks = read("../src/themes/fuyukawa-kagari/components/ArticleTocLinks.astro");
 
   for (const page of [ctfPage, projectDocPage, articleLayout]) {
     assert.match(page, /needsMangaRuntime/);
-    assert.match(page, /data-article-shell/);
-    assert.match(page, /<ArticleMobileToc headings=\{/);
-    assert.match(page, /<ArticleTocLinks headings=\{/);
   }
+  for (const route of [ctfPage, projectDocPage]) assert.match(route, /<DocumentLayout[\s\S]*headings=\{headings\}/);
+  assert.match(articleLayout, /data-article-shell/);
+  assert.match(articleLayout, /<ArticleMobileToc headings=\{/);
+  assert.match(articleLayout, /<ArticleTocLinks headings=\{/);
+  assert.match(documentLayout, /data-article-shell/);
+  assert.match(documentLayout, /<ArticleMobileToc headings=\{tocHeadings\}/);
+  assert.match(documentLayout, /<ArticleTocLinks headings=\{tocHeadings\}/);
+  assert.match(documentLayout, /<nav class=\{`document-pager/);
   assert.match(mobileToc, /class="article-mobile-toc"/);
   assert.match(mobileToc, /<ArticleTocLinks headings=\{headings\}/);
   assert.match(tocLinks, /data-article-toc/);
+});
+
+test("CTF notes keep their independent collection order and route identities", () => {
+  const ctfPage = read("../src/pages/projects/ctf-notes/[slug].astro");
+  assert.match(ctfPage, /getCollection\("ctfNotes"\)/);
+  assert.match(ctfPage, /sort\(\(a, b\) => a\.data\.order - b\.data\.order\)/);
+  assert.match(ctfPage, /params: \{ slug: note\.id \}/);
+  assert.match(ctfPage, /previousNote\.id/);
+  assert.match(ctfPage, /nextNote\.id/);
+  assert.match(ctfPage, /kind="ctf-note"/);
 });

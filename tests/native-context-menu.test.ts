@@ -90,10 +90,12 @@ function textHitTestDocument(rect) {
 
 test("non-article pages no longer disable selection or image-native actions", () => {
   const layout = read("../src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
+  const runtime = read("../src/themes/fuyukawa-kagari/lib/layout-runtime.mjs");
   const longPress = read("../src/core/themes/ThemeLongPressMenu.astro");
 
   assert.doesNotMatch(layout, /data-yuimi-selection-lock/);
   assert.doesNotMatch(longPress, /user-select:\s*none|preventLockedSelection|preventLockedDrag|draggable.*false/);
-  assert.match(layout, /if\s*\(isNativeContextTarget\(event\)\)\s*return;/);
+  assert.match(layout, /installLayoutRuntime/);
+  assert.match(runtime, /if\s*\(isNativeContextTarget\(event\)\)\s*return;/);
   assert.match(longPress, /isNativeContextTarget\(\{ target, clientX, clientY \}\)/);
 });

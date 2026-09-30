@@ -9,6 +9,8 @@ const readSource = (relativePath: string) => readFileSync(
 );
 
 const layoutSource = readSource("src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
+const musicPlayerSource = readSource("src/themes/fuyukawa-kagari/lib/music-player.mjs");
+const layoutRuntimeSource = readSource("src/themes/fuyukawa-kagari/lib/layout-runtime.mjs");
 const homeSource = readSource("src/themes/fuyukawa-kagari/pages/HomePage.astro");
 const refreshStyles = readSource("src/themes/fuyukawa-kagari/styles/refresh.css");
 const mangaStyles = readSource("src/themes/fuyukawa-kagari/styles/manga.css");
@@ -99,18 +101,23 @@ test("Fuyukawa pauses the second-by-second clock while hidden", () => {
 });
 
 test("music manifest and audio source are deferred until music-player intent", () => {
-  const initStart = layoutSource.indexOf("const initMusicPlayer =");
-  const initEnd = layoutSource.indexOf("const ensureCurrentTrackSource =", initStart);
+  const initStart = musicPlayerSource.indexOf("const initMusicPlayer =");
+  const initEnd = musicPlayerSource.indexOf("const ensureCurrentTrackSource =", initStart);
   assert.ok(initStart >= 0 && initEnd > initStart);
-  assert.match(layoutSource, /audio\.preload = "none"/);
-  assert.match(layoutSource, /const musicProgressPersistInterval = 5000/);
-  assert.match(layoutSource, /audio\.addEventListener\("timeupdate", \(\) => \{\s*updateMusicProgressUi\(\);\s*saveMusicProgress\(\);/);
-  assert.doesNotMatch(layoutSource.slice(initStart, initEnd), /audio\.load\(|loadMusicTrack\(/);
+  assert.match(musicPlayerSource, /audio\.preload = "none"/);
+  assert.match(musicPlayerSource, /const musicProgressPersistInterval = 5000/);
+  assert.match(musicPlayerSource, /audio\.addEventListener\("timeupdate", \(\) => \{\s*updateMusicProgressUi\(\);\s*saveMusicProgress\(\);/);
+  assert.doesNotMatch(musicPlayerSource.slice(initStart, initEnd), /audio\.load\(|loadMusicTrack\(/);
+  assert.match(musicPlayerSource, /const playersByDocument = new WeakMap\(\)/);
+  assert.match(musicPlayerSource, /player = createRadioPlayer\(documentRef, windowRef\)/);
+  assert.match(musicPlayerSource, /documentRef\.addEventListener\("astro:page-load", \(\) => player\.bind\(\)\)/);
+  assert.match(musicPlayerSource, /if \(pinned\) void player\?\.init\(\)/);
+  assert.doesNotMatch(musicPlayerSource, /window\.__yuimiRadio/);
 
-  const bootstrapStart = layoutSource.indexOf("window.__yuimiRadio ??=");
-  const bootstrapEnd = layoutSource.indexOf("const getContextMenu =", bootstrapStart);
-  const bootstrap = layoutSource.slice(bootstrapStart, bootstrapEnd);
-  assert.match(bootstrap, /window\.__yuimiRadio\.bind\(\)/);
-  assert.doesNotMatch(bootstrap, /window\.__yuimiRadio\.init\(\)/);
-  assert.match(layoutSource, /if \(pinned\) void window\.__yuimiRadio\?\.init\(\)/);
+  assert.match(layoutSource, /import \{ installLayoutRuntime \} from "\.\.\/lib\/layout-runtime\.mjs"/);
+  assert.match(layoutSource, /installLayoutRuntime\(\{ endpoint:/);
+  assert.doesNotMatch(layoutSource, /initMusicPlayer|installContextMenu|window\.__yuimiRadio/);
+  assert.match(layoutRuntimeSource, /export function installContextMenu\(/);
+  assert.match(layoutRuntimeSource, /installContextMenu\(\{ documentRef, windowRef, musicPlayer, debugSakura \}\)/);
+  assert.match(layoutRuntimeSource, /const musicPlayer = installMusicPlayer\(documentRef, windowRef\)/);
 });

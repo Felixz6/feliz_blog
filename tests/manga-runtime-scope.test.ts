@@ -10,6 +10,7 @@ const sourceFiles = [
   "layouts/BaseLayout.astro",
   "layouts/ArticleLayout.astro",
   "components/MangaRuntime.astro",
+  "components/DocumentLayout.astro",
   "components/ArticleMobileToc.astro",
   "components/ArticleTocLinks.astro",
   "pages/HomePage.astro",
@@ -94,7 +95,6 @@ test("MangaRuntime initializes cold pages once and cleans up across repeated sof
   };
   vm.runInNewContext(runnable, {
     document,
-    window: { __yuimiHomeRainCleanup() { events.push("home-rain-cleanup"); } },
     mountMangaScene: mount("scene"),
     mountChapterRail: mount("rail"),
     mountAlbum: mount("album"),
@@ -133,5 +133,33 @@ test("MangaRuntime initializes cold pages once and cleans up across repeated sof
   assert.equal(events.filter((event) => event === "dispose:scene:home-scene").length, 1);
   assert.equal(events.filter((event) => event === "mount:rail:home-rail").length, 2);
   assert.equal(events.filter((event) => event === "dispose:rail:home-rail").length, 1);
+  assert.doesNotMatch(component, /__yuimiHomeRainCleanup/);
+  assert.doesNotMatch(events.join("\n"), /home-rain-cleanup/);
   assert.equal(listeners.get("astro:page-load")?.size, 1);
+});
+
+test("homepage runtime owns and removes its own pre-swap cleanup", () => {
+  const home = readFileSync(new URL("pages/HomePage.astro", theme), "utf8");
+  const start = home.indexOf("const cleanupTasks = [];");
+  const end = home.indexOf("const stage = document.querySelector", start);
+  assert.ok(start >= 0 && end > start);
+  const setup = home.slice(start, end);
+  assert.doesNotMatch(home, /__yuimiHomeRainCleanup/);
+
+  const listeners = new Map<string, Set<() => void>>();
+  const calls: string[] = [];
+  const document = {
+    addEventListener(name: string, listener: () => void) {
+      if (!listeners.has(name)) listeners.set(name, new Set());
+      listeners.get(name)!.add(listener);
+    },
+    removeEventListener(name: string, listener: () => void) {
+      listeners.get(name)?.delete(listener);
+    }
+  };
+  vm.runInNewContext(`${setup}\ncleanupTasks.push(() => calls.push("home-cleanup"));`, { document, calls });
+  assert.equal(listeners.get("astro:before-swap")?.size, 1);
+  for (const cleanup of [...(listeners.get("astro:before-swap") ?? [])]) cleanup();
+  assert.deepEqual(calls, ["home-cleanup"]);
+  assert.equal(listeners.get("astro:before-swap")?.size, 0);
 });

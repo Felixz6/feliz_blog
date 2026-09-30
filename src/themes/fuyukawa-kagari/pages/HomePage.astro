@@ -167,11 +167,12 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
 
   <script data-astro-rerun>
     (() => {
-      window.__yuimiHomeRainCleanup?.();
       const cleanupTasks = [];
-      window.__yuimiHomeRainCleanup = () => {
+      const cleanupHomeRuntime = () => {
+        document.removeEventListener("astro:before-swap", cleanupHomeRuntime);
         cleanupTasks.splice(0).forEach((cleanup) => cleanup());
       };
+      document.addEventListener("astro:before-swap", cleanupHomeRuntime);
 
       const stage = document.querySelector("[data-tag-rain]");
       const canvas = document.querySelector("[data-tag-rain-canvas]");
