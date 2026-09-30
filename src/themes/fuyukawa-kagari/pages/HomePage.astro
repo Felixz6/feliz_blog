@@ -4,7 +4,6 @@ import { kagariAssets } from "../assets";
 import { Icon } from "astro-icon/components";
 import { getPublishedPosts } from "@/core/content/blog";
 import { getCoverSources } from "@/core/content/coverSources";
-import { getThemePath } from "@/core/themes/registry";
 import { profileIdentity } from "@/core/data/profile";
 import { site } from "@/lib/site";
 import LayeredHero from "../components/LayeredHero.astro";
@@ -147,12 +146,12 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
         <p class="section-kicker">From my notebook</p>
         <h2 id="home-journal-title">最近写下的事</h2>
       </div>
-      <a href={getThemePath("fuyukawa-kagari", "/blog/")}>全部笔记 <Icon name="tabler:arrow-right" aria-hidden="true" /></a>
+      <a href="/blog/">全部笔记 <Icon name="tabler:arrow-right" aria-hidden="true" /></a>
     </header>
     <div class="journal-margin-note" aria-hidden="true"><MangaArt image="kagari-tea" /><span>今天，也有想记住的事。</span></div>
     <div class="journal-grid">
       {recentPosts.map((post) => (
-        <a class="journal-entry" href={getThemePath("fuyukawa-kagari", `/blog/${post.id}/`)}>
+        <a class="journal-entry" href={`/blog/${post.id}/`}>
           <img src={post.data.cover ?? kagariAssets.heroWallpaper} {...getCoverSources(post.data.cover, "(max-width: 480px) calc(100vw - 48px), (max-width: 760px) 180px, 380px")} alt="" width="700" height="1000" loading="lazy" decoding="async" />
           <div>
             <time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toLocaleDateString("zh-CN")}</time>

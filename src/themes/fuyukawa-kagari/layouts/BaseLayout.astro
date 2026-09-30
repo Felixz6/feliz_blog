@@ -8,12 +8,11 @@ import { site } from "@/lib/site";
 import type { BlogPost } from "@/core/content/blog";
 import { Icon } from "astro-icon/components";
 import { ClientRouter } from "astro:transitions";
-import ThemePreferenceGate from "@/core/themes/ThemePreferenceGate.astro";
 import ThemeLongPressMenu from "@/core/themes/ThemeLongPressMenu.astro";
 import ConsoleEasterEgg from "@/core/ConsoleEasterEgg.astro";
 import PerformanceProfile from "@/core/PerformanceProfile.astro";
 import SeoMeta from "@/core/SeoMeta.astro";
-import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
+import { getCanonicalPath } from "@/core/themes/registry";
 import { mangaArt } from "../data/mangaArt";
 import { kagariAssets } from "../assets";
 import MangaRuntime from "../components/MangaRuntime.astro";
@@ -22,7 +21,6 @@ import SakuraRain from "../components/SakuraRain.astro";
 interface Props {
   title?: string;
   description?: string;
-  honorThemePreference?: boolean;
   redirectThemedNotFound?: boolean;
   isArticlePage?: boolean;
   needsMangaRuntime?: boolean;
@@ -32,7 +30,6 @@ interface Props {
 const {
   title = site.title,
   description = site.description,
-  honorThemePreference = false,
   redirectThemedNotFound = false,
   isArticlePage = false,
   needsMangaRuntime = false,
@@ -42,13 +39,12 @@ const canonicalPath = getCanonicalPath(Astro.url.pathname);
 const canonical = new URL(canonicalPath, Astro.site ?? Astro.url);
 // Bypass the stale CDN 404 entries cached during the shared-CSS rollout.
 const sharedStylesheetVersion = "20260928-blog-search-toc";
-const themeHomePath = getThemePath("fuyukawa-kagari", "/");
+const themeHomePath = "/";
 const heroCharacter = mangaArt("hero-character");
 const heroManga = mangaArt("hero-manga");
 const navItems = site.nav.map((item) => ({
   ...item,
-  tone: ["/blog/", "/about/"].includes(item.href) ? "pink" : "blue",
-  href: getThemePath("fuyukawa-kagari", item.href)
+  tone: ["/blog/", "/about/"].includes(item.href) ? "pink" : "blue"
 }));
 const voyagerOneStart = new Date("1977-09-05T12:56:00Z");
 const voyagerTwoStart = new Date("1977-08-20T14:29:00Z");
@@ -64,10 +60,9 @@ const formatInitialElapsed = (start: Date, mode: "minute" | "days") => {
 };
 const isAlternateThemeRoute = Astro.url.pathname.startsWith("/themes/");
 const themedNotFoundRedirectScript = `(() => {
-  const themeMatch = window.location.pathname.match(/^\\/themes\\/(fuyukawa-kagari)(?:\\/|$)/);
-  if (!themeMatch) return;
-  const themeId = themeMatch[1];
-  const notFoundPath = "/themes/" + themeId + "/404/";
+  const themePrefix = "/themes/fuyukawa-kagari";
+  if (window.location.pathname !== themePrefix && !window.location.pathname.startsWith(themePrefix + "/")) return;
+  const notFoundPath = themePrefix + "/404/";
   if (window.location.pathname === notFoundPath) return;
   const original = window.location.pathname + window.location.search + window.location.hash;
   window.location.replace(notFoundPath + "?from=" + encodeURIComponent(original));
@@ -75,7 +70,7 @@ const themedNotFoundRedirectScript = `(() => {
 ---
 
 <!doctype html>
-<html lang="zh-CN" transition:animate="none">
+<html lang="zh-CN" data-theme="fuyukawa-kagari" transition:animate="none">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -89,7 +84,6 @@ const themedNotFoundRedirectScript = `(() => {
       )
     }
     <link rel="canonical" href={canonical} />
-    <ThemePreferenceGate currentTheme="fuyukawa-kagari" honorPreference={honorThemePreference} />
     <link rel="icon" type="image/png" href={kagariAssets.favicon} />
     <link rel="apple-touch-icon" href={kagariAssets.appleTouchIcon} />
     <title>{title}</title>

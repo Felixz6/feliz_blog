@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import { categoryLabel } from "@/lib/site";
-import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
+import { getCanonicalPath } from "@/core/themes/registry";
 import { Icon } from "astro-icon/components";
 import MangaArt from "../components/MangaArt.astro";
 import ArticleMobileToc from "../components/ArticleMobileToc.astro";
@@ -9,7 +9,7 @@ import ArticleTocLinks from "../components/ArticleTocLinks.astro";
 import { site } from "@/lib/site";
 
 const { frontmatter, archiveHref, archiveLabel, footerLabel } = Astro.props;
-const returnHref = archiveHref ?? getThemePath("fuyukawa-kagari", "/blog/");
+const returnHref = archiveHref ?? "/blog/";
 const returnLabel = archiveLabel ?? "回到笔记存档";
 const footerActionLabel = footerLabel ?? "再翻一篇笔记";
 const title = `${frontmatter.seoTitle ?? frontmatter.title} | ${site.name}`;
@@ -32,13 +32,13 @@ const shouldIndexArticle = getCanonicalPath(Astro.url.pathname) === Astro.url.pa
       <a class="back-link" href={returnHref}><Icon name="tabler:arrow-left" aria-hidden="true" />{returnLabel}</a>
       <header class="article-header">
         <div class="meta-row">
-          <a class="blog-category-filter-link" href={getThemePath("fuyukawa-kagari", `/blog/?category=${encodeURIComponent(frontmatter.category)}`)}>{categoryLabel[frontmatter.category]}</a>
+          <a class="blog-category-filter-link" href={`/blog/?category=${encodeURIComponent(frontmatter.category)}`}>{categoryLabel[frontmatter.category]}</a>
           <time datetime={frontmatter.pubDate.toISOString()}>{date}</time>
         </div>
         <h1>{frontmatter.title}</h1>
         <p>{frontmatter.description}</p>
         <div class="tag-row" role="group" aria-label="Tags">
-          {frontmatter.tags.map((tag: string) => <a class="blog-tag-link" href={getThemePath("fuyukawa-kagari", `/blog/?q=${encodeURIComponent(tag)}`)}>#{tag}</a>)}
+          {frontmatter.tags.map((tag: string) => <a class="blog-tag-link" href={`/blog/?q=${encodeURIComponent(tag)}`}>#{tag}</a>)}
         </div>
         <div class="article-print-meta" aria-label="打印信息">
           <span>作者：{site.author}</span>
