@@ -114,9 +114,11 @@ test("SRC research and recon projects are listed under Web Security", () => {
 
   const srcPage = readFileSync(new URL("../src/pages/projects/src-skill/index.astro", import.meta.url), "utf8");
   const reconPage = readFileSync(new URL("../src/pages/projects/recon-mcp/index.astro", import.meta.url), "utf8");
-  assert.match(srcPage, /SRC Skill/);
+  assert.match(srcPage, /projectMetadata\["src-skill"\]/);
+  assert.match(srcPage, /title=\{project\.name\}/);
   assert.match(srcPage, /MCP 服务源码/);
-  assert.match(reconPage, /Recon MCP/);
+  assert.match(reconPage, /projectMetadata\["recon-mcp"\]/);
+  assert.match(reconPage, /title=\{project\.name\}/);
   assert.match(reconPage, /asset_search/);
 });
 

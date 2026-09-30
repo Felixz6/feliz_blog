@@ -1,10 +1,12 @@
 ---
+import { projectMetadata } from "@/core/data/project-metadata";
 import ProjectDetail from "@/themes/fuyukawa-kagari/components/ProjectDetail.astro";
 import { Icon } from "astro-icon/components";
+const project = projectMetadata["recon-mcp"];
 ---
 
 <ProjectDetail
-  title="Recon MCP"
+  title={project.name}
   kicker="LOCAL-FIRST RECONNAISSANCE GATEWAY"
   description="基于 TypeScript、Node.js 与 MCP SDK 构建的统一网络资产侦察 Gateway，将本地扫描与可选 API provider 整理成一致的工具接口。"
   tags={["TypeScript", "MCP", "Asset Discovery"]}

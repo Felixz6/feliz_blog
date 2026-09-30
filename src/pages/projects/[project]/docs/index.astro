@@ -3,42 +3,39 @@ import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
 import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
 import { site } from "@/lib/site";
+import { projectIds, projectMetadata } from "@/core/data/project-metadata";
 
 export async function getStaticPaths() {
-  const projectLabels = {
-    "src-skill": "SRC Skill",
-    "recon-mcp": "Recon MCP"
-  } as const;
   const allDocs = await getCollection("projectDocs");
-  return Object.keys(projectLabels).map((project) => {
-    const key = project as keyof typeof projectLabels;
+  return projectIds.map((id) => {
+    const project = projectMetadata[id];
     const documents = allDocs
-      .filter((document) => document.data.project === key)
+      .filter((document) => document.data.project === id)
       .sort((a, b) => a.data.order - b.data.order);
     return {
-      params: { project: key },
-      props: { project: key, projectName: projectLabels[key], documents }
+      params: { project: id },
+      props: { project, documents }
     };
   });
 }
 
-const { project, projectName, documents } = Astro.props;
+const { project, documents } = Astro.props;
 ---
 
-<BaseLayout title={`${projectName} 文档 | ${site.name}`} description={`${projectName} 的项目主文档。`}>
+<BaseLayout title={`${project.name} 文档 | ${site.name}`} description={`${project.name} 的项目主文档。`}>
   <main class="project-doc-index">
-    <a class="project-doc-back" href={`/projects/${project}/`}>
+    <a class="project-doc-back" href={project.href}>
       <Icon name="tabler:arrow-left" aria-hidden="true" />回到项目介绍
     </a>
     <header class="project-doc-hero">
       <p class="section-kicker">PROJECT DOCUMENTS</p>
-      <h1>{projectName}<span>文档</span></h1>
+      <h1>{project.name}<span>文档</span></h1>
       <p>浏览该项目的主文档。选择一篇即可在网页中阅读完整 Markdown 内容。</p>
       <span class="project-doc-count"><strong>{String(documents.length).padStart(2, "0")}</strong> 篇文档</span>
     </header>
-    <section class="project-doc-list" aria-label={`${projectName} 主文档`}>
+    <section class="project-doc-list" aria-label={`${project.name} 主文档`}>
       {documents.map((document, index) => (
-        <a class="project-doc-card" href={`/projects/${project}/docs/${document.data.routeSlug}/`}>
+        <a class="project-doc-card" href={`${project.docsHref}${document.data.routeSlug}/`}>
           <span class="project-doc-number">{String(index + 1).padStart(2, "0")}</span>
           <span class="project-doc-copy">
             <strong>{document.data.title}</strong>
