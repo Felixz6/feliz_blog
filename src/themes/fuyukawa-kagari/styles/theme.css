@@ -1815,126 +1815,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   display: none;
 }
 
-.game-hero-card {
-  max-width: 900px;
-}
-
-.game-room {
-  display: grid;
-  padding: 34px 0 18px;
-}
-
-.game-cabinet-card {
-  position: relative;
-  grid-template-columns: minmax(190px, 0.42fr) minmax(0, 1fr);
-  gap: 18px;
-  align-items: stretch;
-  min-height: 260px;
-  backdrop-filter: blur(1.5px) saturate(1.02);
-  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
-}
-
-.game-cabinet-screen {
-  position: relative;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  overflow: hidden;
-}
-
-.game-cabinet-screen span {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  text-shadow: 0 0 18px rgba(255, 194, 218, 0.6);
-}
-
-.game-cabinet-screen strong {
-  position: relative;
-  z-index: 1;
-  margin-top: 14px;
-  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
-}
-
-.game-cabinet-copy {
-  align-content: start;
-  min-width: 0;
-}
-
-.game-license {
-  width: fit-content;
-  min-height: 28px;
-  border-radius: 999px;
-  font-weight: 860;
-}
-
-.game-cabinet-copy h2 {
-  color: var(--ink);
-  line-height: 1.15;
-}
-
-.game-cabinet-copy p {
-  margin: 10px 0 0;
-}
-
-.game-vibe {
-  color: #6d628f !important;
-  font-weight: 820;
-}
-
-.game-credit {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0 0;
-}
-
-.game-credit div {
-  display: grid;
-  gap: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed rgba(96, 116, 148, 0.18);
-}
-
-.game-credit dt {
-  font-weight: 860;
-}
-
-.game-credit dd {
-  color: #4f5f7e;
-}
-
-.game-actions {
-  display: flex;
-}
-
-.game-actions a {
-  color: var(--ink);
-  font-weight: 820;
-  transition:
-    background 180ms ease,
-    border-color 180ms ease,
-    transform 180ms ease;
-}
-
-.game-actions a:hover {
-  background: rgba(255, 226, 234, 0.72);
-  border-color: rgba(215, 130, 156, 0.28);
-  transform: translateY(-1px);
-}
-
-.game-note {
-  margin: 0 auto 76px;
-}
-
-.game-note strong {
-  color: var(--ink);
-}
-
-.game-note p {
-  margin: 6px 0 0;
-}
-
 .article-shell {
   display: grid;
   align-items: start;
@@ -2417,10 +2297,6 @@ html[data-yuimi-performance="lite"] .console-meter span {
     grid-template-columns: 1fr;
   }
 
-  .game-cabinet-card {
-    grid-template-columns: 1fr;
-  }
-
   .post-row {
     gap: 8px;
   }
@@ -2507,10 +2383,6 @@ html[data-yuimi-performance="lite"] .console-meter span {
   .article-toc {
     position: static;
     margin-top: 16px;
-  }
-
-  .game-credit div {
-    gap: 3px;
   }
 
   .scroll-progress {

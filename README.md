@@ -15,10 +15,8 @@ Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用
 | /projects/ | 项目展示 | Fuyukawa Kagari |
 | /about/ | 个人资料 | Fuyukawa Kagari |
 | /friends/ | 旧入口 | 重定向到 /about/ |
-| /games/ | 游戏页面 | 主站路由已移除 |
-| /themes/fuyukawa-kagari/games/ | 游戏页面 | 保留的主题前缀兼容路由 |
 
-根路径主站统一使用 Fuyukawa Kagari，顶栏不显示 Games。`/games/` 主站路由已移除；主题前缀兼容路径 `/themes/fuyukawa-kagari/games/` 仍会构建。Blank 与 Kisara 主题源码、专属页面路由及其公开资源已从当前工作区删除，仓库仅保留 Fuyukawa Kagari 主题。
+根路径主站统一使用 Fuyukawa Kagari。Blank 与 Kisara 主题源码、专属页面路由及其公开资源已从当前工作区删除，仓库仅保留 Fuyukawa Kagari 主题。
 
 ## 当前功能
 

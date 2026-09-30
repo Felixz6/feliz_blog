@@ -220,8 +220,6 @@ body[data-fuyukawa] :is(.page-title p:not(.section-kicker), .works-hero p:not(.s
 /* Portrait frames preserve the entire illustration, including non-portrait art. */
 body[data-fuyukawa] .blog-search-heading .section-kicker { display: none; }
 
-/* Game collection: distinct mint, sky and strawberry cabinets. */
-
 /* Works: unframed sections, small colored identifiers and readable status rows. */
 body[data-fuyukawa] .works-filter button.is-active { background: #ebf4fc; border-color: #c8dfef; color: var(--accent); }
 

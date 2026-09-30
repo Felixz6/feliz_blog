@@ -4,7 +4,7 @@ import postcss from "postcss";
 import selectorParser from "postcss-selector-parser";
 
 const directory = path.resolve("src/themes/fuyukawa-kagari/styles");
-const innerClass = /^(?:blog-|post-|compact-post-|timeline-|page-title|works-|about-|article|prose$|meta-row$|tag-row$|game-|back-link$|not-found|archive-|workshop-|playroom-|memory-album|album-|lost-|manga-page-stamp)/;
+const innerClass = /^(?:blog-|post-|compact-post-|timeline-|page-title|works-|about-|article|prose$|meta-row$|tag-row$|back-link$|not-found|archive-|workshop-|memory-album|album-|lost-|manga-page-stamp)/;
 for (const name of ["refresh", "manga"]) {
   const file = path.join(directory, `${name}.css`);
   const target = path.join(directory, `${name}-pages.css`);

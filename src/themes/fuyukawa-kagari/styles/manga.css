@@ -70,8 +70,6 @@ body[data-fuyukawa] .blog-title-copy > .manga-handwritten { display: block; marg
 /* A workbench of numbered draft sheets. Project controls retain their semantics. */
 body[data-fuyukawa] .workshop-scene .manga-handwritten { position: absolute; bottom: 4px; left: 24px; max-width: calc(100% - 80px); font-size: .85rem; }
 
-/* After-school stage: original game previews remain the primary actionable art. */
-
 /* The personal notebook mixes a profile margin, complete colour plates and lists. */
 body[data-fuyukawa] .memory-album .manga-section-heading h2 { font-size: 1.3rem; }
 
