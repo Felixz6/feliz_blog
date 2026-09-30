@@ -77,6 +77,7 @@ const blogCoverSizes = [
       <p data-blog-search-summary aria-live="polite"></p>
       <button type="button" data-blog-search-more hidden>查看更多</button>
     </div>
+    <p class="blog-search-error" data-blog-search-error role="status" hidden></p>
     <div class="blog-search-results" data-blog-search-results aria-live="polite"></div>
   </section>
 
@@ -133,6 +134,7 @@ const blogCoverSizes = [
     const searchMeta = document.querySelector("[data-blog-search-meta]");
     const searchSummary = document.querySelector("[data-blog-search-summary]");
     const loadMoreButton = document.querySelector("[data-blog-search-more]");
+    const loadMoreError = document.querySelector("[data-blog-search-error]");
     let pagefindReady;
     let currentMatches = [];
     let displayedCount = 0;
@@ -151,14 +153,21 @@ const blogCoverSizes = [
     const loadPagefind = async () => {
       if (!pagefindReady) {
         const importRuntime = new Function("path", "return import(path)");
-        pagefindReady = importRuntime("/pagefind/pagefind.js").then(async (pagefind) => {
+        const pending = importRuntime("/pagefind/pagefind.js").then(async (pagefind) => {
           await pagefind.options({
             excerptLength: 18
           });
           return pagefind;
         });
+        pagefindReady = pending;
       }
-      return pagefindReady;
+      const pending = pagefindReady;
+      try {
+        return await pending;
+      } catch (error) {
+        if (pagefindReady === pending) pagefindReady = undefined;
+        throw error;
+      }
     };
 
     const renderSearchState = (message) => {
@@ -197,6 +206,10 @@ const blogCoverSizes = [
       const batch = currentMatches.slice(displayedCount, displayedCount + pageSize);
       if (!batch.length) return;
       loadingMore = true;
+      if (loadMoreError) {
+        loadMoreError.hidden = true;
+        loadMoreError.textContent = "";
+      }
       if (loadMoreButton) loadMoreButton.disabled = true;
       try {
         const data = await Promise.all(batch.map((match) =>
@@ -218,6 +231,16 @@ const blogCoverSizes = [
           loadMoreButton.hidden = remaining <= 0;
           loadMoreButton.textContent = `查看更多（还有 ${remaining} 篇）`;
         }
+      } catch {
+        if (version !== searchVersion || !searchInput?.isConnected) return;
+        if (loadMoreError) {
+          loadMoreError.textContent = "加载失败，请重试。";
+          loadMoreError.hidden = false;
+        }
+        if (loadMoreButton) {
+          loadMoreButton.hidden = false;
+          loadMoreButton.textContent = `重试查看更多（还有 ${currentMatches.length - displayedCount} 篇）`;
+        }
       } finally {
         if (version === searchVersion) {
           loadingMore = false;
@@ -231,9 +254,14 @@ const blogCoverSizes = [
       displayedCount = 0;
       loadingMore = false;
       if (searchResults) searchResults.innerHTML = "";
+      if (loadMoreError) {
+        loadMoreError.hidden = true;
+        loadMoreError.textContent = "";
+      }
       if (loadMoreButton) {
         loadMoreButton.hidden = true;
         loadMoreButton.disabled = false;
+        loadMoreButton.textContent = "查看更多";
       }
       if (!matches.length) {
         if (searchSummary) searchSummary.textContent = "共找到 0 篇笔记";
@@ -252,11 +280,16 @@ const blogCoverSizes = [
       currentMatches = [];
       displayedCount = 0;
       loadingMore = false;
+      if (loadMoreError) {
+        loadMoreError.hidden = true;
+        loadMoreError.textContent = "";
+      }
       if (searchMeta) searchMeta.hidden = !query;
       if (syncUrl) updateQueryInUrl(query);
       if (loadMoreButton) {
         loadMoreButton.hidden = true;
         loadMoreButton.disabled = false;
+        loadMoreButton.textContent = "查看更多";
       }
       if (!query) {
         if (searchResults) searchResults.innerHTML = "";

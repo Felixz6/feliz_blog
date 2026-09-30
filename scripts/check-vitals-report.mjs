@@ -14,8 +14,26 @@ export function evaluateMobileReports(input, { minimumSamples = 30 } = {}) {
   if (!Array.isArray(reports)) throw new TypeError("Expected a JSON array or an object with a reports array.");
   if (!Number.isInteger(minimumSamples) || minimumSamples < 1) throw new RangeError("minimumSamples must be a positive integer.");
 
-  const groups = new Map();
+  // A v2 beacon is a revision of one page-view sample, not a new visit.
+  // Keep the highest revision for each navigationId before computing p75.
+  const latestByNavigation = new Map();
+  const legacyReports = [];
   for (const report of reports) {
+    if (typeof report?.navigationId !== "string" || !report.navigationId) {
+      legacyReports.push(report);
+      continue;
+    }
+    const previous = latestByNavigation.get(report.navigationId);
+    const revision = Number(report.revision);
+    const previousRevision = Number(previous?.revision);
+    if (!previous || !Number.isFinite(previousRevision) || (Number.isFinite(revision) && revision >= previousRevision)) {
+      latestByNavigation.set(report.navigationId, report);
+    }
+  }
+  const samples = [...legacyReports, ...latestByNavigation.values()];
+
+  const groups = new Map();
+  for (const report of samples) {
     if (report?.deviceClass !== "mobile" || !report.metrics || typeof report.metrics !== "object") continue;
     const path = typeof report.path === "string" && report.path.startsWith("/") ? report.path : "/";
     for (const name of Object.keys(targets)) {
@@ -36,7 +54,7 @@ export function evaluateMobileReports(input, { minimumSamples = 30 } = {}) {
       status: values.length < minimumSamples ? "INCONCLUSIVE" : p75 <= targets[name] ? "PASS" : "FAIL" };
   }).sort((left, right) => left.path.localeCompare(right.path) || left.name.localeCompare(right.name));
 
-  return { results, minimumSamples, mobileVisits: reports.filter((row) => row?.deviceClass === "mobile").length };
+  return { results, minimumSamples, mobileVisits: samples.filter((row) => row?.deviceClass === "mobile").length };
 }
 
 async function main() {

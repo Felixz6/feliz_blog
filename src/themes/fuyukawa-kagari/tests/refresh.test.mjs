@@ -261,6 +261,8 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
   const summary = node();
   const moreButton = node();
   moreButton.hidden = true;
+  const loadMoreError = node();
+  loadMoreError.hidden = true;
   const documentEvents = new Map();
   const windowEvents = new Map();
   const timers = new Map();
@@ -272,7 +274,8 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
       "[data-blog-search-results]": output,
       "[data-blog-search-meta]": searchMeta,
       "[data-blog-search-summary]": summary,
-      "[data-blog-search-more]": moreButton
+      "[data-blog-search-more]": moreButton,
+      "[data-blog-search-error]": loadMoreError
     })[selector],
     querySelectorAll: () => [],
     addEventListener: (key, value) => documentEvents.set(key, value),
@@ -309,7 +312,7 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
     await flush();
   };
   run();
-  return { input, output, searchMeta, summary, moreButton, window, windowEvents, timers, type, flush, run, documentEvents };
+  return { input, output, searchMeta, summary, moreButton, loadMoreError, window, windowEvents, timers, type, flush, run, documentEvents };
 }
 
 test("search ignores stale asynchronous results and clears pending results", async () => {
@@ -365,6 +368,30 @@ test("search failure renders a usable empty fallback", async () => {
   assert.doesNotMatch(fixture.output.innerHTML, /正在翻页/);
 });
 
+test("pagefind initialization failure is not cached and the next search retries it", async () => {
+  let optionsCalls = 0;
+  let searches = 0;
+  const fixture = searchFixture({
+    options: async () => {
+      optionsCalls += 1;
+      if (optionsCalls === 1) throw new Error("Initialization failed");
+    },
+    search: async () => {
+      searches += 1;
+      return { results: [{ data: async () => ({
+        url: "/blog/recovered/", meta: { title: "Recovered result" }, excerpt: "Ready again"
+      }) }] };
+    }
+  });
+
+  await fixture.type("first");
+  assert.match(fixture.output.innerHTML, /没有找到相关笔记/);
+  await fixture.type("second");
+  assert.equal(optionsCalls, 2);
+  assert.equal(searches, 1);
+  assert.match(fixture.output.innerHTML, /Recovered result/);
+});
+
 test("search reports total matches, loads more than five, and preserves category/query URL state", async () => {
   let searchedQuery = "";
   const fixture = searchFixture({
@@ -400,6 +427,42 @@ test("search reports total matches, loads more than five, and preserves category
   assert.equal(fixture.summary.textContent, "");
   assert.equal(new URL(fixture.window.location.href).searchParams.has("q"), false);
   assert.equal(new URL(fixture.window.location.href).searchParams.get("category"), "tech");
+});
+
+test("load-more failure preserves rendered results and retries the same batch", async () => {
+  let failLaterResults = true;
+  const fixture = searchFixture({
+    options: async () => {},
+    search: async () => ({ results: Array.from({ length: 7 }, (_, index) => ({
+      data: async () => {
+        if (index >= 5 && failLaterResults) throw new Error("Result unavailable");
+        return {
+          url: `/blog/note-${index + 1}/`,
+          meta: { title: `Note ${index + 1}` },
+          excerpt: "A note"
+        };
+      }
+    })) })
+  });
+
+  await fixture.type("notes");
+  assert.equal((fixture.output.innerHTML.match(/class="blog-search-result"/g) ?? []).length, 5);
+  const previousHtml = fixture.output.innerHTML;
+  await fixture.moreButton.events.get("click")();
+  assert.equal(fixture.output.innerHTML, previousHtml);
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 5 篇");
+  assert.equal(fixture.loadMoreError.hidden, false);
+  assert.equal(fixture.loadMoreError.textContent, "加载失败，请重试。");
+  assert.equal(fixture.moreButton.hidden, false);
+  assert.equal(fixture.moreButton.disabled, false);
+  assert.match(fixture.moreButton.textContent, /重试查看更多/);
+
+  failLaterResults = false;
+  await fixture.moreButton.events.get("click")();
+  assert.equal((fixture.output.innerHTML.match(/class="blog-search-result"/g) ?? []).length, 7);
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 7 篇");
+  assert.equal(fixture.loadMoreError.hidden, true);
+  assert.equal(fixture.moreButton.hidden, true);
 });
 
 test("search restores shared query URLs on load and popstate", async () => {
