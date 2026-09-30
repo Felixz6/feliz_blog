@@ -186,8 +186,10 @@ test("evaluates nearest-rank mobile p75 by route and leaves sparse samples incon
 
 test("the shared layout loads the opt-in RUM collector and exposes the report checker", () => {
   const layout = source("src/themes/fuyukawa-kagari/layouts/BaseLayout.astro");
+  const runtime = source("src/themes/fuyukawa-kagari/lib/layout-runtime.mjs");
   const packageJson = JSON.parse(source("package.json"));
-  assert.match(layout, /installWebVitals\(\{ endpoint: import\.meta\.env\.PUBLIC_WEB_VITALS_ENDPOINT/);
+  assert.match(layout, /installLayoutRuntime\(\{ endpoint: import\.meta\.env\.PUBLIC_WEB_VITALS_ENDPOINT/);
+  assert.match(runtime, /installWebVitals\(\{ endpoint \}\)/);
   assert.equal(packageJson.scripts["check:vitals-report"], "node scripts/check-vitals-report.mjs");
   assert.equal(packageJson.dependencies["web-vitals"], "^6.2.2");
 });

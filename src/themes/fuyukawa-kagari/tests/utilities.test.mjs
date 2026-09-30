@@ -8,6 +8,8 @@ import sharp from "sharp";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const layout = read("layouts/BaseLayout.astro");
+const musicModule = read("lib/music-player.mjs");
+const layoutRuntime = read("lib/layout-runtime.mjs");
 const themeLongPressMenu = readFileSync(new URL("../../../core/themes/ThemeLongPressMenu.astro", import.meta.url), "utf8");
 const css = postcss.parse(read("styles/refresh.css"));
 const declarations = (root, selector) => {
@@ -94,8 +96,9 @@ test("drawer pin, second-click close, hover reentry and Escape agree with aria-e
   doc.querySelector = () => dock;
   win.setTimeout = (fn) => { timers.set(++id, fn); return id; };
   win.clearTimeout = (key) => timers.delete(key);
-  vm.runInNewContext(section("let toyDockCloseTimer", 'const musicCacheKey ='), {
-    document: doc, window: win, Node: Element, Element, queueMicrotask
+  const dockBehavior = musicModule.slice(musicModule.indexOf("const installDockBehavior ="), musicModule.indexOf("export function installMusicPlayer"));
+  vm.runInNewContext(`${dockBehavior}\ninstallDockBehavior(player, document, window);`, {
+    document: doc, window: win, player: { init() {} }, Node: Element, Element, queueMicrotask
   });
   dock.hovered = true;
   doc.dispatch("pointerover", { target: handle });
@@ -134,10 +137,10 @@ test("sakura uses a single accessible canvas with tiered SVG petals", async () =
   assert.match(layout, /<SakuraRain \/>/);
   const runtime = read("lib/sakura-runtime.mjs");
   const performance = read("lib/sakura-performance.mjs");
-  assert.match(layout, /createSakuraController/);
-  assert.match(layout, /astro:before-swap.*sakuraController\.destroy/);
-  assert.match(layout, /astro:page-load[\s\S]*sakuraController\.mount/);
-  assert.match(layout, /import\.meta\.env\.DEV \|\| new URLSearchParams\(window\.location\.search\)\.has\("debug-sakura"\)/);
+  assert.match(layoutRuntime, /createSakuraController/);
+  assert.match(layoutRuntime, /astro:before-swap.*sakuraController\.destroy/);
+  assert.match(layoutRuntime, /astro:page-load[\s\S]*sakuraController\.mount/);
+  assert.match(layoutRuntime, /import\.meta\.env\.DEV \|\| new URLSearchParams\(window\.location\.search\)\.has\("debug-sakura"\)/);
   assert.match(runtime, /getDebugTargets: \(\) => mounted \?/);
   assert.doesNotMatch(runtime, /windowRef\.__yuimiSakuraSession/);
   assert.match(runtime, /requestIdleCallback/);
@@ -195,7 +198,7 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
     document: doc, window: win, localStorage, sessionStorage: storage(), Audio,
     URL, AbortController, fetch: async () => ({ json: async () => [{ id: "1", title: "A track", src: "/track.mp3" }] })
   });
-  vm.runInContext(section("const musicCacheKey =", "window.__yuimiRadio ??=") + "globalThis.player = createMusicPlayer();", context);
+  vm.runInContext(`${musicModule.replace(/^export /gm, "")}\nglobalThis.player = installMusicPlayer(document, window);`, context);
   const player = context.player;
   const toggle = nodes.get("[data-music-toggle]");
   toggle.textContent = "existing icon children";
@@ -223,6 +226,9 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
   assert.equal(toggle.attributes["aria-label"], "播放音乐");
   player.bind();
   assert.equal(toggle.events.get("click").size, 1);
+  vm.runInContext("globalThis.samePlayer = installMusicPlayer(document, window);", context);
+  assert.equal(context.samePlayer, player, "reinstallation should reuse the per-document player and audio state");
+  assert.equal(toggle.events.get("click").size, 1);
   for (const controller of ["controlAbort", "audioAbort", "unlockAbort"]) player[controller]?.abort();
 });
 
@@ -240,7 +246,8 @@ test("footer counters update at minute boundaries and pause while hidden", () =>
   doc.querySelectorAll = () => { queryCount += 1; return nodes; };
   win.setTimeout = (fn, delay) => { timers.set(++nextId, { fn, delay }); return nextId; };
   win.clearTimeout = (id) => timers.delete(id);
-  vm.runInNewContext(section("const padTimer =", "let toyDockCloseTimer"), {
+  const footerTimers = layoutRuntime.slice(layoutRuntime.indexOf("const padTimer ="), layoutRuntime.indexOf("const musicPlayer = installMusicPlayer"));
+  vm.runInNewContext(footerTimers, {
     document: doc, window: win, Date: TestDate
   });
   assert.equal(queryCount, 1);
@@ -263,8 +270,8 @@ test("footer counters update at minute boundaries and pause while hidden", () =>
 
 test("article image viewer stays out of homepage code and loads only when its dialog exists", () => {
   assert.doesNotMatch(layout, /import\s*\{\s*installArticleImageViewer\s*\}\s*from/);
-  assert.match(layout, /const loadArticleImageViewer = \(\) => \{[\s\S]*?if \(!document\.querySelector\("\[data-article-image-viewer\]"\)\) return;[\s\S]*?import\("\.\.\/lib\/article-image-viewer\.mjs"\)/);
-  assert.match(layout, /loadArticleImageViewer\(\);\s*document\.addEventListener\("astro:page-load", loadArticleImageViewer\);/);
+  assert.match(layoutRuntime, /const loadArticleImageViewer = \(\) => \{[\s\S]*?if \(!document\.querySelector\("\[data-article-image-viewer\]"\)\) return;[\s\S]*?import\("\.\/article-image-viewer\.mjs"\)/);
+  assert.match(layoutRuntime, /loadArticleImageViewer\(\);\s*document\.addEventListener\("astro:page-load", loadArticleImageViewer\);/);
 });
 
 test("home scroll handlers batch layout work through requestAnimationFrame", () => {
@@ -337,8 +344,8 @@ test("music manifest and audio wait for music-dock intent, then playback loads o
       ] };
     }
   });
-  vm.runInContext(section("let toyDockCloseTimer", "const getContextMenu ="), context);
-  const player = win.__yuimiRadio;
+  vm.runInContext(`${musicModule.replace(/^export /gm, "")}\nglobalThis.player = installMusicPlayer(document, window);`, context);
+  const player = context.player;
 
   assert.equal(player.audio.preload, "none");
   assert.equal(fetchCount, 0);

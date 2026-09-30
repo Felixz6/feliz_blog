@@ -29,9 +29,6 @@
     mountedRoots = roots;
   };
   document.addEventListener("astro:page-load", start);
-  document.addEventListener("astro:before-swap", () => {
-    dispose();
-    window.__yuimiHomeRainCleanup?.();
-  });
+  document.addEventListener("astro:before-swap", dispose);
   start();
 </script>

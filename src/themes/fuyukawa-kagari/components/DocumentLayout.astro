@@ -1,0 +1,105 @@
+---
+import { Icon } from "astro-icon/components";
+import ArticleMobileToc from "./ArticleMobileToc.astro";
+import ArticleTocLinks from "./ArticleTocLinks.astro";
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface PagerItem {
+  href: string;
+  title: string;
+}
+
+interface Props {
+  kind: "ctf-note" | "project-doc";
+  title: string;
+  description: string;
+  eyebrow: string;
+  current: number;
+  total: number;
+  headings: Heading[];
+  backHref: string;
+  backLabel: string;
+  pagerLabel: string;
+  previous?: PagerItem;
+  next?: PagerItem;
+  finishHref: string;
+  finishLabel: string;
+  finishTitle: string;
+}
+
+const {
+  kind,
+  title,
+  description,
+  eyebrow,
+  current,
+  total,
+  headings,
+  backHref,
+  backLabel,
+  pagerLabel,
+  previous,
+  next,
+  finishHref,
+  finishLabel,
+  finishTitle
+} = Astro.props;
+const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const count = (value: number) => String(value).padStart(2, "0");
+---
+
+<div class={`article-shell ${kind}-shell`} data-article-shell>
+  <ArticleMobileToc headings={tocHeadings} title="本文目录" />
+  <article class="article" data-pagefind-body>
+    <a class="back-link" href={backHref}><Icon name="tabler:arrow-left" aria-hidden="true" />{backLabel}</a>
+    <header class={`article-header ${kind}-header`}>
+      <div class="meta-row"><span>{eyebrow}</span><span>{count(current)} / {count(total)}</span></div>
+      {headings[0]?.depth !== 1 && <h1>{title}</h1>}
+      <p>{description}</p>
+    </header>
+    <div class="prose"><slot /></div>
+    <nav class={`document-pager ${kind}-pager`} aria-label={pagerLabel}>
+      {previous ? <a href={previous.href}><span>上一篇</span><strong>{previous.title}</strong></a> : <span></span>}
+      {next ? (
+        <a class="document-pager-next" href={next.href}><span>下一篇</span><strong>{next.title}</strong></a>
+      ) : (
+        <a class="document-pager-next" href={finishHref}><span>{finishLabel}</span><strong>{finishTitle}</strong></a>
+      )}
+    </nav>
+  </article>
+  {tocHeadings.length > 0 && (
+    <aside class={`article-toc ${kind}-toc`} aria-label="文章导航" data-pagefind-ignore>
+      <p>本文目录</p>
+      <ArticleTocLinks headings={tocHeadings} ariaLabel="桌面端文章导航" />
+    </aside>
+  )}
+</div>
+
+<style is:global>
+  body[data-fuyukawa] .article-shell.ctf-note-shell,
+  body[data-fuyukawa] .article-shell.project-doc-shell { grid-template-columns: minmax(0, 820px) 220px; }
+  .ctf-note-header .meta-row,
+  .project-doc-header .meta-row { display: flex; justify-content: space-between; gap: 16px; color: var(--accent); font: 700 .75rem/1.5 ui-monospace, monospace; letter-spacing: .06em; }
+  .ctf-note-header h1,
+  .project-doc-header h1 { margin-top: 15px; color: var(--ink); font-size: 2.25rem; line-height: 1.5; }
+  .document-pager { display: flex; justify-content: space-between; gap: 18px; margin-top: 54px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .document-pager a { display: grid; gap: 6px; max-width: 48%; color: var(--ink); text-decoration: none; }
+  .document-pager a:hover strong { color: var(--accent); }
+  .document-pager span { color: var(--ink-soft); font-size: .75rem; }
+  .document-pager strong { line-height: 1.55; }
+  .document-pager .document-pager-next { margin-left: auto; text-align: right; }
+  @media (max-width: 900px) {
+    body[data-fuyukawa] .article-shell.ctf-note-shell,
+    body[data-fuyukawa] .article-shell.project-doc-shell { grid-template-columns: 1fr; gap: 20px; }
+  }
+  @media (max-width: 680px) {
+    .ctf-note-header h1,
+    .project-doc-header h1 { font-size: 1.75rem; }
+    .project-doc-header .meta-row { flex-wrap: wrap; }
+  }
+</style>
