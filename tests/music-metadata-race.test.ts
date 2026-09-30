@@ -1,11 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 import test from 'node:test';
-
-const musicModule = readFileSync(fileURLToPath(new URL('../src/themes/fuyukawa-kagari/lib/music-player.mjs', import.meta.url)), 'utf8')
-  .replace(/^export /gm, '');
+import { installMusicPlayer } from '../src/themes/fuyukawa-kagari/lib/music-player.mjs';
 
 class MockElement {
   events = new Map();
@@ -101,13 +96,21 @@ function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = fals
     }
   }
 
-  const sandbox = {
-    document, window, Audio: MockAudio, URL, AbortController,
-    localStorage: storage(cached), sessionStorage,
-    fetch: async () => ({ json: async () => tracks.map((track) => ({ ...track })) })
+  window.Audio = MockAudio;
+  window.URL = URL;
+  window.AbortController = AbortController;
+  window.Date = Date;
+  window.Node = MockElement;
+  window.Element = MockElement;
+  window.CustomEvent = class MockCustomEvent {
+    constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
   };
-  vm.runInNewContext(`${musicModule}\nglobalThis.__testPlayer = installMusicPlayer(document, window);`, sandbox);
-  return { player: sandbox.__testPlayer, document, nodes, pendingPlays, sessionStorage };
+  window.queueMicrotask = queueMicrotask;
+  window.localStorage = storage(cached);
+  window.sessionStorage = sessionStorage;
+  window.fetch = async () => ({ json: async () => tracks.map((track) => ({ ...track })) });
+  const player = installMusicPlayer(document, window);
+  return { player, document, nodes, pendingPlays, sessionStorage };
 }
 
 async function next(nodes) { await nodes.get('[data-music-next]').dispatch('click'); }

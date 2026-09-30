@@ -6,7 +6,7 @@ const createRadioPlayer = (document, window) => {
   const musicSessionAutoplayKey = "yuimi-radio-session-autoplay-v1";
   const musicProgressPersistInterval = 5000;
   const createMusicPlayer = () => {
-    const audio = new Audio();
+    const audio = new window.Audio();
     audio.preload = "none";
     const player = {
       audio,
@@ -36,25 +36,25 @@ const createRadioPlayer = (document, window) => {
 
     const getMusicState = () => {
       try {
-        return JSON.parse(localStorage.getItem(musicCacheKey) ?? "{}");
+        return JSON.parse(window.localStorage.getItem(musicCacheKey) ?? "{}");
       } catch {
         return {};
       }
     };
 
-    const isMusicAutoplayEnabled = () => localStorage.getItem(musicAutoplayKey) === "1";
-    const isMusicSessionAutoplayEnabled = () => sessionStorage.getItem(musicSessionAutoplayKey) === "1";
+    const isMusicAutoplayEnabled = () => window.localStorage.getItem(musicAutoplayKey) === "1";
+    const isMusicSessionAutoplayEnabled = () => window.sessionStorage.getItem(musicSessionAutoplayKey) === "1";
     const shouldRestoreAutoplay = () => {
       const cached = getMusicState();
       return cached.paused === false && (isMusicAutoplayEnabled() || isMusicSessionAutoplayEnabled());
     };
     const setMusicSessionAutoplayEnabled = (enabled) => {
-      sessionStorage.setItem(musicSessionAutoplayKey, enabled ? "1" : "0");
+      window.sessionStorage.setItem(musicSessionAutoplayKey, enabled ? "1" : "0");
     };
 
     const setMusicAutoplayEnabled = (enabled) => {
-      localStorage.setItem(musicAutoplayKey, enabled ? "1" : "0");
-      window.dispatchEvent(new CustomEvent("yuimi:music-autoplay-change", { detail: { enabled } }));
+      window.localStorage.setItem(musicAutoplayKey, enabled ? "1" : "0");
+      window.dispatchEvent(new window.CustomEvent("yuimi:music-autoplay-change", { detail: { enabled } }));
     };
 
     const clampVolume = (value, fallback = 0.28) => {
@@ -64,7 +64,7 @@ const createRadioPlayer = (document, window) => {
     };
 
     const musicTrackSource = (track) => {
-      const url = new URL(track.src, window.location.origin);
+      const url = new window.URL(track.src, window.location.origin);
       url.pathname = decodeURIComponent(url.pathname);
       return url.href;
     };
@@ -72,8 +72,8 @@ const createRadioPlayer = (document, window) => {
     const saveMusicState = () => {
       const currentTrack = player.tracks[player.index];
       if (!currentTrack) return;
-      const savedAt = Date.now();
-      localStorage.setItem(
+      const savedAt = window.Date.now();
+      window.localStorage.setItem(
         musicCacheKey,
         JSON.stringify({
           trackId: currentTrack.id,
@@ -87,7 +87,7 @@ const createRadioPlayer = (document, window) => {
     };
 
     const saveMusicProgress = () => {
-      const now = Date.now();
+      const now = window.Date.now();
       if (lastMusicProgressSavedAt !== null && now - lastMusicProgressSavedAt < musicProgressPersistInterval) return;
       saveMusicState();
     };
@@ -143,7 +143,7 @@ const createRadioPlayer = (document, window) => {
     const loadMusicTrack = (index, { keepTime = 0, autoplay = false, persist = true } = {}) => {
       if (!player.tracks.length) return;
       player.metadataRequest?.controller.abort();
-      const metadataRequest = { controller: new AbortController(), autoplay, handled: false };
+      const metadataRequest = { controller: new window.AbortController(), autoplay, handled: false };
       player.metadataRequest = metadataRequest;
       player.index = (index + player.tracks.length) % player.tracks.length;
       player.restoreTime = keepTime;
@@ -196,7 +196,7 @@ const createRadioPlayer = (document, window) => {
 
       player.initializing = (async () => {
         try {
-          const response = await fetch("/themes/fuyukawa-kagari/music/manifest.json", { cache: "no-cache" });
+          const response = await window.fetch("/themes/fuyukawa-kagari/music/manifest.json", { cache: "no-cache" });
           const tracks = await response.json();
           player.tracks = Array.isArray(tracks) ? tracks : [];
         } catch {
@@ -245,7 +245,7 @@ const createRadioPlayer = (document, window) => {
     player.bind = () => {
       queryElements();
       player.controlAbort?.abort();
-      player.controlAbort = new AbortController();
+      player.controlAbort = new window.AbortController();
       const listenerOptions = { signal: player.controlAbort.signal };
 
       player.elements.toggle?.addEventListener("click", async () => {
@@ -313,7 +313,7 @@ const createRadioPlayer = (document, window) => {
       }, listenerOptions);
 
       player.audioAbort?.abort();
-      player.audioAbort = new AbortController();
+      player.audioAbort = new window.AbortController();
       const audioListenerOptions = { signal: player.audioAbort.signal };
 
       const tryResumeAfterRefresh = async () => {
@@ -337,7 +337,7 @@ const createRadioPlayer = (document, window) => {
       };
 
       player.unlockAbort?.abort();
-      player.unlockAbort = new AbortController();
+      player.unlockAbort = new window.AbortController();
       const unlockOptions = { signal: player.unlockAbort.signal, passive: true };
       ["pointerdown", "keydown", "wheel", "touchstart"].forEach((eventName) => {
         window.addEventListener(eventName, tryResumeAfterRefresh, unlockOptions);
@@ -399,10 +399,10 @@ const installDockBehavior = (player, document, window) => {
   };
   const isInsideToyDock = (target) => {
     const toyDock = getToyDock();
-    return Boolean(toyDock && target instanceof Node && toyDock.contains(target));
+    return Boolean(toyDock && target instanceof window.Node && toyDock.contains(target));
   };
   document.addEventListener("click", (event) => {
-    const handle = event.target instanceof Element ? event.target.closest(".toy-dock-handle") : null;
+    const handle = event.target instanceof window.Element ? event.target.closest(".toy-dock-handle") : null;
     if (!handle) return;
     const toyDock = getToyDock();
     if (!toyDock) return;
@@ -435,7 +435,7 @@ const installDockBehavior = (player, document, window) => {
     syncToyDock();
     void player?.init();
   });
-  document.addEventListener("focusout", () => queueMicrotask(syncToyDock));
+  document.addEventListener("focusout", () => window.queueMicrotask(syncToyDock));
   window.addEventListener("pointerdown", (event) => {
     const toyDock = getToyDock();
     if (!toyDock || toyDock.contains(event.target)) return;

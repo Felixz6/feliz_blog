@@ -5,10 +5,10 @@ import vm from "node:vm";
 import test from "node:test";
 import postcss from "postcss";
 import sharp from "sharp";
+import { installMusicPlayer } from "../lib/music-player.mjs";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const layout = read("layouts/BaseLayout.astro");
-const musicModule = read("lib/music-player.mjs");
 const layoutRuntime = read("lib/layout-runtime.mjs");
 const themeLongPressMenu = readFileSync(new URL("../../../core/themes/ThemeLongPressMenu.astro", import.meta.url), "utf8");
 const css = postcss.parse(read("styles/refresh.css"));
@@ -20,8 +20,6 @@ const declarations = (root, selector) => {
   });
   return values;
 };
-const section = (start, end) => layout.slice(layout.indexOf(start), layout.indexOf(end));
-
 test("long-press menu uses a bundled module and follows Astro page lifecycle", () => {
   assert.match(themeLongPressMenu, /^<script>\s*import \{ isNativeContextTarget \}/);
   assert.doesNotMatch(themeLongPressMenu, /data-astro-rerun|is:inline/);
@@ -65,6 +63,36 @@ class Element {
   setAttribute(key, value) { this.attributes[key] = value; }
 }
 
+const memoryStorage = (data = new Map()) => ({
+  getItem: (key) => data.get(key) ?? null,
+  setItem: (key, value) => data.set(key, value)
+});
+
+function installTestMusicPlayer(document, window, {
+  Audio,
+  localStorage = memoryStorage(),
+  sessionStorage = memoryStorage(),
+  fetch = async () => ({ json: async () => [] }),
+  Date: DateRef = Date
+}) {
+  Object.assign(window, {
+    Audio,
+    localStorage,
+    sessionStorage,
+    fetch,
+    Date: DateRef,
+    URL,
+    AbortController,
+    Element,
+    Node: Element,
+    CustomEvent: class MockCustomEvent {
+      constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
+    },
+    queueMicrotask
+  });
+  return installMusicPlayer(document, window);
+}
+
 test("drawer has a viewport-sized flex frame and a visible, independently scrollable panel", () => {
   const dock = declarations(css, "body[data-fuyukawa] .toy-dock");
   const panel = declarations(css, "body[data-fuyukawa] .toy-dock-panel");
@@ -86,6 +114,7 @@ test("drawer has a viewport-sized flex frame and a visible, independently scroll
 
 test("drawer pin, second-click close, hover reentry and Escape agree with aria-expanded", () => {
   const dock = new Element(), handle = new Element(), doc = new Element(), win = new Element();
+  const nodes = new Map([[".toy-dock", dock]]);
   const timers = new Map();
   let id = 0;
   dock.contains = (node) => node === dock || node === handle;
@@ -93,13 +122,18 @@ test("drawer pin, second-click close, hover reentry and Escape agree with aria-e
   dock.querySelector = (selector) => selector === ":focus" ? (dock.focused ? handle : null) : handle;
   handle.closest = () => handle;
   handle.blur = () => { dock.focused = false; };
-  doc.querySelector = () => dock;
+  doc.querySelector = (selector) => nodes.get(selector);
+  doc.body = new Element();
+  win.location = { origin: "https://example.test" };
   win.setTimeout = (fn) => { timers.set(++id, fn); return id; };
   win.clearTimeout = (key) => timers.delete(key);
-  const dockBehavior = musicModule.slice(musicModule.indexOf("const installDockBehavior ="), musicModule.indexOf("export function installMusicPlayer"));
-  vm.runInNewContext(`${dockBehavior}\ninstallDockBehavior(player, document, window);`, {
-    document: doc, window: win, player: { init() {} }, Node: Element, Element, queueMicrotask
-  });
+  class Audio extends Element {
+    constructor() { super(); this.volume = .28; this.paused = true; this.currentTime = 0; this.duration = 0; }
+    load() {}
+    async play() { this.paused = false; this.dispatch("play"); }
+    pause() { this.paused = true; this.dispatch("pause"); }
+  }
+  installTestMusicPlayer(doc, win, { Audio });
   dock.hovered = true;
   doc.dispatch("pointerover", { target: handle });
   assert.equal(handle.attributes["aria-expanded"], "true");
@@ -181,11 +215,7 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
   let queryCount = 0;
   doc.querySelector = (selector) => { queryCount += 1; return nodes.get(selector); };
   doc.body = new Element();
-  const storage = () => {
-    const data = new Map();
-    return { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
-  };
-  const localStorage = storage();
+  const localStorage = memoryStorage();
   localStorage.setItem("yuimi-radio-state-v1", JSON.stringify({ volume: 0 }));
   win.location = { origin: "https://example.test" };
   class Audio extends Element {
@@ -194,12 +224,11 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
     async play() { this.paused = false; this.dispatch("play"); }
     pause() { this.paused = true; this.dispatch("pause"); }
   }
-  const context = vm.createContext({
-    document: doc, window: win, localStorage, sessionStorage: storage(), Audio,
-    URL, AbortController, fetch: async () => ({ json: async () => [{ id: "1", title: "A track", src: "/track.mp3" }] })
+  const player = installTestMusicPlayer(doc, win, {
+    Audio,
+    localStorage,
+    fetch: async () => ({ json: async () => [{ id: "1", title: "A track", src: "/track.mp3" }] })
   });
-  vm.runInContext(`${musicModule.replace(/^export /gm, "")}\nglobalThis.player = installMusicPlayer(document, window);`, context);
-  const player = context.player;
   const toggle = nodes.get("[data-music-toggle]");
   toggle.textContent = "existing icon children";
   await player.init();
@@ -226,8 +255,7 @@ test("music UI preserves zero volume, icon children, seek fill and live playback
   assert.equal(toggle.attributes["aria-label"], "播放音乐");
   player.bind();
   assert.equal(toggle.events.get("click").size, 1);
-  vm.runInContext("globalThis.samePlayer = installMusicPlayer(document, window);", context);
-  assert.equal(context.samePlayer, player, "reinstallation should reuse the per-document player and audio state");
+  assert.equal(installMusicPlayer(doc, win), player, "reinstallation should reuse the per-document player and audio state");
   assert.equal(toggle.events.get("click").size, 1);
   for (const controller of ["controlAbort", "audioAbort", "unlockAbort"]) player[controller]?.abort();
 });
@@ -333,9 +361,11 @@ test("music manifest and audio wait for music-dock intent, then playback loads o
     async play() { this.playCount += 1; this.paused = false; this.dispatch("play"); }
     pause() { this.paused = true; this.dispatch("pause"); }
   }
-  const context = vm.createContext({
-    document: doc, window: win, Node: Element, Element, Audio,
-    localStorage: storage(localData), sessionStorage: storage(), URL, AbortController, Date: TestDate,
+  const player = installTestMusicPlayer(doc, win, {
+    Audio,
+    localStorage: storage(localData),
+    sessionStorage: storage(),
+    Date: TestDate,
     fetch: async () => {
       fetchCount += 1;
       return { json: async () => [
@@ -344,8 +374,6 @@ test("music manifest and audio wait for music-dock intent, then playback loads o
       ] };
     }
   });
-  vm.runInContext(`${musicModule.replace(/^export /gm, "")}\nglobalThis.player = installMusicPlayer(document, window);`, context);
-  const player = context.player;
 
   assert.equal(player.audio.preload, "none");
   assert.equal(fetchCount, 0);
