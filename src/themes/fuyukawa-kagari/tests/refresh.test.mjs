@@ -43,6 +43,57 @@ test("refresh uses bounded typography, reduced motion, and compact-screen layout
   assert.match(css, /\.post-cover-frame[^}]*aspect-ratio: 7 \/ 10/);
 });
 
+test("project page rules have one owner and keep the effective desktop and mobile layouts together", () => {
+  const pages = read("styles/refresh-pages.css");
+  assert.doesNotMatch(read("styles/refresh.css"), /\.works-/);
+  assert.doesNotMatch(read("styles/manga-pages.css"), /\.works-/);
+
+  const root = postcss.parse(pages);
+  const baseHero = [];
+  const mobileHeroColumns = new Map();
+  root.walkRules("body[data-fuyukawa] .works-hero", (rule) => {
+    if (rule.parent.type === "root") baseHero.push(Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value])));
+    if (rule.parent.type === "atrule" && ["(max-width: 760px)", "(max-width: 480px)"].includes(rule.parent.params)) {
+      mobileHeroColumns.set(rule.parent.params, rule.nodes.find((node) => node.type === "decl" && node.prop === "grid-template-columns")?.value);
+    }
+  });
+
+  assert.equal(baseHero.length, 1);
+  assert.equal(baseHero[0]["grid-template-columns"], "minmax(0, 1fr) minmax(280px, .85fr)");
+  assert.equal(mobileHeroColumns.get("(max-width: 760px)"), "minmax(0, 1fr) 170px");
+  assert.equal(mobileHeroColumns.get("(max-width: 480px)"), "minmax(0, 1fr) 95px");
+  assert.match(pages, /\.works-card:hover\s*\{/);
+  assert.match(pages, /\.works-filter button\.is-active\s*\{/);
+});
+
+test("article reading and mobile TOC states have one page-style owner", () => {
+  const pages = read("styles/refresh-pages.css");
+  const articleChrome = /\.(?:article-shell|article-toc|article-mobile-toc|article-colophon|article-margin-character|prose)\b/;
+  assert.doesNotMatch(read("styles/refresh.css"), articleChrome);
+  assert.doesNotMatch(read("styles/manga-pages.css"), articleChrome);
+  assert.match(pages, /\.article-toc a:hover\s*\{/);
+  assert.match(pages, /\.article-mobile-toc\[open\]/);
+  assert.match(pages, /\.article-colophon\s*\{/);
+  assert.match(pages, /@media \(max-width: 480px\)[\s\S]*?\.article-colophon > img\s*\{/);
+});
+
+test("home scene, chapter rail, navigation states, and pending feedback have one owner", () => {
+  const refresh = read("styles/refresh.css");
+  const manga = read("styles/manga.css");
+  const theme = read("styles/theme.css");
+  const homeChrome = /\.(?:hero-stage|hero|manga-scene|chapter-|home-journal|journal-margin-note)\b/;
+
+  assert.doesNotMatch(manga, homeChrome);
+  assert.doesNotMatch(theme, /body\[data-fuyukawa\].*navigation-pending/);
+  assert.match(refresh, /\.nav-links a:hover,[\s\S]*?\.nav-links a\[aria-current="page"\][\s\S]*?color:\s*var\(--nav-ink\)/);
+  assert.match(refresh, /\.nav-links a\[data-navigation-tone="pink"\]\s*\{[^}]*--nav-ink:\s*var\(--rose\)/);
+  assert.match(refresh, /\.site-header \.nav-links a\[data-navigation-pending="true"\]/);
+  assert.match(refresh, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)::before/);
+  assert.match(refresh, /\.chapter-leaf:hover\s*\{/);
+  assert.match(refresh, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.chapter-track \{ scroll-behavior: auto/);
+  assert.match(refresh, /@media \(max-width: 760px\)[\s\S]*?\.hero-copy \{ position: absolute;[\s\S]*?\.manga-scene-camera \.manga-scene-front/);
+});
+
 test("mobile music drawer handle and play triangle are compact", () => {
   let handle;
   let handleIcon;
