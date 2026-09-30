@@ -13,7 +13,6 @@ const musicPlayerSource = readSource("src/themes/fuyukawa-kagari/lib/music-playe
 const layoutRuntimeSource = readSource("src/themes/fuyukawa-kagari/lib/layout-runtime.mjs");
 const homeSource = readSource("src/themes/fuyukawa-kagari/pages/HomePage.astro");
 const refreshStyles = readSource("src/themes/fuyukawa-kagari/styles/refresh.css");
-const mangaStyles = readSource("src/themes/fuyukawa-kagari/styles/manga.css");
 const layeredHeroSource = readSource("src/themes/fuyukawa-kagari/components/LayeredHero.astro");
 
 test("Fuyukawa has no Live2D widget or external loader and retains the music dock", () => {
@@ -89,7 +88,7 @@ test("portrait mobile hero uses its own manga crop while desktop keeps the origi
   assert.match(layeredHeroSource, /<img \{\.\.\.mangaArt\("hero-manga"\)\} class="manga-scene-back" data-manga-back/);
   assert.match(layoutSource, /href=\{kagariAssets\.mobileHeroManga\}[\s\S]*?media="\(max-width: 760px\) and \(orientation: portrait\) and \(max-aspect-ratio: 3\/5\)"/);
   assert.match(layoutSource, /href=\{heroManga\.src\}[\s\S]*?media="\(min-width: 761px\)"/);
-  assert.match(mangaStyles, /background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
+  assert.match(refreshStyles, /background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
   assert.ok(mobileHeroManga < desktopHeroManga * 0.45, `mobile manga hero (${mobileHeroManga}) should be at least 55% smaller than desktop hero (${desktopHeroManga})`);
 });
 

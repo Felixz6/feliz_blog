@@ -44,7 +44,7 @@ body[data-fuyukawa] .skip-to-content {
 }
 body[data-fuyukawa] .skip-to-content:focus { top: 12px; }
 
-/* Equal side tracks keep the glass navigation centered in the viewport. */
+/* Navigation: layout, tone-driven hover/current states, and pending state stay together. */
 body[data-fuyukawa] .site-header {
   top: 0; min-height: 68px; padding: 7px max(28px, calc((100% - 1240px) / 2));
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -74,42 +74,50 @@ body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"] {
 }
 body[data-fuyukawa] .nav-links a:hover,
 body[data-fuyukawa] .nav-links a[aria-current="page"] {
-  color: var(--accent); background: #edf5fd80; transform: none;
-}
-body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]:hover {
-  color: var(--rose); background: #fceff580;
-}
-body[data-fuyukawa] .nav-links a:where([data-navigation-tone="pink"])[aria-current="page"] {
-  color: var(--rose); background: #fceff580;
+  color: var(--nav-ink); background: var(--nav-tint); transform: none;
 }
 body[data-fuyukawa] .nav-links a[aria-current="page"] { box-shadow: inset 0 -2px 0 #a9cbe4; }
+body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"] {
+  color: var(--nav-ink); background: var(--nav-fill); box-shadow: none;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
 body[data-fuyukawa] .nav-icon { background: none; border: 0; box-shadow: none; width: 22px; height: 26px; }
 body[data-fuyukawa] .nav-hint { color: inherit; opacity: .78; font-size: .65rem; }
 body[data-fuyukawa] .nav-label { font-size: .77rem; }
 body[data-fuyukawa] .nav-links a:hover .nav-icon { animation: none; }
 
-/* Keep the original illustrated scene and its two-step profile reveal. */
+/* Home hero: fallback artwork, decoded layers, copy, and profile reveal form one component. */
 body[data-fuyukawa] .hero-stage {
-  background: #f8fbfe; height: calc(100svh - 36px); min-height: 600px;
+  background: #f8fbfe; height: calc(100svh - 82px); min-height: 600px;
 }
 body[data-fuyukawa] .hero {
-  height: 100%; min-height: 600px; padding: 140px 24px 110px;
-  background: #f5f6f6;
+  height: 100%; min-height: 600px; padding: 140px max(48px, calc((100% - 1240px) / 2)) 110px;
+  isolation: isolate; justify-content: flex-start; background: #f5f6f6;
 }
 @media (min-width: 761px) {
-  body[data-fuyukawa] .hero { background-image: none; background-color: #f5f6f6; }
+  body[data-fuyukawa] .hero {
+    background-image: none; background-color: #f5f6f6;
+  }
+  /* Paint the same contained figure before the layered images decode. */
+  body[data-fuyukawa] .hero::before {
+    content: ""; display: block; position: absolute; inset: 0 0 16px; z-index: 0; pointer-events: none;
+    background-image: url("/themes/fuyukawa-kagari/assets/manga/hero-character.webp"), url("/themes/fuyukawa-kagari/assets/manga/hero-manga.webp");
+    background-position: center bottom, center; background-size: contain, cover; background-repeat: no-repeat;
+  }
+  body[data-fuyukawa] .hero:has(.manga-scene[data-ready="true"])::before { display: none; }
 }
-body[data-fuyukawa] .hero::before { display: none; }
 body[data-fuyukawa] .hero::after {
-  background: linear-gradient(180deg, #ffffff00 60%, #f8fbfe 100%);
+  z-index: 1; background: linear-gradient(180deg, #f8fbfe00 80%, #f8fbfe 100%);
 }
 body[data-fuyukawa] .hero-stage::after { display: none; }
-body[data-fuyukawa] .hero-overlay { background: #ffffff08; }
+body[data-fuyukawa] .hero-overlay { background: none; pointer-events: none; }
 body[data-fuyukawa] .hero-copy {
   color: var(--ink); text-shadow: 0 2px 16px #ffffffef;
-  padding: 0; max-width: 900px;
+  width: 39%; max-width: 440px; padding: 0; text-align: left; justify-items: start;
   transform: translateY(calc(32px + (1 - var(--copy-opacity)) * -30px));
 }
+body[data-fuyukawa] .hero-copy .eyebrow { font-size: .61rem; }
+body[data-fuyukawa] .hero-copy .terminal-line { width: 320px; max-width: 100%; font-size: .78rem; }
 body[data-fuyukawa] .eyebrow {
   color: #6b7c97; font-size: .7rem; margin-bottom: 14px; font-weight: 600;
   text-shadow: 0 1px 8px white, 0 0 16px white;
@@ -120,14 +128,14 @@ body[data-fuyukawa] .section-kicker::before {
   box-shadow: 3px 3px 0 #dcebf7; background: var(--pink); transform: rotate(-12deg);
 }
 body[data-fuyukawa] .hero h1 {
-  color: #495675; font-size: 5.5rem; line-height: 1.25;
+  color: #495675; font-size: 5rem; line-height: 1.4;
   font-family: "Segoe Print", "Comic Sans MS", "Microsoft YaHei", cursive;
   font-weight: 700; background: none; -webkit-text-stroke: 3px #ffffff; paint-order: stroke fill; filter: none;
   text-shadow: 3px 4px 0 #e9b9d0, 0 2px 12px #ffffff;
 }
 body[data-fuyukawa] .hero h1::before { display: none; }
 body[data-fuyukawa] .hero-diary-line {
-  margin: 14px 0 0; color: #65738e; font-size: 1.04rem; font-weight: 500;
+  max-width: 330px; margin: 14px 0 0; color: #65738e; font-size: .98rem; font-weight: 500; line-height: 1.9;
   text-shadow: 0 1px 8px white, 0 0 16px white;
 }
 body[data-fuyukawa] .terminal-line {
@@ -163,10 +171,28 @@ body[data-fuyukawa] .identity-command [data-name-typing] { color: var(--accent);
 body[data-fuyukawa] .identity-command .terminal-prefix { color: var(--rose); }
 body[data-fuyukawa] .social-links a { background: var(--paper-soft); color: var(--accent); box-shadow: none; border: 1px solid var(--line); border-radius: 6px; }
 body[data-fuyukawa] .social-links a:last-child { background: var(--pink-soft); color: var(--rose); }
-body[data-fuyukawa] .scene-divider { height: 24px; background: #f8fbfe; overflow: hidden; }
-body[data-fuyukawa] .scene-divider__rail { height: 1px; top: 12px; background: var(--line); border: 0; box-shadow: none; }
-body[data-fuyukawa] .scene-divider__rail > *,
-body[data-fuyukawa] .scene-divider__rail::before { display: none; }
+body[data-fuyukawa] .hero-profile { z-index: 3; }
+body[data-fuyukawa] .scene-divider { height: 8px; background: #f8fbfe; overflow: hidden; }
+body[data-fuyukawa] .scene-divider__rail { display: none; }
+
+/* Home chapter rail: one desktop grid becomes a sideways, snap-aligned shelf on small screens. */
+body[data-fuyukawa] .manga-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+body[data-fuyukawa] .manga-scene-camera { position: absolute; inset: -24px; }
+body[data-fuyukawa] .manga-scene-camera img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; pointer-events: none; backface-visibility: hidden; }
+body[data-fuyukawa] .manga-scene-camera .manga-scene-front { inset: 24px 24px 40px; width: calc(100% - 48px); height: calc(100% - 64px); object-fit: contain; object-position: center bottom; }
+body[data-fuyukawa] .chapter-rail { padding: 32px max(28px, calc((100% - 1200px) / 2)) 60px; overflow: hidden; }
+body[data-fuyukawa] .chapter-track { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row; gap: 24px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #c4d6e5 transparent; padding: 10px 8px 22px 2px; scroll-padding-inline: 2px; }
+body[data-fuyukawa] .chapter-leaf { --leaf-tint: #e7f0f8; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 350px; padding: 18px; border: 1px solid var(--manga-rule); border-radius: 4px; background: #fff; box-shadow: 5px 6px 0 var(--leaf-tint); scroll-snap-align: start; }
+body[data-fuyukawa] .chapter-leaf:nth-child(2) { --leaf-tint: #f4e2eb; }
+body[data-fuyukawa] .chapter-leaf:nth-child(3) { --leaf-tint: #ece8f4; }
+body[data-fuyukawa] .chapter-number { font-family: Consolas, monospace; color: var(--accent); font-size: .7rem; }
+body[data-fuyukawa] .chapter-picture { height: 184px; margin-top: 14px; padding-right: 18px; }
+body[data-fuyukawa] .chapter-picture img { width: 100%; height: 100%; object-fit: contain; }
+body[data-fuyukawa] .chapter-sticker { position: absolute; bottom: 49px; right: 12px; width: 86px; height: 130px; object-position: bottom; }
+body[data-fuyukawa] .chapter-caption { padding: 20px 68px 4px 0; margin-top: auto; }
+body[data-fuyukawa] .chapter-caption h3 { font-size: 1.08rem; margin: 0 0 7px; line-height: 1.5; }
+body[data-fuyukawa] .chapter-caption p { font-size: .72rem; color: var(--ink-soft); margin: 0; }
+body[data-fuyukawa] .chapter-arrow { position: absolute; bottom: 22px; right: 22px; width: 19px; height: 19px; color: var(--rose); transform: rotate(45deg); }
 body[data-fuyukawa] .home-content-bg {
   isolation: isolate;
   background: #edf5f4;
@@ -196,7 +222,10 @@ body[data-fuyukawa] .home-welcome-bubble strong { font-size: 1.2rem; }
 body[data-fuyukawa] .home-welcome-bubble p { color: var(--ink-soft); font-size: .86rem; }
 
 /* Latest journal entries are a full-width reading section, not another panel. */
-body[data-fuyukawa] .home-journal { max-width: 1200px; margin: auto; padding: 80px 28px 88px; }
+body[data-fuyukawa] .home-journal { position: relative; max-width: 1200px; margin: auto; padding: 80px 28px 88px; }
+body[data-fuyukawa] .journal-margin-note { display: flex; gap: 14px; align-items: end; margin: -8px 0 20px; }
+body[data-fuyukawa] .journal-margin-note img { width: 44px; height: 70px; }
+body[data-fuyukawa] .journal-margin-note span { font-family: "KaiTi", serif; font-size: .85rem; color: var(--rose); padding-bottom: 8px; }
 body[data-fuyukawa] .journal-heading { display: flex; gap: 24px; justify-content: space-between; align-items: end; margin-bottom: 28px; }
 body[data-fuyukawa] .journal-heading h2 { margin: 0; font-size: 1.85rem; line-height: 1.4; }
 body[data-fuyukawa] .journal-heading > a { display: inline-flex; align-items: center; gap: 10px; font-size: .85rem; color: var(--accent); flex-shrink: 0; }
@@ -215,19 +244,14 @@ body[data-fuyukawa] .journal-arrow { position: absolute; right: 0; bottom: 26px;
 
 /* Section titles share a quiet notebook margin and bilingual hierarchy. */
 body[data-fuyukawa] .section-kicker { color: var(--accent); font-size: .72rem; font-weight: 700; margin-bottom: 12px; }
-body[data-fuyukawa] :is(.page-title p:not(.section-kicker), .works-hero p:not(.section-kicker)) { max-width: 740px; margin: 14px 0 0; color: var(--ink-soft); font-size: .95rem; }
+body[data-fuyukawa] .page-title p:not(.section-kicker) { max-width: 740px; margin: 14px 0 0; color: var(--ink-soft); font-size: .95rem; }
 
 /* Portrait frames preserve the entire illustration, including non-portrait art. */
 body[data-fuyukawa] .blog-search-heading .section-kicker { display: none; }
 
 /* Works: unframed sections, small colored identifiers and readable status rows. */
-body[data-fuyukawa] .works-filter button.is-active { background: #ebf4fc; border-color: #c8dfef; color: var(--accent); }
 
 /* Personal shelves: original illustrations remain unmodified and inspectable. */
-
-/* Reading surface: generous measure, quiet code and a compact sticky index. */
-body[data-fuyukawa] .prose .expressive-code .frame { box-shadow: 0 5px 18px #3759510a; }
-body[data-fuyukawa] .article-toc .toc-depth-3 { padding-left: 14px; font-size: .72rem; }
 
 /* Utility surfaces use the same palette without competing with the content. */
 body[data-fuyukawa] .toy-dock {
@@ -324,6 +348,11 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
 
 @media (max-width: 1100px) {
   body[data-fuyukawa] .brand span { display: none; }
+  body[data-fuyukawa] .hero h1 { font-size: 4rem; }
+  body[data-fuyukawa] .hero-copy { width: 41%; }
+}
+@media (max-width: 860px) {
+  body[data-fuyukawa] .chapter-track { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(270px, 80%); }
 }
 @media (max-width: 760px) {
   body[data-fuyukawa] .site-header { min-height: 66px; padding: 8px 18px; gap: 0; grid-template-columns: minmax(0, 1fr); }
@@ -334,10 +363,15 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .nav-icon { width: 20px; height: 21px; }
   body[data-fuyukawa] .nav-label { font-size: .58rem; }
   body[data-fuyukawa] .nav-hint { display: none; }
+  body[data-fuyukawa] .hero::before { display: none; }
   body[data-fuyukawa] .hero-stage { min-height: 560px; }
   body[data-fuyukawa] .hero { min-height: 560px; padding: 128px 24px 110px; background-position: 50% center; }
-  body[data-fuyukawa] .hero h1 { font-size: 4rem; }
-  body[data-fuyukawa] .hero-diary-line { font-size: .95rem; }
+  body[data-fuyukawa] .hero-copy { position: absolute; left: 24px; right: 24px; top: 118px; width: auto; max-width: none; transform: translateY(calc((1 - var(--copy-opacity)) * -30px)); align-self: start; text-align: center; justify-items: center; }
+  body[data-fuyukawa] .hero h1 { font-size: 3.5rem; }
+  body[data-fuyukawa] .hero-copy .terminal-line { display: none; }
+  body[data-fuyukawa] .hero-copy .eyebrow { margin-bottom: 4px; }
+  body[data-fuyukawa] .hero-diary-line { margin-top: 0; font-size: .85rem; }
+  body[data-fuyukawa] .manga-scene-camera .manga-scene-front { inset: auto; left: 50%; bottom: 40px; translate: -53.5% 0; width: auto; height: min(calc(100% - 64px), calc(100vw * 1.42)); object-fit: contain; }
   body[data-fuyukawa] .home-art-word { left: 30%; top: 180px; width: 48%; }
   body[data-fuyukawa] .home-art-word span { font-size: 2.8rem; }
   body[data-fuyukawa] .home-signal-card { right: 4%; top: 80px; width: 220px; padding: 20px; }
@@ -350,12 +384,15 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   /* Lower the first card enough to clear the wordmark; grid flow carries the quote card down with it. */
   body[data-fuyukawa] .home-signal-card { margin-top: clamp(36px, 6vh, 52px); }
   body[data-fuyukawa] .home-journal { padding: 52px 24px; }
+  body[data-fuyukawa] .chapter-rail { padding: 28px 24px 44px; }
+  body[data-fuyukawa] .chapter-track { gap: 20px; }
+  body[data-fuyukawa] .chapter-leaf { min-height: 335px; }
+  body[data-fuyukawa] .chapter-picture { height: 175px; }
   body[data-fuyukawa] .journal-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   body[data-fuyukawa] .journal-entry { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 20px; }
   body[data-fuyukawa] .journal-entry > div { padding: 0; }
   body[data-fuyukawa] .journal-entry h3 { font-size: 1rem; }
   body[data-fuyukawa] .journal-entry p { font-size: .8rem; }
-  body[data-fuyukawa] .article-mobile-toc .toc-depth-3 { padding-left: 16px; color: var(--ink-soft); }
   body[data-fuyukawa] .site-footer { padding: 40px 24px 76px; }
   body[data-fuyukawa] .footer-inner { grid-template-columns: 1fr; gap: 10px; }
   body[data-fuyukawa] .toy-dock { --dock-top: 86px; }
@@ -379,7 +416,8 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
 @media (max-width: 480px) {
   body[data-fuyukawa] .site-header { padding: 8px 12px; gap: 6px; }
   body[data-fuyukawa] .nav-links a { padding: 4px 8px; }
-  body[data-fuyukawa] .hero h1 { font-size: 3rem; }
+  body[data-fuyukawa] .hero-copy { top: 123px; }
+  body[data-fuyukawa] .hero h1 { font-size: 2.8rem; }
   body[data-fuyukawa] .eyebrow { font-size: .65rem; }
   body[data-fuyukawa] .hero-diary-line { font-size: .87rem; }
   body[data-fuyukawa] .terminal-line { padding: 9px 12px; min-height: 44px; align-items: center; }
@@ -396,8 +434,16 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
   body[data-fuyukawa] .journal-heading > a { font-size: .74rem; gap: 5px; }
   body[data-fuyukawa] .journal-entry { grid-template-columns: 1fr; gap: 16px; }
   body[data-fuyukawa] .journal-entry h3 { font-size: 1.1rem; }
+  body[data-fuyukawa] .chapter-track { grid-auto-columns: minmax(254px, 88%); }
+  body[data-fuyukawa] .chapter-caption h3 { font-size: 1rem; }
+  body[data-fuyukawa] .chapter-sticker { width: 74px; height: 120px; }
   body[data-fuyukawa] .scroll-progress { display: none; }
   body[data-fuyukawa] .toy-dock-panel { padding: 12px; }
+}
+@media (max-width: 760px) and (max-height: 620px) {
+  body[data-fuyukawa] .hero-copy { top: 145px; right: 52%; left: 24px; text-align: left; justify-items: start; }
+  body[data-fuyukawa] .hero h1 { font-size: 2.6rem; }
+  body[data-fuyukawa] .manga-scene-camera .manga-scene-front { left: 68%; }
 }
 @media (max-width: 760px) and (orientation: portrait) {
   body[data-fuyukawa] .home-welcome-bubble { transform: translateY(clamp(96px, 16vh, 144px)); }
@@ -415,6 +461,9 @@ body[data-fuyukawa] .footer-status-line { grid-column: 1 / -1; border-top: 1px s
 @media (hover: hover) and (pointer: fine) {
   body[data-fuyukawa] .music-controls button:hover { background: #edf5fb; }
   body[data-fuyukawa] .music-controls button[data-music-toggle]:hover { background: #496f91; }
+  body[data-fuyukawa] .chapter-leaf { transition: transform 180ms var(--manga-ease); }
+  body[data-fuyukawa] .chapter-leaf:hover { transform: translateY(-3px); }
+  body[data-fuyukawa] .chapter-leaf:hover .chapter-arrow { color: var(--accent); }
 }
 html:has(body[data-fuyukawa])[data-yuimi-visibility="hidden"] .record-disc { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
@@ -423,4 +472,8 @@ html:has(body[data-fuyukawa])[data-yuimi-visibility="hidden"] .record-disc { ani
     animation-duration: .01ms !important; animation-iteration-count: 1 !important;
     transition-duration: .01ms !important; scroll-behavior: auto !important;
   }
+  body[data-fuyukawa] .chapter-leaf { transition: none; }
+  body[data-fuyukawa] .chapter-leaf:hover { transform: none; }
+  body[data-fuyukawa] .chapter-track { scroll-behavior: auto; }
+  body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"] { transition: none; }
 }

@@ -419,7 +419,8 @@ test("the paper bookmark stays anchored, non-blocking and uses only transform/op
   const keyframes = css.nodes.find((node) => node.type === "atrule" && node.name === "keyframes" && node.params === "navigation-page-turn");
   assert.ok(keyframes);
   keyframes.walkDecls((decl) => assert.ok(["transform", "opacity"].includes(decl.prop)));
-  const pending = css.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  const refresh = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
+  const pending = refresh.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
   assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--nav-fill)");
 });
 
@@ -453,32 +454,31 @@ test("destination gradients apply only while pending, not to static or hover bac
   const selected = declarationsFor('body[data-fuyukawa] .nav-links a[aria-current="page"]');
   assert.equal(selected["box-shadow"], "inset 0 -2px 0 #a9cbe4");
   const states = declarationsFor('body[data-fuyukawa] .nav-links a:hover,\nbody[data-fuyukawa] .nav-links a[aria-current="page"]');
-  assert.equal(states.background, "#edf5fd80");
-  assert.equal(states.color, "var(--accent)");
-  const pinkSelected = declarationsFor('body[data-fuyukawa] .nav-links a:where([data-navigation-tone="pink"])[aria-current="page"]');
-  assert.equal(pinkSelected.background, "#fceff580");
-  assert.equal(pinkSelected.color, "var(--rose)");
-  assert.equal(blue["--nav-tint"], states.background);
-  assert.equal(pink["--nav-tint"], pinkSelected.background);
+  assert.equal(states.background, "var(--nav-tint)");
+  assert.equal(states.color, "var(--nav-ink)");
+  assert.equal(blue["--nav-tint"], "#edf5fd80");
+  assert.equal(pink["--nav-tint"], "#fceff580");
   assert.doesNotMatch(css.toString(), /nav-links a:nth-child\(even\)/);
-  const theme = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
-  const pending = theme.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  const pending = css.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
   assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--nav-fill)");
   assert.equal(pending.nodes.find((node) => node.prop === "color").value, "var(--nav-ink)");
-  css.walkDecls("background", (decl) => assert.notEqual(decl.value, "var(--nav-fill)", decl.parent.selector));
+  css.walkDecls("background", (decl) => {
+    if (decl.value === "var(--nav-fill)") assert.equal(decl.parent.selector, 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  });
 });
 
 
 test("BLOG and ME hover capsules are pink while HOME and WORKS stay blue", () => {
   const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
-  const rule = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]:hover');
+  const rule = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]');
   assert.ok(rule);
   const declarations = Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
-  assert.equal(declarations.background, "#fceff580");
-  assert.equal(declarations.color, "var(--rose)");
+  assert.equal(declarations["--nav-tint"], "#fceff580");
+  assert.equal(declarations["--nav-ink"], "var(--rose)");
   const defaultHover = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a:hover,\nbody[data-fuyukawa] .nav-links a[aria-current="page"]');
   assert.ok(defaultHover);
-  assert.equal(defaultHover.nodes.find((node) => node.prop === "background").value, "#edf5fd80");
+  assert.equal(defaultHover.nodes.find((node) => node.prop === "background").value, "var(--nav-tint)");
+  assert.equal(defaultHover.nodes.find((node) => node.prop === "color").value, "var(--nav-ink)");
 });
 
 test("shared theme styles use ordered external URLs across client-side page swaps", () => {

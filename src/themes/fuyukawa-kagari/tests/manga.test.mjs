@@ -426,14 +426,15 @@ test("home static scene paints before JavaScript and avoids the duplicate mobile
   assert.doesNotMatch(refresh, /hero-wallpaper(?:-mobile)?\.webp/);
   assert.doesNotMatch(layout, /mobileHeroWallpaper|hero-wallpaper-mobile\.webp/);
   assert.match(hero, /<picture>[\s\S]*data-manga-back[\s\S]*data-manga-front/);
+  assert.doesNotMatch(manga, /\.hero-stage|\.manga-scene|\.chapter-/);
   assert.doesNotMatch(manga, /\.manga-scene\s*\{[^}]*opacity:\s*0/);
   assert.doesNotMatch(manga, /\.manga-scene\[data-ready="true"\]\s*\{[^}]*opacity/);
-  assert.match(manga, /\.hero::before\s*\{[^}]*background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
-  assert.match(manga, /\.hero::before\s*\{[^}]*inset:\s*0 0 16px[^}]*background-size:\s*contain,\s*cover/);
-  assert.match(manga, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)::before\s*\{\s*display:\s*none/);
-  assert.match(manga, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-fit:\s*contain;\s*object-position:\s*center bottom/);
+  assert.match(refresh, /\.hero::before\s*\{[^}]*background-image:\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-character\.webp["']?\),\s*url\(["']?\/themes\/fuyukawa-kagari\/assets\/manga\/hero-manga\.webp["']?\)/);
+  assert.match(refresh, /\.hero::before\s*\{[^}]*inset:\s*0 0 16px[^}]*background-size:\s*contain,\s*cover/);
+  assert.match(refresh, /\.hero:has\(\.manga-scene\[data-ready="true"\]\)::before\s*\{\s*display:\s*none/);
+  assert.match(refresh, /\.manga-scene-camera \.manga-scene-front\s*\{[^}]*object-fit:\s*contain;\s*object-position:\s*center bottom/);
 
-  const mobileRule = manga.match(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
+  const mobileRule = refresh.match(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.manga-scene-camera \.manga-scene-front\s*\{([^}]*)\}/);
   assert.ok(mobileRule, "mobile foreground sizing remains explicitly tuned");
   assert.match(mobileRule[1], /object-fit:\s*contain/);
 });
@@ -448,24 +449,26 @@ test("below-the-fold homepage background is lazy and no longer a stylesheet back
 
 test("manga CSS stays theme-local, responsive, and never crops article covers", async () => {
   const source = await read("styles/manga.css") + "\n" + await read("styles/manga-pages.css");
+  const home = await read("styles/refresh.css");
   const css = postcss.parse(source);
   css.walkRules((rule) => {
     for (const selector of postcss.list.comma(rule.selector)) assert.ok(selector.startsWith("body[data-fuyukawa]"), selector);
   });
   css.walkDecls("font-size", (declaration) => assert.doesNotMatch(declaration.value, /vw|cqw/));
   assert.doesNotMatch(source, /\.post-cover-frame\s+img|\.journal-entry\s*>\s*img/);
-  assert.match(source, /inset: -24px/);
-  assert.match(source, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: contain/);
-  assert.match(source, /height: calc\(100% - 64px\)/);
+  assert.doesNotMatch(source, /\.hero-stage|\.manga-scene|\.chapter-/);
+  assert.match(home, /inset: -24px/);
+  assert.match(home, /\.manga-scene-camera \.manga-scene-front \{[^}]*object-fit: contain/);
+  assert.match(home, /height: calc\(100% - 64px\)/);
   assert.match(source, /body\[data-fuyukawa\] :where\(\.manga-art\)/);
   assert.match(source, /\.album-page-image-next \.manga-art\s*\{[^}]*min-width:\s*0[^}]*min-height:\s*0/);
   assert.match(source, /@media \(max-width: 1100px\)[\s\S]*?\.album-page-image-next\s*\{\s*height:\s*350px/);
   assert.match(source, /@media \(max-width: 760px\)[\s\S]*?\.album-page-image-next\s*\{\s*height:\s*360px/);
   assert.doesNotMatch(source, /\.album-page\s*>\s*img/);
-  assert.match(source, /\.chapter-track\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(source, /@media \(max-width: 860px\)[\s\S]*?\.chapter-track\s*\{[^}]*grid-auto-flow:\s*column/);
+  assert.match(home, /\.chapter-track\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(home, /@media \(max-width: 860px\)[\s\S]*?\.chapter-track\s*\{[^}]*grid-auto-flow:\s*column/);
   assert.match(source, /max-width: 480px/);
-  assert.match(source, /prefers-reduced-motion: reduce/);
+  assert.match(home, /prefers-reduced-motion: reduce/);
   assert.doesNotMatch(await read("lib/manga-runtime.mjs"), /preventDefault|deviceorientation|setInterval/);
   assert.doesNotMatch(await read("pages/BlogIndexPage.astro"), /compact-post-row|class="post-list"/);
   assert.match(await read("layouts/BaseLayout.astro"), /canonicalPath !== "\/" && <link rel="stylesheet" href=\{mangaPagesHref\}/);

@@ -122,14 +122,6 @@ img {
   border-radius: inherit;
 }
 
-/* A quiet paper bookmark replaces the loading bar; the current page stays usable. */
-body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"] {
-  color: var(--nav-ink);
-  background: var(--nav-fill);
-  box-shadow: none;
-  transition: background-color 120ms ease-out, color 120ms ease-out;
-}
-
 .navigation-bookmark {
   position: absolute;
   top: calc(100% + 10px);
@@ -232,9 +224,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
     animation: none;
   }
 
-  body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"] {
-    transition: none;
-  }
 }
 
 .toy-dock {
