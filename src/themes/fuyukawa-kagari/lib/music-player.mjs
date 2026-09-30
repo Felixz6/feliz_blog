@@ -34,26 +34,43 @@ const createRadioPlayer = (document, window) => {
       return `${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
     };
 
+    const readStorage = (storage, key) => {
+      try {
+        return window[storage].getItem(key);
+      } catch {
+        return null;
+      }
+    };
+
+    const writeStorage = (storage, key, value) => {
+      try {
+        window[storage].setItem(key, value);
+      } catch {
+        // Persistence is optional; storage failures must not interrupt playback.
+      }
+    };
+
     const getMusicState = () => {
       try {
-        return JSON.parse(window.localStorage.getItem(musicCacheKey) ?? "{}");
+        const cached = JSON.parse(readStorage("localStorage", musicCacheKey) ?? "{}");
+        return cached && typeof cached === "object" && !Array.isArray(cached) ? cached : {};
       } catch {
         return {};
       }
     };
 
-    const isMusicAutoplayEnabled = () => window.localStorage.getItem(musicAutoplayKey) === "1";
-    const isMusicSessionAutoplayEnabled = () => window.sessionStorage.getItem(musicSessionAutoplayKey) === "1";
+    const isMusicAutoplayEnabled = () => readStorage("localStorage", musicAutoplayKey) === "1";
+    const isMusicSessionAutoplayEnabled = () => readStorage("sessionStorage", musicSessionAutoplayKey) === "1";
     const shouldRestoreAutoplay = () => {
       const cached = getMusicState();
       return cached.paused === false && (isMusicAutoplayEnabled() || isMusicSessionAutoplayEnabled());
     };
     const setMusicSessionAutoplayEnabled = (enabled) => {
-      window.sessionStorage.setItem(musicSessionAutoplayKey, enabled ? "1" : "0");
+      writeStorage("sessionStorage", musicSessionAutoplayKey, enabled ? "1" : "0");
     };
 
     const setMusicAutoplayEnabled = (enabled) => {
-      window.localStorage.setItem(musicAutoplayKey, enabled ? "1" : "0");
+      writeStorage("localStorage", musicAutoplayKey, enabled ? "1" : "0");
       window.dispatchEvent(new window.CustomEvent("yuimi:music-autoplay-change", { detail: { enabled } }));
     };
 
@@ -73,10 +90,12 @@ const createRadioPlayer = (document, window) => {
       const currentTrack = player.tracks[player.index];
       if (!currentTrack) return;
       const savedAt = window.Date.now();
-      window.localStorage.setItem(
+      writeStorage(
+        "localStorage",
         musicCacheKey,
         JSON.stringify({
           trackId: currentTrack.id,
+          trackSrc: currentTrack.src,
           currentTime: player.restoreTime > 0 ? player.restoreTime : audio.currentTime || 0,
           volume: audio.volume,
           paused: player.playbackRequested || player.pendingAutoplay ? false : audio.paused,
@@ -214,11 +233,15 @@ const createRadioPlayer = (document, window) => {
         }
 
         const cached = getMusicState();
-        const cachedIndex = player.tracks.findIndex((track) => track.id === cached.trackId);
+        // A saved path is authoritative. Old positional IDs cannot identify a file.
+        const cachedIndex = player.tracks.findIndex((track) => cached.trackSrc
+          ? track.src === cached.trackSrc
+          : !/^track-\d+$/.test(cached.trackId) && track.id === cached.trackId);
         player.index = cachedIndex >= 0 ? cachedIndex : 0;
-        player.restoreTime = Number(cached.currentTime ?? 0);
+        const cachedTime = Number(cached.currentTime ?? 0);
+        player.restoreTime = cachedIndex >= 0 && Number.isFinite(cachedTime) && cachedTime > 0 ? cachedTime : 0;
         audio.volume = Number.isFinite(cached.volume) ? clampVolume(cached.volume) : clampVolume(player.elements.volume?.value);
-        player.restoreAutoplay = shouldRestoreAutoplay();
+        player.restoreAutoplay = cachedIndex >= 0 && shouldRestoreAutoplay();
         player.pendingAutoplay = player.restoreAutoplay;
         player.playbackRequested = player.restoreAutoplay;
         if (player.restoreAutoplay && player.elements.note) {
