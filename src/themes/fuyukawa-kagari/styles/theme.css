@@ -767,29 +767,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   text-align: left;
 }
 
-.theme-quick-switch {
-  position: fixed;
-  right: 78px;
-  bottom: 20px;
-  z-index: 45;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-}
-
-.theme-quick-switch:hover,
-.theme-quick-switch:focus-visible {
-  color: #d75f86;
-  transform: rotate(-8deg) scale(1.05);
-}
-
-.theme-quick-switch svg {
-  width: 21px;
-  height: 21px;
-}
-
 .hide-sakura .sakura-rain {
   display: none;
 }
@@ -1552,12 +1529,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   }
 }
 
-.post-list {
-  width: min(1160px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 68px 0;
-}
-
 .page-title {
   position: relative;
   isolation: isolate;
@@ -1637,12 +1608,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   margin-bottom: 22px;
 }
 
-.post-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
 .post-row:hover {
   box-shadow: var(--shadow);
   transform: translateY(-3px) rotate(-0.35deg);
@@ -1677,12 +1642,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
 
 .page-title {
   max-width: 780px;
-}
-
-.post-list {
-  display: grid;
-  gap: 14px;
-  padding-top: 24px;
 }
 
 .blog-hero-card {
@@ -1798,10 +1757,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   display: grid;
   align-content: center;
   min-width: 0;
-}
-
-.compact-post-row {
-  display: none;
 }
 
 .article-shell {
@@ -2241,11 +2196,6 @@ html[data-yuimi-performance="lite"] .console-meter span {
     display: none;
   }
 
-  .theme-quick-switch {
-    right: 18px;
-    bottom: 18px;
-  }
-
   .toy-dock {
     top: 112px;
     width: 388px;
@@ -2280,10 +2230,6 @@ html[data-yuimi-performance="lite"] .console-meter span {
 
   .hero-profile {
     top: 50%;
-  }
-
-  .post-grid {
-    grid-template-columns: 1fr;
   }
 
   .post-row {
@@ -2359,10 +2305,6 @@ html[data-yuimi-performance="lite"] .console-meter span {
     flex-wrap: wrap;
     row-gap: 2px;
     white-space: normal;
-  }
-
-  .post-list {
-    padding: 46px 0;
   }
 
   .article-shell {

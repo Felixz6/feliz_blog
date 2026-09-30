@@ -60,7 +60,7 @@ export function installContextMenu({ documentRef = document, windowRef = window,
       const activeElement = document.activeElement;
       contextMenuReturnFocus = activeElement instanceof HTMLElement && activeElement !== document.body
         ? activeElement
-        : document.querySelector(".theme-quick-switch");
+        : document.querySelector(".skip-to-content");
     }
     updateContextToggleLabels();
     const menuWidth = contextMenu.offsetWidth;
@@ -70,7 +70,19 @@ export function installContextMenu({ documentRef = document, windowRef = window,
     contextMenu.style.setProperty("--menu-x", `${Math.max(12, x)}px`);
     contextMenu.style.setProperty("--menu-y", `${Math.max(12, y)}px`);
     contextMenu.classList.add("is-open");
-    if (focusFirst) contextMenu.querySelector("button")?.focus({ preventScroll: true });
+    if (focusFirst) {
+      const firstButton = contextMenu.querySelector("button");
+      firstButton?.focus({ preventScroll: true });
+      // Wait for a rendered frame if a visibility transition rejected focus.
+      if (firstButton && document.activeElement !== firstButton) {
+        window.requestAnimationFrame(() => {
+          if (!contextMenu.classList.contains("is-open")) return;
+          window.requestAnimationFrame(() => {
+            if (contextMenu.classList.contains("is-open")) firstButton.focus({ preventScroll: true });
+          });
+        });
+      }
+    }
     return true;
   };
 
