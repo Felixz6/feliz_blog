@@ -404,7 +404,7 @@ test("the loading bar is gone from layout, styling and runtime, not merely hidde
   assert.match(nav, /data-navigation-bookmark role="status" aria-live="polite" aria-atomic="true" lang="ja"/);
   assert.match(nav, /<span data-navigation-message><\/span>/);
   assert.match(nav, /navigation-book-page--second/);
-  assert.match(layout, /<html lang="zh-CN" transition:animate="none">/);
+  assert.match(layout, /<html lang="zh-CN" data-theme="fuyukawa-kagari" transition:animate="none">/);
   assert.match(layout, /transition:persist="yuimi-toy-dock"/);
   assert.match(layout, /<SakuraRain \/>/);
 });

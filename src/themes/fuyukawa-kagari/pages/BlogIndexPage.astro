@@ -4,7 +4,6 @@ import { getPublishedPosts } from "@/core/content/blog";
 import { getCoverSources } from "@/core/content/coverSources";
 import { categoryLabel } from "@/lib/site";
 import { Icon } from "astro-icon/components";
-import { getThemePath } from "@/core/themes/registry";
 import { kagariAssets } from "../assets";
 import MangaArt from "../components/MangaArt.astro";
 import { site } from "@/lib/site";
@@ -33,10 +32,9 @@ const formatter = new Intl.DateTimeFormat("zh-CN", {
   day: "2-digit"
 });
 
-const themeRoutePrefix = getThemePath("fuyukawa-kagari", "/").replace(/\/$/, "");
-const getBlogPostHref = (id: string) => getThemePath("fuyukawa-kagari", `/blog/${id}/`);
-const getBlogTagHref = (tag: string) => getThemePath("fuyukawa-kagari", `/blog/?q=${encodeURIComponent(tag)}`);
-const getBlogCategoryHref = (category: string) => getThemePath("fuyukawa-kagari", `/blog/?category=${encodeURIComponent(category)}`);
+const getBlogPostHref = (id: string) => `/blog/${id}/`;
+const getBlogTagHref = (tag: string) => `/blog/?q=${encodeURIComponent(tag)}`;
+const getBlogCategoryHref = (category: string) => `/blog/?category=${encodeURIComponent(category)}`;
 const blogCoverSizes = [
   "(max-width: 480px) calc(100vw - 84px)",
   "(max-width: 561px) 160px",
@@ -63,7 +61,7 @@ const blogCoverSizes = [
     </div>
   </section>
 
-  <section class="blog-search-card" data-pagefind-ignore data-theme-route-prefix={themeRoutePrefix}>
+  <section class="blog-search-card" data-pagefind-ignore>
     <div class="blog-search-heading">
       <Icon name="tabler:search" aria-hidden="true" />
       <div>
@@ -135,7 +133,6 @@ const blogCoverSizes = [
     const searchMeta = document.querySelector("[data-blog-search-meta]");
     const searchSummary = document.querySelector("[data-blog-search-summary]");
     const loadMoreButton = document.querySelector("[data-blog-search-more]");
-    const themeRoutePrefix = document.querySelector("[data-theme-route-prefix]")?.dataset.themeRoutePrefix ?? "";
     let pagefindReady;
     let currentMatches = [];
     let displayedCount = 0;
@@ -179,19 +176,6 @@ const blogCoverSizes = [
       }
     };
 
-    const toThemeHref = (value) => {
-      try {
-        const url = new URL(value, window.location.origin);
-        if (url.origin !== window.location.origin || !themeRoutePrefix) return value;
-        if (!url.pathname.startsWith(`${themeRoutePrefix}/`)) {
-          url.pathname = `${themeRoutePrefix}${url.pathname.startsWith("/") ? "" : "/"}${url.pathname}`;
-        }
-        return `${url.pathname}${url.search}${url.hash}`;
-      } catch {
-        return value;
-      }
-    };
-
     const fallbackLocalSearch = (query) => {
       const cards = [...document.querySelectorAll(".blog-post-row")];
       const lowerQuery = query.toLowerCase();
@@ -221,7 +205,7 @@ const blogCoverSizes = [
         if (version !== searchVersion || !searchInput?.isConnected) return;
         if (searchResults) {
           searchResults.innerHTML += data.map((item) => `
-            <a class="blog-search-result" href="${escapeHtml(toThemeHref(item.url || "#"))}">
+            <a class="blog-search-result" href="${escapeHtml(item.url || "#")}">
               <strong>${escapeHtml(item.meta?.title || "Untitled")}</strong>
               <span>${item.excerpt || ""}</span>
             </a>

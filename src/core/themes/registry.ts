@@ -1,57 +1,20 @@
-export const THEME_STORAGE_KEY = "yuimi-theme-id-v2";
-export const DEFAULT_THEME_ID = "fuyukawa-kagari";
-
-export const themes = [
-  {
-    id: "fuyukawa-kagari",
-    label: "Fuyukawa Kagari",
-    description: "现有的 Fuyukawa Kagari 二次元手账主题",
-    routePrefix: "/themes/fuyukawa-kagari"
-  }
-] as const;
-
-// Only the primary theme is registered and exposed to site routing.
-export const selectableThemes = themes.filter((theme) => theme.id === DEFAULT_THEME_ID);
-
-export type ThemeId = (typeof themes)[number]["id"];
-
-export function isThemeId(value: unknown): value is ThemeId {
-  return typeof value === "string" && themes.some((theme) => theme.id === value);
-}
-
-export function getTheme(themeId: ThemeId) {
-  return themes.find((theme) => theme.id === themeId)
-    ?? themes.find((theme) => theme.id === DEFAULT_THEME_ID)
-    ?? themes[0];
-}
-
-function withLeadingSlash(pathname: string) {
-  if (!pathname) return "/";
-  return pathname.startsWith("/") ? pathname : `/${pathname}`;
-}
+const LEGACY_THEME_PREFIX = "/themes/fuyukawa-kagari";
+const LEGACY_GAMES_PREFIX = `${LEGACY_THEME_PREFIX}/games`;
 
 export function getCanonicalPath(pathname: string) {
-  const normalized = withLeadingSlash(pathname);
-  const prefixedThemes = [...themes]
-    .filter((theme) => theme.routePrefix)
-    .sort((a, b) => b.routePrefix.length - a.routePrefix.length);
+  const normalized = pathname
+    ? pathname.startsWith("/") ? pathname : `/${pathname}`
+    : "/";
 
-  for (const theme of prefixedThemes) {
-    if (normalized === theme.routePrefix || normalized === `${theme.routePrefix}/`) return "/";
-    if (normalized.startsWith(`${theme.routePrefix}/`)) {
-      return normalized.slice(theme.routePrefix.length) || "/";
-    }
+  // Games has no root-route counterpart; keep the historical page canonical at its live URL.
+  if (normalized === LEGACY_GAMES_PREFIX || normalized.startsWith(`${LEGACY_GAMES_PREFIX}/`)) {
+    return normalized;
+  }
+
+  if (normalized === LEGACY_THEME_PREFIX || normalized === `${LEGACY_THEME_PREFIX}/`) return "/";
+  if (normalized.startsWith(`${LEGACY_THEME_PREFIX}/`)) {
+    return normalized.slice(LEGACY_THEME_PREFIX.length) || "/";
   }
 
   return normalized;
-}
-
-export function getThemePath(themeId: ThemeId, pathname: string) {
-  const canonicalPath = getCanonicalPath(pathname);
-  const theme = getTheme(themeId);
-
-  if (theme.id === DEFAULT_THEME_ID) return canonicalPath;
-  if (!theme.routePrefix) return canonicalPath;
-  if (canonicalPath === "/") return `${theme.routePrefix}/`;
-  return `${theme.routePrefix}${canonicalPath}`;
 }

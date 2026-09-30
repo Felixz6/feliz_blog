@@ -177,7 +177,7 @@ test("closed tool drawer hides its whole panel at every width", () => {
 test("homepage journal and custom game artwork stay in the Fuyukawa boundary", () => {
   const home = read("pages/HomePage.astro");
   assert.match(home, /recentPosts = \(await getPublishedPosts\(\)\)\.slice\(0, 3\)/);
-  assert.match(home, /class="journal-entry" href=\{getThemePath\("fuyukawa-kagari"/);
+  assert.match(home, /class="journal-entry" href=\{`\/blog\/\$\{post\.id\}\/`\}/);
   assert.match(read("pages/GamesPage.astro"), /<GameCover game=\{game.id\}/);
   assert.doesNotMatch(css + read("components/GameCover.astro"), /https?:\/\//);
 });
@@ -212,7 +212,6 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
   const summary = node();
   const moreButton = node();
   moreButton.hidden = true;
-  const prefix = node({ themeRoutePrefix: "/themes/fuyukawa-kagari" });
   const documentEvents = new Map();
   const windowEvents = new Map();
   const timers = new Map();
@@ -224,8 +223,7 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
       "[data-blog-search-results]": output,
       "[data-blog-search-meta]": searchMeta,
       "[data-blog-search-summary]": summary,
-      "[data-blog-search-more]": moreButton,
-      "[data-theme-route-prefix]": prefix
+      "[data-blog-search-more]": moreButton
     })[selector],
     querySelectorAll: () => [],
     addEventListener: (key, value) => documentEvents.set(key, value),
@@ -279,7 +277,8 @@ test("search ignores stale asynchronous results and clears pending results", asy
   pending.get("new")(result("New result"));
   await settle();
   assert.match(fixture.output.innerHTML, /New result/);
-  assert.match(fixture.output.innerHTML, /\/themes\/fuyukawa-kagari\/blog\/note\//);
+  assert.match(fixture.output.innerHTML, /href="\/blog\/note\/"/);
+  assert.doesNotMatch(fixture.output.innerHTML, /\/themes\/fuyukawa-kagari\/blog\/note\//);
   pending.get("old")(result("Old result"));
   await settle();
   assert.doesNotMatch(fixture.output.innerHTML, /Old result/);
@@ -381,7 +380,7 @@ test("blog archive and article tags and categories are linked to shareable searc
   const article = read("layouts/ArticleLayout.astro");
   assert.match(archive, /class=\"blog-tag-link\" href=\{getBlogTagHref\(tag\)\}/);
   assert.match(archive, /class=\"blog-category-filter-link\" href=\{getBlogCategoryHref\(post\.data\.category\)\}/);
-  assert.match(article, /class=\"blog-tag-link\" href=\{getThemePath\([^\n]+\?q=\$\{encodeURIComponent\(tag\)\}/);
+  assert.match(article, /class=\"blog-tag-link\" href=\{`\/blog\/\?q=\$\{encodeURIComponent\(tag\)\}`\}/);
   assert.match(article, /\?category=\$\{encodeURIComponent\(frontmatter\.category\)\}/);
 });
 

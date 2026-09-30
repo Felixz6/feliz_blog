@@ -1,6 +1,5 @@
 ---
 import { Icon } from "astro-icon/components";
-import { getThemePath } from "@/core/themes/registry";
 import MangaArt from "./MangaArt.astro";
 import type { MangaImage } from "../data/mangaArt";
 const chapters: { route: string; label: string; title: string; note: string; image: MangaImage; sticker: MangaImage }[] = [
@@ -20,7 +19,7 @@ const chapters: { route: string; label: string; title: string; note: string; ima
   </header>
   <div class="chapter-track" id="home-chapters" data-rail-track tabindex="0" role="group" aria-label="手帖章节">
     {chapters.map((chapter) => (
-      <a class="chapter-leaf" data-rail-item href={getThemePath("fuyukawa-kagari", chapter.route)}>
+      <a class="chapter-leaf" data-rail-item href={chapter.route}>
         <span class="chapter-number">{chapter.label}</span>
         <div class="chapter-picture"><MangaArt image={chapter.image} fetchpriority="low" /></div>
         <MangaArt image={chapter.sticker} class="chapter-sticker" fetchpriority="low" />
