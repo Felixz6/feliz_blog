@@ -45,8 +45,8 @@ function createHarness(endpoint = "", deliver?: (url: string, body: string) => P
     callbacks[name] = callback;
     registrations.push({ name, options });
   }]));
-  const emit = (name: string, value: number, rating?: string) => callbacks[name]?.({
-    name, value, rating: rating || "good", id: `${name.toLowerCase()}-sample-id`, navigationType: "navigate"
+  const emit = (name: string, value: number, rating?: string, metadata: Record<string, any> = {}) => callbacks[name]?.({
+    name, value, rating: rating || "good", id: `${name.toLowerCase()}-sample-id`, navigationType: "navigate", ...metadata
   });
   const fire = (name: string, target: Map<string, Set<(event?: any) => void>> = listeners) => {
     for (const listener of target.get(name) || []) listener();
@@ -84,19 +84,58 @@ test("keeps local snapshots and emits no request when the endpoint is empty", ()
   h.cleanup();
 });
 
-test("finalizes and resets route attribution across Astro soft navigations", () => {
+test("sends later hidden-view metric revisions once with the original navigation identity", () => {
   const h = createHarness("https://rum.invalid/collect");
   h.emit("LCP", 1800);
+  h.hide();
+  const first = JSON.parse(h.sent[0].body);
+
+  h.emit("LCP", 2200);
+  h.emit("LCP", 2200);
+  assert.equal(h.sent.length, 2);
+  const updated = JSON.parse(h.sent[1].body);
+  assert.equal(updated.navigationId, first.navigationId);
+  assert.ok(updated.revision > first.revision);
+  assert.equal(updated.metrics.LCP.value, 2200);
+  const evaluated = evaluateMobileReports([first, updated], { minimumSamples: 1 });
+  assert.equal(evaluated.mobileVisits, 1);
+  assert.deepEqual(evaluated.results.find(({ name }) => name === "LCP"), {
+    path: "/blog/example/", name: "LCP", count: 1, p75: 2200, target: 2500, status: "PASS"
+  });
+  h.cleanup();
+});
+
+test("finalizes and resets route attribution across Astro soft navigations", () => {
+  const h = createHarness("https://rum.invalid/collect");
+  h.emit("LCP", 1800, undefined, { id: "lcp-old" });
   h.fire("astro:before-swap");
   h.win.location.pathname = "/projects/";
   h.fire("astro:after-swap");
-  h.emit("LCP", 3100);
-  h.emit("INP", 176);
+  h.emit("LCP", 3100, undefined, {
+    id: "lcp-new", navigationType: "soft-navigation", navigationId: 22,
+    navigationURL: "https://example.test/projects/", navigationStartTime: 1
+  });
+  // The old navigation's final LCP callback arrives after Astro activated the
+  // next route; metric identity must keep it on the original page view.
+  h.emit("LCP", 2400, undefined, {
+    id: "lcp-old", navigationType: "soft-navigation", navigationId: 21,
+    navigationURL: "https://example.test/blog/example/", navigationStartTime: 0
+  });
+  h.emit("INP", 176, undefined, {
+    id: "inp-new", navigationType: "soft-navigation", navigationId: 22,
+    navigationURL: "https://example.test/projects/", navigationStartTime: 1
+  });
+  assert.equal(h.win.__yuimiWebVitals.path, "/projects/");
+  assert.equal(h.win.__yuimiWebVitals.metrics.LCP.value, 3100);
   h.fire("pagehide");
 
-  assert.equal(h.sent.length, 2);
+  assert.equal(h.sent.length, 3);
   assert.equal(JSON.parse(h.sent[0].body).path, "/blog/example/");
-  const nextView = JSON.parse(h.sent[1].body);
+  const lateOldView = JSON.parse(h.sent[1].body);
+  assert.equal(lateOldView.path, "/blog/example/");
+  assert.equal(lateOldView.metrics.LCP.value, 2400);
+  assert.equal(lateOldView.navigationId, JSON.parse(h.sent[0].body).navigationId);
+  const nextView = JSON.parse(h.sent[2].body);
   assert.equal(nextView.path, "/projects/");
   assert.deepEqual([nextView.metrics.LCP.value, nextView.metrics.INP.value, nextView.metrics.CLS.value], [3100, 176, 0]);
   h.cleanup();
@@ -144,7 +183,7 @@ test("delivers mobile reports to an HTTP receiver and computes route-level p75",
     assert.deepEqual(responses.map((response) => response.status), [204, 204]);
     assert.equal(received.length, 2);
     assert.deepEqual(received.map((report) => report.path).sort(), ["/", "/slow/"]);
-    assert.ok(received.every((report) => report.deviceClass === "mobile" && report.schema === "yuimi-web-vitals/v1"));
+    assert.ok(received.every((report) => report.deviceClass === "mobile" && report.schema === "yuimi-web-vitals/v2"));
 
     const reportFile = join(tempDirectory, "reports.json");
     writeFileSync(reportFile, JSON.stringify(received));
@@ -182,6 +221,20 @@ test("evaluates nearest-rank mobile p75 by route and leaves sparse samples incon
   ]);
   assert.equal(webVitalsTargets.LCP, 2500);
   assert.equal(evaluateMobileReports(rows, { minimumSamples: 5 }).results[0].status, "INCONCLUSIVE");
+});
+
+test("uses only the highest revision for each navigation when calculating p75", () => {
+  const reports = [
+    { navigationId: "visit-1", revision: 1, path: "/", deviceClass: "mobile", metrics: { LCP: 1000 } },
+    { navigationId: "visit-1", revision: 3, path: "/", deviceClass: "mobile", metrics: { LCP: 5000 } },
+    { navigationId: "visit-1", revision: 2, path: "/", deviceClass: "mobile", metrics: { LCP: 2000 } },
+    { navigationId: "visit-2", revision: 1, path: "/", deviceClass: "mobile", metrics: { LCP: 2400 } }
+  ];
+  const evaluated = evaluateMobileReports(reports, { minimumSamples: 2 });
+  assert.equal(evaluated.mobileVisits, 2);
+  assert.deepEqual(evaluated.results.map(({ name, count, p75, status }) => [name, count, p75, status]), [
+    ["LCP", 2, 5000, "FAIL"]
+  ]);
 });
 
 test("the shared layout loads the opt-in RUM collector and exposes the report checker", () => {
