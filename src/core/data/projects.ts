@@ -1,3 +1,8 @@
+import { projectMetadata } from "./project-metadata.ts";
+
+const srcSkill = projectMetadata["src-skill"];
+const reconMcp = projectMetadata["recon-mcp"];
+
 export const projectTechLines = [
   { key: "web-security", label: "Web Security", note: "安全研究与分析" },
   { key: "ctf", label: "CTF", note: "题目与解题笔记" },
@@ -7,12 +12,12 @@ export const projectTechLines = [
 export const projectEntries = [
   {
     id: "security-research",
-    title: "SRC Skill",
+    title: srcSkill.name,
     type: "SRC Research Toolkit",
     line: "web-security",
     summary: "SRC 研究技能、规则、知识库、MCP 服务源码与部署脚本的整理项目。",
-    details: ["src-skill", "SRC Skill", "规则与知识库"],
-    href: "/projects/src-skill/",
+    details: [srcSkill.id, srcSkill.name, "规则与知识库"],
+    href: srcSkill.href,
     linkLabel: "查看项目详情"
   },
   {
@@ -38,12 +43,12 @@ export const projectEntries = [
   },
   {
     id: "recon-tools",
-    title: "Recon MCP",
+    title: reconMcp.name,
     type: "Reconnaissance MCP",
     line: "web-security",
     summary: "基于 TypeScript 的统一资产侦察 MCP Gateway，采用本地优先扫描与串行 provider 回退。",
-    details: ["recon-mcp", "MCP Gateway", "资产侦察"],
-    href: "/projects/recon-mcp/",
+    details: [reconMcp.id, "MCP Gateway", "资产侦察"],
+    href: reconMcp.href,
     linkLabel: "查看项目详情"
   },
   {

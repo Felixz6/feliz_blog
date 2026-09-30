@@ -23,7 +23,8 @@ test("the four project primary Markdown documents are copied into the site conte
 test("project detail pages link to their rendered Markdown document indexes or source repositories", () => {
   const srcPage = read("../src/pages/projects/src-skill/index.astro");
   const reconPage = read("../src/pages/projects/recon-mcp/index.astro");
-  assert.match(srcPage, /href="\/projects\/src-skill\/docs\/"/);
+  assert.match(srcPage, /projectMetadata\["src-skill"\]/);
+  assert.match(srcPage, /href=\{project\.docsHref\}/);
   assert.match(srcPage, /浏览 3 份主文档/);
   assert.match(reconPage, /href="https:\/\/github\.com\/Felixz6\/recon-mcp"/);
   assert.match(reconPage, /GITHUB REPOSITORY/);

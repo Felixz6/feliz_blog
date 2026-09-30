@@ -1,5 +1,6 @@
 import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
+import { projectIds } from "./core/data/project-metadata";
 
 const blog = defineCollection({
   loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/blog" }),
@@ -47,7 +48,7 @@ const projectDocs = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    project: z.enum(["src-skill", "recon-mcp"]),
+    project: z.enum(projectIds),
     routeSlug: z.string(),
     order: z.number().int().positive()
   })

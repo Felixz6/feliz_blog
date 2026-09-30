@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from "astro:content";
+import { projectMetadata } from "@/core/data/project-metadata";
 import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
 import DocumentLayout from "@/themes/fuyukawa-kagari/components/DocumentLayout.astro";
 
@@ -18,33 +19,33 @@ export async function getStaticPaths() {
 
 const { document, documents } = Astro.props;
 const { Content, headings } = await render(document);
-const projectName = document.data.project === "src-skill" ? "SRC Skill" : "Recon MCP";
+const project = projectMetadata[document.data.project];
 const documentIndex = documents.findIndex((item) => item.id === document.id);
 const previousDocument = documents[documentIndex - 1];
 const nextDocument = documents[documentIndex + 1];
 ---
 
-<BaseLayout title={`${document.data.title} | ${projectName}`} description={document.data.description} isArticlePage needsMangaRuntime>
+<BaseLayout title={`${document.data.title} | ${project.name}`} description={document.data.description} isArticlePage needsMangaRuntime>
   <DocumentLayout
     kind="project-doc"
     title={document.data.title}
     description={document.data.description}
-    eyebrow={`${projectName} / PROJECT DOCS`}
+    eyebrow={`${project.name} / PROJECT DOCS`}
     current={document.data.order}
     total={documents.length}
     headings={headings}
-    backHref={`/projects/${document.data.project}/docs/`}
+    backHref={project.docsHref}
     backLabel="回到文档目录"
     pagerLabel="项目文档导航"
     previous={previousDocument && {
-      href: `/projects/${document.data.project}/docs/${previousDocument.data.routeSlug}/`,
+      href: `${project.docsHref}${previousDocument.data.routeSlug}/`,
       title: previousDocument.data.title
     }}
     next={nextDocument && {
-      href: `/projects/${document.data.project}/docs/${nextDocument.data.routeSlug}/`,
+      href: `${project.docsHref}${nextDocument.data.routeSlug}/`,
       title: nextDocument.data.title
     }}
-    finishHref={`/projects/${document.data.project}/`}
+    finishHref={project.href}
     finishLabel="已读完"
     finishTitle="返回项目介绍"
   >
