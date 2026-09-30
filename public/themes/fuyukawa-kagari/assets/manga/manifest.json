@@ -280,17 +280,6 @@
       "operation": "complete artwork, no crop"
     },
     {
-      "file": "playroom-page.webp",
-      "width": 700,
-      "height": 1013,
-      "bytes": 131006,
-      "sha256": "c4b88e18e5a8dd39aba3e9cd17f69888dc09ad6072df61014924b86d5fa61978",
-      "sources": [
-        "fuyukawa/葉佐乃_【創作漫画】儚いキミは猛攻をはじめる⑧_102800687_p14.jpg"
-      ],
-      "operation": "complete artwork, no crop"
-    },
-    {
       "file": "letter-page.webp",
       "width": 625,
       "height": 850,
@@ -345,24 +334,6 @@
           "top": 12,
           "width": 580,
           "height": 305
-        }
-      }
-    },
-    {
-      "file": "playroom-strip.webp",
-      "width": 644,
-      "height": 480,
-      "bytes": 75790,
-      "sha256": "585c3c1bff59f99a72eee9dbc3139731dddb43e90d54a33d3b5aa504bdeb073b",
-      "sources": [
-        "fuyukawa/葉佐乃_【創作漫画】儚いキミは猛攻をはじめる⑧_102800687_p14.jpg"
-      ],
-      "operation": {
-        "crop": {
-          "left": 30,
-          "top": 505,
-          "width": 644,
-          "height": 480
         }
       }
     },

@@ -31,11 +31,6 @@ test("canonical paths normalize plain and unknown paths without changing them", 
   assert.equal(getCanonicalPath("/blog/hello-asteria/"), "/blog/hello-asteria/");
 });
 
-test("canonical paths preserve the live legacy games route", () => {
-  assert.equal(getCanonicalPath(`${themePrefix}/games/`), `${themePrefix}/games/`);
-  assert.equal(getCanonicalPath(`${themePrefix}/games/arcade/`), `${themePrefix}/games/arcade/`);
-});
-
 test("primary root routes render through Fuyukawa Kagari", () => {
   const routes = [
     "src/pages/index.astro",
@@ -52,7 +47,16 @@ test("primary root routes render through Fuyukawa Kagari", () => {
   }
 });
 
-test("the legacy games page remains live without a root games route", () => {
-  assert.equal(existsSync(new URL("../src/pages/games.astro", import.meta.url)), false);
-  assert.equal(existsSync(new URL("../src/pages/themes/fuyukawa-kagari/games.astro", import.meta.url)), true);
+test("removed arcade routes and implementation files stay absent", () => {
+  for (const path of [
+    "src/pages/games.astro",
+    "src/pages/themes/fuyukawa-kagari/games.astro",
+    "src/themes/fuyukawa-kagari/pages/GamesPage.astro",
+    "src/themes/fuyukawa-kagari/components/GameCover.astro",
+    "src/core/data/games.ts",
+    "public/themes/fuyukawa-kagari/assets/manga/playroom-page.webp",
+    "public/themes/fuyukawa-kagari/assets/manga/playroom-strip.webp"
+  ]) {
+    assert.equal(existsSync(new URL(`../${path}`, import.meta.url)), false, path);
+  }
 });

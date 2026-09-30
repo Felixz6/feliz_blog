@@ -33,22 +33,6 @@ body[data-fuyukawa] .works-card--pink { border-top-color: var(--pink); }
 body[data-fuyukawa] .works-card--mint { border-top-color: var(--mint); }
 body[data-fuyukawa] .works-card--lavender { border-top-color: var(--lavender); }
 body[data-fuyukawa] .works-card--orange { border-top-color: #dfbc88; }
-body[data-fuyukawa] .game-hero-card { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) 150px; align-items: center; gap: 32px; padding: 30px 0; }
-body[data-fuyukawa] .playroom-opening-panel { width: 100%; height: 240px; }
-body[data-fuyukawa] .playroom-companions { width: 150px; height: 220px; align-self: end; }
-body[data-fuyukawa] .playroom-heading h1 { font-size: 2.2rem; }
-body[data-fuyukawa] .playroom-heading .page-title-en { display: block; padding: 6px 0 0; }
-body[data-fuyukawa] .playroom-ticket-line { width: min(1144px, calc(100% - 80px)); margin: 26px auto 0; display: flex; align-items: center; gap: 18px; font: .68rem Consolas, monospace; color: var(--rose); }
-body[data-fuyukawa] .playroom-ticket-line i { flex: 1; border-top: 1px dashed #d6c2d1; }
-body[data-fuyukawa] .game-room { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
-body[data-fuyukawa] .game-cabinet-card { border: 1px solid var(--manga-rule); border-radius: 6px; box-shadow: 5px 6px 0 var(--game-tint); }
-body[data-fuyukawa] .game-cabinet-card:nth-child(2) { margin-top: 26px; }
-body[data-fuyukawa] .game-machine-label { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; font: .7rem Consolas, monospace; color: var(--game-accent); background: #fff; }
-body[data-fuyukawa] .game-machine-label svg { width: 20px; height: 20px; }
-body[data-fuyukawa] .game-cabinet-screen { border-block: 1px solid var(--line); }
-body[data-fuyukawa] .game-cabinet-copy { padding: 22px; }
-body[data-fuyukawa] .game-note { position: relative; padding-right: 115px; min-height: 160px; }
-body[data-fuyukawa] .game-note-character { position: absolute; right: 12px; top: 0; width: 74px; height: 140px; }
 body[data-fuyukawa] .about-profile-shell { gap: 48px; }
 body[data-fuyukawa] .about-readme-hero { grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 24px; }
 body[data-fuyukawa] .about-letter-art { width: 180px; height: 244px; }
@@ -82,11 +66,6 @@ body[data-fuyukawa] .not-found-visual .lost-manga-page { width: 74%; height: 360
 body[data-fuyukawa] .not-found-visual .lost-page-character { position: absolute; right: 0; bottom: 48px; width: 135px; height: 280px; object-fit: contain; }
 body[data-fuyukawa] .not-found-visual figcaption { margin-top: 24px; text-align: center; }
 @media (max-width: 1100px) {
-  body[data-fuyukawa] .game-hero-card { grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) 100px; gap: 20px; }
-  body[data-fuyukawa] .playroom-companions { width: 100px; }
-  body[data-fuyukawa] .playroom-heading h1 { font-size: 1.9rem; }
-  body[data-fuyukawa] .game-room { gap: 18px; }
-  body[data-fuyukawa] .game-cabinet-copy { padding: 18px; }
   body[data-fuyukawa] .about-readme-hero { grid-template-columns: minmax(0, 1fr) 130px; }
   body[data-fuyukawa] .about-letter-art { width: 130px; height: 210px; }
   body[data-fuyukawa] .album-page { gap: 18px; }
@@ -114,16 +93,6 @@ body[data-fuyukawa] .not-found-visual figcaption { margin-top: 24px; text-align:
   body[data-fuyukawa] .works-hero .page-title-en { display: block; padding: 4px 0 0; }
   body[data-fuyukawa] .works-card:first-child { padding-right: 150px; }
   body[data-fuyukawa] .works-card-companion { width: 90px; height: 150px; right: 28px; }
-  body[data-fuyukawa] .game-hero-card { grid-template-columns: minmax(0, 1fr) 120px; gap: 20px; }
-  body[data-fuyukawa] .playroom-opening-panel { grid-column: 1 / -1; width: 100%; height: 126px; object-position: left; }
-  body[data-fuyukawa] .playroom-companions { width: 120px; height: 175px; }
-  body[data-fuyukawa] .playroom-heading h1 { font-size: 1.9rem; }
-  body[data-fuyukawa] .playroom-ticket-line { width: calc(100% - 48px); gap: 10px; font-size: .57rem; }
-  body[data-fuyukawa] .game-room { grid-template-columns: minmax(0, 1fr); gap: 26px; }
-  body[data-fuyukawa] .game-cabinet-card { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1fr); }
-  body[data-fuyukawa] .game-cabinet-card:nth-child(2) { margin-top: 0; }
-  body[data-fuyukawa] .game-machine-label { grid-column: 1 / -1; }
-  body[data-fuyukawa] .game-cabinet-screen { height: 100%; min-height: 220px; border-bottom: 0; border-right: 1px solid var(--line); }
   body[data-fuyukawa] .about-profile-shell { gap: 28px; }
   body[data-fuyukawa] .about-side-character { display: none; }
   body[data-fuyukawa] .album-page-image-next { height: 360px; }
@@ -146,13 +115,6 @@ body[data-fuyukawa] .not-found-visual figcaption { margin-top: 24px; text-align:
   body[data-fuyukawa] .works-grid { grid-template-columns: minmax(0, 1fr); }
   body[data-fuyukawa] .works-card:first-child { padding-right: 20px; padding-bottom: 150px; }
   body[data-fuyukawa] .works-card-companion { height: 120px; bottom: 12px; right: 20px; }
-  body[data-fuyukawa] .game-hero-card { grid-template-columns: minmax(0, 1fr) 94px; }
-  body[data-fuyukawa] .playroom-companions { width: 94px; height: 150px; }
-  body[data-fuyukawa] .playroom-heading h1 { font-size: 1.65rem; }
-  body[data-fuyukawa] .game-cabinet-card { grid-template-columns: minmax(0, 1fr); }
-  body[data-fuyukawa] .game-cabinet-screen { height: 190px; min-height: 190px; border-right: 0; border-bottom: 1px solid var(--line); }
-  body[data-fuyukawa] .game-note { padding-right: 78px; }
-  body[data-fuyukawa] .game-note-character { width: 60px; height: 120px; right: 0; }
   body[data-fuyukawa] .about-readme-hero { grid-template-columns: minmax(0, 1fr) 90px; gap: 16px; }
   body[data-fuyukawa] .about-readme-hero h2 { font-size: 1.5rem; }
   body[data-fuyukawa] .about-letter-art { width: 90px; height: 180px; }

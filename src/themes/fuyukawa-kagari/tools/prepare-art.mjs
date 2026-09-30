@@ -39,12 +39,10 @@ const selections = [
   ["together-cover", 8, 22],
   ["notebook-page", 8, 11],
   ["workshop-page", 4, 7],
-  ["playroom-page", 8, 14],
   ["letter-page", 4, 29],
   ["fireworks-page", 4, 30],
   ["reading-strip", 8, 3, { left: 25, top: 14, width: 653, height: 430 }],
   ["workshop-strip", 4, 7, { left: 22, top: 12, width: 580, height: 305 }],
-  ["playroom-strip", 8, 14, { left: 30, top: 505, width: 644, height: 480 }],
   ["hand-note", 4, 30, { left: 25, top: 322, width: 570, height: 252 }]
 ];
 for (const [name, volume, page, crop] of selections) {

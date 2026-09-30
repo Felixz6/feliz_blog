@@ -139,9 +139,9 @@ test("active article TOC keeps chapter labels aligned", () => {
 test("all theme templates parse without errors", async () => {
   for (const path of [
     "layouts/BaseLayout.astro", "layouts/ArticleLayout.astro",
-    "pages/HomePage.astro", "pages/BlogIndexPage.astro", "pages/GamesPage.astro",
+    "pages/HomePage.astro", "pages/BlogIndexPage.astro",
     "pages/ProjectsPage.astro", "pages/AboutPage.astro", "pages/NotFoundPage.astro",
-    "components/GameCover.astro", "components/SakuraRain.astro",
+    "components/SakuraRain.astro",
     "components/ArticleMobileToc.astro", "components/ArticleTocLinks.astro"
   ]) {
     const result = await parse(read(path));
@@ -174,12 +174,10 @@ test("closed tool drawer hides its whole panel at every width", () => {
   assert.match(css, /\.toy-dock:focus-within/);
 });
 
-test("homepage journal and custom game artwork stay in the Fuyukawa boundary", () => {
+test("homepage journal stays in the Fuyukawa boundary", () => {
   const home = read("pages/HomePage.astro");
   assert.match(home, /recentPosts = \(await getPublishedPosts\(\)\)\.slice\(0, 3\)/);
   assert.match(home, /class="journal-entry" href=\{`\/blog\/\$\{post\.id\}\/`\}/);
-  assert.match(read("pages/GamesPage.astro"), /<GameCover game=\{game.id\}/);
-  assert.doesNotMatch(css + read("components/GameCover.astro"), /https?:\/\//);
 });
 
 function node(dataset = {}) {

@@ -392,7 +392,7 @@ test("chapter controls target real leaf positions and account for track ends", (
   cleanup();
 });
 
-test("home chapter rail omits Games and numbers About as the third chapter", async () => {
+test("home chapter rail exposes intended routes and numbers About as the third chapter", async () => {
   const source = await read("components/ChapterRail.astro");
   const routes = [...source.matchAll(/route: "([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(routes, ["/blog/", "/projects/", "/about/"]);

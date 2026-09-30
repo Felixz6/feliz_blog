@@ -111,7 +111,6 @@ export default defineConfig({
         tabler: [
           "home-heart",
           "book-2",
-          "device-gamepad-2",
           "code",
           "user-heart",
           "search",
@@ -119,7 +118,6 @@ export default defineConfig({
           "brand-bilibili",
           "sparkles",
           "heart",
-          "device-gamepad",
           "movie",
           "pin",
           "terminal-2",
