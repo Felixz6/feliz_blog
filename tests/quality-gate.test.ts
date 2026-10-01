@@ -21,7 +21,11 @@ test("local and Pages Node pins agree and installation rejects other versions", 
 });
 
 test("verification checks application and test types before the existing build gates", () => {
-  assert.equal(pkg.scripts.check, "astro check");
+  assert.equal(pkg.scripts.check, "astro check && npm run check:rum");
+  assert.equal(pkg.scripts["check:rum"], "tsc -p tsconfig.rum.json");
+  const rumTypes = JSON.parse(read("tsconfig.rum.json"));
+  assert.deepEqual(rumTypes.include, ["server/**/*.ts", "functions/**/*.ts"]);
+  assert.equal(rumTypes.compilerOptions.strict, true);
   assert.equal(pkg.scripts.verify, "npm run check && npm test && npm run build");
   for (const dependency of ["@astrojs/check", "typescript", "@types/node"]) {
     assert.ok(pkg.devDependencies[dependency]);

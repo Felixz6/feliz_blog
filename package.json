@@ -16,9 +16,12 @@
     "preview": "astro preview",
     "generate:assets": "node scripts/generate-assets.mjs",
     "optimize:images": "node scripts/optimize-images.mjs",
-    "check": "astro check",
+    "check": "astro check && npm run check:rum",
     "verify": "npm run check && npm test && npm run build",
-    "check:built-tests": "node --test tests/manga-runtime-scope.test.ts tests/pagefind-alias.test.ts"
+    "check:built-tests": "node --test tests/manga-runtime-scope.test.ts tests/pagefind-alias.test.ts",
+    "check:rum": "tsc -p tsconfig.rum.json",
+    "rum:local": "node scripts/rum-local.mjs",
+    "rum:cloud": "node scripts/rum-cloud.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",

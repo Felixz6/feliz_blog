@@ -17,3 +17,7 @@ roleplay_persona_prompt_experience.md
 astrbot教学/
 技能/
 文章封面/
+
+# Local RUM D1 state and local-only secrets.
+.wrangler/
+.dev.vars*
