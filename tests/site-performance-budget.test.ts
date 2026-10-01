@@ -29,7 +29,7 @@ test("lite mode removes only persistent decorative motion", () => {
 
 test("production build enforces active route, CSS, and responsive-media budgets", () => {
   const scripts = JSON.parse(packageSource).scripts;
-  assert.equal(scripts.build, "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:links && npm run check:modules && npm run check:performance");
+  assert.equal(scripts.build, "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:links && npm run check:modules && npm run check:performance && npm run check:built-tests");
   assert.equal(scripts["check:links"], "node scripts/check-internal-links.mjs");
   assert.equal(scripts["check:modules"], "node --experimental-vm-modules scripts/check-built-modules.mjs");
   assert.equal(scripts["check:performance"], "node scripts/check-performance-budgets.mjs");

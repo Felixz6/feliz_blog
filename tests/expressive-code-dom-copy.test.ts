@@ -1,9 +1,10 @@
+import type { Root, Element } from "hast";
 import assert from "node:assert/strict";
 import test from "node:test";
 import rehypeRemoveExpressiveCodeCopyData from "../src/core/rehype-remove-expressive-code-copy-data.mjs";
 
 test("only Expressive Code copy payloads are removed from the rendered HAST", () => {
-  const copyButton = {
+  const copyButton: Element = {
     type: "element",
     tagName: "button",
     properties: {
@@ -14,13 +15,13 @@ test("only Expressive Code copy payloads are removed from the rendered HAST", ()
     },
     children: [{ type: "element", tagName: "div", properties: {}, children: [] }]
   };
-  const unrelatedButton = {
+  const unrelatedButton: Element = {
     type: "element",
     tagName: "button",
     properties: { "data-code": "unrelated payload", className: ["other-button"] },
     children: [{ type: "text", value: "other" }]
   };
-  const tree = {
+  const tree: Root = {
     type: "root",
     children: [
       {
@@ -45,7 +46,7 @@ test("only Expressive Code copy payloads are removed from the rendered HAST", ()
   };
   const originalChildren = tree.children;
 
-  rehypeRemoveExpressiveCodeCopyData()(tree as never);
+  rehypeRemoveExpressiveCodeCopyData()(tree);
 
   assert.equal(copyButton.properties.dataCode, undefined);
   assert.deepEqual(copyButton.properties, {
@@ -55,5 +56,10 @@ test("only Expressive Code copy payloads are removed from the rendered HAST", ()
   });
   assert.equal(unrelatedButton.properties["data-code"], "unrelated payload");
   assert.strictEqual(tree.children, originalChildren);
-  assert.strictEqual(tree.children[0].children[1].children[1], copyButton);
+  const frame = tree.children[0];
+  assert.equal(frame.type, "element");
+  assert.ok("children" in frame);
+  const copy = frame.children[1];
+  assert.ok("children" in copy);
+  assert.strictEqual(copy.children[1], copyButton);
 });

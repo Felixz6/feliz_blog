@@ -10,7 +10,7 @@ import { site } from "@/lib/site";
 
 const posts = (await getPublishedPosts())
   .map((post) => {
-    const rawText = post.body
+    const rawText = (post.body ?? "")
       .replace(/```[\s\S]*?```/g, "")
       .replace(/<[^>]+>/g, "")
       .replace(/[#>*_\-[\]()`~]/g, "")

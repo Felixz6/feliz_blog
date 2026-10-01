@@ -1,3 +1,4 @@
+import type { Metric, LCPMetric, INPMetric, CLSMetric, ReportOpts } from "web-vitals";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -41,10 +42,11 @@ function createHarness(endpoint = "", deliver?: (url: string, body: string) => P
     addEventListener: recordListener,
     removeEventListener: win.removeEventListener
   };
-  const webVitals = Object.fromEntries(["LCP", "INP", "CLS"].map((name) => [`on${name}`, (callback: (metric: any) => void, options: any) => {
+  const register = <T extends Metric>(name: string) => (callback: (metric: T) => void, options?: ReportOpts) => {
     callbacks[name] = callback;
     registrations.push({ name, options });
-  }]));
+  };
+  const webVitals = { onLCP: register<LCPMetric>("LCP"), onINP: register<INPMetric>("INP"), onCLS: register<CLSMetric>("CLS") };
   const emit = (name: string, value: number, rating?: string, metadata: Record<string, any> = {}) => callbacks[name]?.({
     name, value, rating: rating || "good", id: `${name.toLowerCase()}-sample-id`, navigationType: "navigate", ...metadata
   });

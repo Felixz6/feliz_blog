@@ -9,10 +9,10 @@ const source = config.slice(config.indexOf('const pagefindIntegration ='), confi
 const integration = new Function('pagefind', 'fileURLToPath', `${source}; return pagefindIntegration();`);
 
 function fixture({ stage = '', throws = false, warning = false } = {}) {
-  const calls = [];
-  const warnings = [];
-  const messages = [];
-  const response = (name, success, failure) => async (options) => {
+  const calls: [string, unknown?][] = [];
+  const warnings: string[] = [];
+  const messages: string[] = [];
+  const response = <T, F>(name: string, success: T, failure: F) => async (options: unknown) => {
     calls.push([name, options]);
     if (stage === name) {
       if (throws) throw new Error(`fixture ${name} rejection`);
@@ -29,7 +29,7 @@ function fixture({ stage = '', throws = false, warning = false } = {}) {
     createIndex: response('create', { index, errors: [] }, { errors: ['fixture index failure'] }),
     close: async () => { calls.push(['close']); }
   };
-  const logger = { warn: (value) => warnings.push(value), info: (value) => messages.push(value) };
+  const logger = { warn: (value: string) => warnings.push(value), info: (value: string) => messages.push(value) };
   const run = () => integration(pagefind, fileURLToPath).hooks['astro:build:done']({ dir: new URL('file:///tmp/dist/'), logger });
   return { run, calls, warnings, messages };
 }
@@ -39,7 +39,7 @@ for (const stage of ['create', 'add', 'write']) {
     test(`Pagefind ${stage} ${throws ? 'rejection' : 'error response'} fails the build and closes the service`, async () => {
       const { run, calls } = fixture({ stage, throws });
       await assert.rejects(run, /fixture/);
-      assert.equal(calls.at(-1)[0], 'close');
+      assert.equal(calls.at(-1)?.[0], 'close');
       assert.equal(calls.filter(([name]) => name === 'close').length, 1);
       if (stage !== 'write') assert.ok(!calls.some(([name]) => name === 'write'));
     });

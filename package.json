@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:links && npm run check:modules && npm run check:performance",
+    "build": "npm run generate:assets && npm run prepare:covers && astro build && npm run prune:media && npm run check:links && npm run check:modules && npm run check:performance && npm run check:built-tests",
     "check:links": "node scripts/check-internal-links.mjs",
     "check:modules": "node --experimental-vm-modules scripts/check-built-modules.mjs",
     "prepare:covers": "node scripts/prepare-responsive-covers.mjs",
@@ -15,7 +15,10 @@
     "test": "node --test tests/*.test.ts src/themes/fuyukawa-kagari/tests/manga.test.mjs src/themes/fuyukawa-kagari/tests/refresh.test.mjs src/themes/fuyukawa-kagari/tests/sakura-performance.test.mjs src/themes/fuyukawa-kagari/tests/utilities.test.mjs",
     "preview": "astro preview",
     "generate:assets": "node scripts/generate-assets.mjs",
-    "optimize:images": "node scripts/optimize-images.mjs"
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "check": "astro check",
+    "verify": "npm run check && npm test && npm run build",
+    "check:built-tests": "node --test tests/manga-runtime-scope.test.ts tests/pagefind-alias.test.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",
@@ -31,6 +34,12 @@
     "web-vitals": "^6.2.2"
   },
   "devDependencies": {
-    "sharp": "^0.34.5"
+    "@astrojs/check": "0.9.10",
+    "@types/node": "24.19.0",
+    "sharp": "^0.34.5",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": "24.21.0"
   }
 }

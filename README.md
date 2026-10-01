@@ -30,9 +30,11 @@ Feliz Lab 是一个基于 Astro 的静态个人博客，当前主站统一使用
 
 ## 本地开发
 
-环境要求：Node.js 24 和 npm。
+环境要求：Node.js **24.21.0** 和 npm。根目录 `.nvmrc` 是本地与 Cloudflare Pages 的版本入口，`package.json` 的 `engines` 和 `.npmrc` 的 `engine-strict` 会拒绝不匹配的安装环境。
 
 ~~~bash
+nvm install
+nvm use
 npm ci
 npm run dev
 ~~~
@@ -43,9 +45,11 @@ Astro 默认会在终端显示本地访问地址，通常是 http://localhost:43
 
 ~~~bash
 npm run dev       # 启动开发服务器
+npm run check     # 检查 Astro 与 TypeScript 类型（包括测试）
 npm test          # 运行仓库测试
 node --test src/themes/fuyukawa-kagari/tests/*.test.mjs  # 运行 Fuyukawa 主题专项测试
-npm run build     # 生成资源并构建 dist/
+npm run build     # 单独构建；保留链接、模块和性能预算检查
+npm run verify    # 发布门禁：类型检查 → 测试 → 完整构建
 npm run preview   # 本地预览构建产物
 ~~~
 
@@ -84,11 +88,14 @@ npm run prepare:covers
 ## 构建与发布
 
 ~~~bash
-npm test
-npm run build
+nvm use
+npm ci
+npm run verify
 ~~~
 
-构建产物位于 `dist/`。截至 2026-09-24，正式入口 `https://felizx.com/` 与 `https://www.felizx.com/` 均接入 Cloudflare Pages 项目 `feliz-blog`（`https://feliz-blog.pages.dev/`），正式页 canonical 为 `https://felizx.com/`。静态站点使用 `npm run build` 构建并将 `dist/` 作为输出目录；构建分支、发布触发器与 DNS 由 Cloudflare 控制台管理。仓库不使用 Vercel adapter 或 `vercel.json`，也不再保留 GitHub Pages 工作流或 EdgeOne 配置。
+构建产物位于 `dist/`。截至 2026-09-24，正式入口 `https://felizx.com/` 与 `https://www.felizx.com/` 均接入 Cloudflare Pages 项目 `feliz-blog`（`https://feliz-blog.pages.dev/`），正式页 canonical 为 `https://felizx.com/`。发布配置要求将 Cloudflare Pages 的生产与预览构建命令统一设为 **`npm run verify`**，输出目录仍为 **`dist/`**；构建分支、发布触发器与 DNS 由 Cloudflare 控制台管理。仓库不使用 Vercel adapter 或 `vercel.json`，也不再保留 GitHub Pages 工作流或 EdgeOne 配置。
+
+Cloudflare Pages 使用支持 `.nvmrc` 的 v3 构建镜像，并清除旧的 `NODE_VERSION` 覆盖值（若保留，必须与 `.nvmrc` 一致）。控制台构建命令不受仓库文件自动更新，发布前需核对上述设置，不能只修改 README。标准安装使用 `npm ci`，不要通过 `--omit=dev` / `NODE_ENV=production` 省略检查依赖。`verify` 的三个阶段由 `&&` 串联，类型或测试失败时不会进入构建；原有资源生成、Pagefind、链接、模块及性能预算检查继续由 `build` 执行。依赖构建产物的 MangaRuntime 与 Pagefind 测试在干净工作区的前置测试阶段会跳过，并通过 `check:built-tests` 在新产物生成后重新执行。
 
 Vercel 专属 Analytics 与 Speed Insights 集成已从站点布局和依赖中移除。Vercel 项目可在迁移观察期内保留作回滚，但不应继续绑定正式域名或自动发布；观察期结束后可从 Vercel 控制台归档该项目。Cloudflare Web Analytics 如需启用，应在 Cloudflare 控制台单独配置。
 

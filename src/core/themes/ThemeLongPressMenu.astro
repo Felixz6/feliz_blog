@@ -17,18 +17,18 @@
     let startY = 0;
     let startScrollX = 0;
     let startScrollY = 0;
-    let activePointerId = null;
+    let activePointerId: number | null = null;
     let suppressContextMenuUntil = 0;
     let suppressClickUntil = 0;
     let suppressNextClick = false;
 
-    const isTouchPointer = (event) => event.pointerType === "touch";
-    const isEditableTarget = (target) => target instanceof Element
+    const isTouchPointer = (event: PointerEvent) => event.pointerType === "touch";
+    const isEditableTarget = (target: EventTarget | null) => target instanceof Element
       && Boolean(target.closest("button, input, textarea, select, option, [contenteditable='true'], [data-no-long-press]"));
-    const isArticleTarget = (target) => document.body?.dataset.yuimiArticlePage === "true"
+    const isArticleTarget = (target: EventTarget | null) => document.body?.dataset.yuimiArticlePage === "true"
       && target instanceof Element
       && Boolean(target.closest("article"));
-    const isIgnoredTarget = (target, clientX, clientY) => isEditableTarget(target)
+    const isIgnoredTarget = (target: EventTarget | null, clientX: number, clientY: number) => isEditableTarget(target)
       || isArticleTarget(target)
       || isNativeContextTarget({ target, clientX, clientY });
 
@@ -52,7 +52,7 @@
       }));
     };
 
-    const beginPress = (pointerId, clientX, clientY, target) => {
+    const beginPress = (pointerId: number, clientX: number, clientY: number, target: EventTarget | null) => {
       if (isIgnoredTarget(target, clientX, clientY)) return;
       clearPress();
       activePointerId = pointerId;
@@ -66,51 +66,51 @@
       }, longPressDelay);
     };
 
-    const movePress = (pointerId, clientX, clientY) => {
+    const movePress = (pointerId: number, clientX: number, clientY: number) => {
       if (pointerId !== activePointerId) return;
       if (Math.hypot(clientX - startX, clientY - startY) > movementTolerance) clearPress();
     };
 
-    const endPress = (pointerId) => {
+    const endPress = (pointerId: number) => {
       if (pointerId === activePointerId) clearPress();
     };
 
-    const handlePointerDown = (event) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (!isTouchPointer(event)) return;
       beginPress(event.pointerId, event.clientX, event.clientY, event.target);
     };
 
-    const handlePointerMove = (event) => {
+    const handlePointerMove = (event: PointerEvent) => {
       movePress(event.pointerId, event.clientX, event.clientY);
     };
 
-    const handlePointerEnd = (event) => {
+    const handlePointerEnd = (event: PointerEvent) => {
       endPress(event.pointerId);
     };
 
-    const handleTouchStart = (event) => {
+    const handleTouchStart = (event: TouchEvent) => {
       if (event.touches.length !== 1) return;
       const touch = event.touches[0];
       beginPress(touch.identifier, touch.clientX, touch.clientY, event.target);
     };
 
-    const handleTouchMove = (event) => {
+    const handleTouchMove = (event: TouchEvent) => {
       const touch = Array.from(event.touches).find((item) => item.identifier === activePointerId);
       if (touch) movePress(touch.identifier, touch.clientX, touch.clientY);
     };
 
-    const handleTouchEnd = (event) => {
+    const handleTouchEnd = (event: TouchEvent) => {
       const touch = Array.from(event.changedTouches).find((item) => item.identifier === activePointerId);
       if (touch) endPress(touch.identifier);
     };
 
-    const suppressNativeContextMenu = (event) => {
+    const suppressNativeContextMenu = (event: MouseEvent) => {
       if (Date.now() >= suppressContextMenuUntil) return;
       event.preventDefault();
       event.stopImmediatePropagation();
     };
 
-    const suppressSyntheticClick = (event) => {
+    const suppressSyntheticClick = (event: MouseEvent) => {
       if (!suppressNextClick || performance.now() >= suppressClickUntil) {
         suppressNextClick = false;
         return;
@@ -125,7 +125,7 @@
       if (Math.hypot(window.scrollX - startScrollX, window.scrollY - startScrollY) > movementTolerance) clearPress();
     };
 
-    if ("PointerEvent" in window) {
+    if (Reflect.has(window, "PointerEvent")) {
       window.addEventListener("pointerdown", handlePointerDown, { capture: true, passive: true, signal });
       window.addEventListener("pointermove", handlePointerMove, { capture: true, passive: true, signal });
       window.addEventListener("pointerup", handlePointerEnd, { capture: true, passive: true, signal });

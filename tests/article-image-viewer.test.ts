@@ -45,7 +45,7 @@ class FakeElement {
   }
 
   closest(selector: string) { return this.closestMatches.get(selector) ?? null; }
-  contains(element: FakeElement) { return this.children.includes(element) || this.children.some((child) => child.contains(element)); }
+  contains(element: FakeElement): boolean { return this.children.includes(element) || this.children.some((child) => child.contains(element)); }
   setAttribute(name: string, value: string) { this.attributes.set(name, value); }
   removeAttribute(name: string) {
     this.attributes.delete(name);

@@ -1,6 +1,8 @@
 ---
 import ArticleLayout from "../layouts/ArticleLayout.astro";
 
+type Props = import("astro/types").ComponentProps<typeof ArticleLayout>;
+
 const { frontmatter, headings, archiveHref, archiveLabel, footerLabel } = Astro.props;
 ---
 

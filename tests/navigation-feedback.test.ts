@@ -1,35 +1,44 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import postcss from "postcss";
+import postcss, { type Container } from "postcss";
+
+function declarationValue(container: Container, prop: string) {
+  const declaration = container.nodes?.find(node => node.type === "decl" && node.prop === prop);
+  assert.ok(declaration?.type === "decl", `missing declaration ${prop}`);
+  return declaration.value;
+}
 import { installNavigationFeedback } from "../src/themes/fuyukawa-kagari/lib/navigation-feedback.mjs";
 
-const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
+const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+
+type FakeAnimation = { cancelled: boolean; onfinish: (() => void) | null; oncancel: (() => void) | null; cancel: () => void; finish: () => void };
+type TestEvent = { persisted?: boolean; signal?: AbortSignal; loader?: () => Promise<unknown>; navigationType?: string; sourceElement?: { closest: (selector: string) => FakeElement | null }; defaultPrevented?: boolean; newDocument?: ReturnType<typeof makePage> };
 
 class FakeElement {
-  constructor() {
-    this.dataset = {};
-    this.textContent = "";
-    this.attributes = new Map();
-    this.animations = [];
-    this.children = new Map();
-  }
+  dataset: Record<string, string> = {};
+  textContent = "";
+  attributes = new Map<string, string>();
+  animations: { keyframes: Keyframe[]; options: KeyframeAnimationOptions }[] = [];
+  children = new Map<string, FakeElement>();
+  animationHandle!: FakeAnimation;
+  closest: (selector: string) => FakeElement | null = () => null;
 
-  setAttribute(name, value) {
+  setAttribute(name: string, value: string) {
     this.attributes.set(name, value);
     if (name === "data-navigating") this.dataset.navigating = value;
   }
 
-  removeAttribute(name) {
+  removeAttribute(name: string) {
     this.attributes.delete(name);
     if (name === "data-navigating") delete this.dataset.navigating;
   }
 
-  querySelector(selector) { return this.children.get(selector) ?? null; }
+  querySelector(selector: string) { return this.children.get(selector) ?? null; }
 
-  animate(keyframes, options) {
+  animate: ((keyframes: Keyframe[], options: KeyframeAnimationOptions) => FakeAnimation) | undefined = (keyframes, options) => {
     this.animations.push({ keyframes, options });
-    const handle = {
+    const handle: FakeAnimation = {
       cancelled: false,
       onfinish: null,
       oncancel: null,
@@ -56,7 +65,7 @@ function makePage() {
     content,
     bookmark,
     message,
-    querySelector(selector) {
+    querySelector(selector: string) {
       if (selector === "[data-navigation-bookmark]") return bookmark;
       if (selector === "#page-content") return content;
       return null;
@@ -66,21 +75,21 @@ function makePage() {
 
 function makeDocument() {
   let page = makePage();
-  const listeners = new Map();
+  const listeners = new Map<string, Set<(event: TestEvent) => void>>();
   return {
     get body() { return page.body; },
-    addEventListener(name, callback) {
+    addEventListener(name: string, callback: (event: TestEvent) => void) {
       const callbacks = listeners.get(name) ?? new Set();
       callbacks.add(callback);
       listeners.set(name, callbacks);
     },
-    dispatch(name, event = {}) {
+    dispatch(name: string, event: TestEvent = {}) {
       for (const callback of [...(listeners.get(name) ?? [])]) callback(event);
     },
-    querySelector(selector) {
+    querySelector(selector: string) {
       return page.querySelector(selector);
     },
-    swapTo(nextPage) { page = nextPage; },
+    swapTo(nextPage: ReturnType<typeof makePage>) { page = nextPage; },
     get page() { return page; }
   };
 }
@@ -88,19 +97,19 @@ function makeDocument() {
 function makeWindow(reducedMotion = false) {
   let now = 0;
   let nextTimer = 0;
-  const timers = new Map();
-  const listeners = new Map();
+  const timers = new Map<number, { callback: () => void; dueAt: number }>();
+  const listeners = new Map<string, (event: TestEvent) => void>();
   return {
-    addEventListener(name, callback) { listeners.set(name, callback); },
-    dispatch(name, event) { listeners.get(name)?.(event); },
+    addEventListener(name: string, callback: (event: TestEvent) => void) { listeners.set(name, callback); },
+    dispatch(name: string, event: TestEvent) { listeners.get(name)?.(event); },
     matchMedia: () => ({ matches: reducedMotion }),
-    setTimeout(callback, delay) {
+    setTimeout(callback: () => void, delay: number) {
       const id = ++nextTimer;
       timers.set(id, { callback, dueAt: now + delay });
       return id;
     },
-    clearTimeout(id) { timers.delete(id); },
-    advance(milliseconds) {
+    clearTimeout(id: number) { timers.delete(id); },
+    advance(milliseconds: number) {
       now += milliseconds;
       while (true) {
         const due = [...timers.entries()]
@@ -115,24 +124,24 @@ function makeWindow(reducedMotion = false) {
   };
 }
 
-function preparationEvent({ signal = new AbortController().signal, loader = async () => {}, type = "push", sourceElement } = {}) {
+function preparationEvent({ signal = new AbortController().signal, loader = async () => {}, type = "push", sourceElement }: { signal?: AbortSignal; loader?: () => Promise<unknown>; type?: string; sourceElement?: { closest: (selector: string) => FakeElement | null } } = {}) {
   return { signal, loader, navigationType: type, sourceElement, defaultPrevented: false };
 }
 
 function navLink() {
   const link = new FakeElement();
-  link.closest = (selector) => selector === ".nav-links a" ? link : null;
+  link.closest = (selector: string) => selector === ".nav-links a" ? link : null;
   return link;
 }
 
 function setup(reducedMotion = false) {
   const doc = makeDocument();
   const win = makeWindow(reducedMotion);
-  installNavigationFeedback(doc, win);
+  installNavigationFeedback(doc as unknown as Document, win as unknown as Window & typeof globalThis);
   return { doc, win };
 }
 
-function assertCleared(doc, win, link) {
+function assertCleared(doc: ReturnType<typeof makeDocument>, win: ReturnType<typeof makeWindow>, link?: FakeElement) {
   assert.equal(doc.page.bookmark.dataset.visible, undefined);
   assert.equal(doc.page.message.textContent, "");
   assert.equal(doc.body.dataset.navigating, undefined);
@@ -246,8 +255,8 @@ test("preventDefault without running the loader also clears click feedback", asy
 test("a late abort and loader completion from an older click cannot clear the new request", async () => {
   const { doc, win } = setup();
   const oldController = new AbortController();
-  let release;
-  const wait = new Promise((resolve) => { release = resolve; });
+  let release!: () => void;
+  const wait = new Promise<void>((resolve) => { release = resolve; });
   const old = preparationEvent({ signal: oldController.signal, loader: () => wait });
   doc.dispatch("astro:before-preparation", old);
   const run = old.loader();
@@ -266,7 +275,7 @@ test("a late abort and loader completion from an older click cannot clear the ne
 
 test("late rejection from an older click cannot dismiss the current Japanese bookmark", async () => {
   const { doc, win } = setup();
-  let rejectOld;
+  let rejectOld!: (reason?: unknown) => void;
   const wait = new Promise((resolve, reject) => { rejectOld = reject; });
   const event = preparationEvent({ loader: () => wait });
   doc.dispatch("astro:before-preparation", event);
@@ -322,8 +331,11 @@ test("reduced motion retains a static Japanese message without content or book a
   assertCleared(doc, win);
   const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
   const reduced = css.nodes.find((node) => node.type === "atrule" && node.params === "(prefers-reduced-motion: reduce)");
-  const pages = reduced.nodes.find((node) => node.selector === '.navigation-bookmark[data-visible="true"] .navigation-book-page');
-  assert.equal(pages.nodes.find((node) => node.prop === "animation").value, "none");
+  assert.ok(reduced?.type === "atrule");
+  assert.ok(reduced.nodes);
+  const pages = reduced.nodes.find((node) => node.type === "rule" && node.selector === '.navigation-bookmark[data-visible="true"] .navigation-book-page');
+  assert.ok(pages?.type === "rule");
+  assert.equal(declarationValue(pages, "animation"), "none");
 });
 
 test("back-forward cache restores without a stuck label, pending highlight or animation", () => {
@@ -357,7 +369,7 @@ test("nested navigation icons resolve to their link without changing aria-curren
   const { doc, win } = setup();
   const link = navLink();
   link.setAttribute("aria-current", "page");
-  const sourceElement = { closest: (selector) => selector === ".nav-links a" ? link : null };
+  const sourceElement = { closest: (selector: string) => selector === ".nav-links a" ? link : null };
   doc.dispatch("astro:before-preparation", preparationEvent({ sourceElement }));
   assert.equal(link.dataset.navigationPending, "true");
   assert.equal(link.attributes.get("aria-current"), "page");
@@ -412,16 +424,19 @@ test("the loading bar is gone from layout, styling and runtime, not merely hidde
 test("the paper bookmark stays anchored, non-blocking and uses only transform/opacity keyframes", () => {
   const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/theme.css"));
   const rule = css.nodes.find((node) => node.type === "rule" && node.selector === ".navigation-bookmark");
+  assert.ok(rule?.type === "rule");
   const values = Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
   assert.equal(values.position, "absolute");
   assert.equal(values["pointer-events"], "none");
   assert.equal(values["max-width"], "calc(100vw - 32px)");
   const keyframes = css.nodes.find((node) => node.type === "atrule" && node.name === "keyframes" && node.params === "navigation-page-turn");
+  assert.ok(keyframes?.type === "atrule");
   assert.ok(keyframes);
   keyframes.walkDecls((decl) => assert.ok(["transform", "opacity"].includes(decl.prop)));
   const refresh = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
-  const pending = refresh.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
-  assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--nav-fill)");
+  const pending = refresh.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  assert.ok(pending?.type === "rule");
+  assert.equal(declarationValue(pending, "background"), "var(--nav-fill)");
 });
 
 
@@ -439,8 +454,9 @@ test("navigation routes explicitly assign pink to blog/me and blue to home/works
 
 test("destination gradients apply only while pending, not to static or hover backgrounds", () => {
   const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
-  const declarationsFor = (selector) => {
+  const declarationsFor = (selector: string) => {
     const rule = css.nodes.find((node) => node.type === "rule" && node.selector === selector);
+    assert.ok(rule?.type === "rule");
     assert.ok(rule, selector);
     return Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
   };
@@ -459,11 +475,12 @@ test("destination gradients apply only while pending, not to static or hover bac
   assert.equal(blue["--nav-tint"], "#edf5fd80");
   assert.equal(pink["--nav-tint"], "#fceff580");
   assert.doesNotMatch(css.toString(), /nav-links a:nth-child\(even\)/);
-  const pending = css.nodes.find((node) => node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
-  assert.equal(pending.nodes.find((node) => node.prop === "background").value, "var(--nav-fill)");
-  assert.equal(pending.nodes.find((node) => node.prop === "color").value, "var(--nav-ink)");
+  const pending = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+  assert.ok(pending?.type === "rule");
+  assert.equal(declarationValue(pending, "background"), "var(--nav-fill)");
+  assert.equal(declarationValue(pending, "color"), "var(--nav-ink)");
   css.walkDecls("background", (decl) => {
-    if (decl.value === "var(--nav-fill)") assert.equal(decl.parent.selector, 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
+    if (decl.value === "var(--nav-fill)") assert.equal((decl.parent?.type === "rule" ? decl.parent.selector : undefined), 'body[data-fuyukawa] .site-header .nav-links a[data-navigation-pending="true"]');
   });
 });
 
@@ -471,14 +488,16 @@ test("destination gradients apply only while pending, not to static or hover bac
 test("BLOG and ME hover capsules are pink while HOME and WORKS stay blue", () => {
   const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
   const rule = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a[data-navigation-tone="pink"]');
+  assert.ok(rule?.type === "rule");
   assert.ok(rule);
   const declarations = Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
   assert.equal(declarations["--nav-tint"], "#fceff580");
   assert.equal(declarations["--nav-ink"], "var(--rose)");
   const defaultHover = css.nodes.find((node) => node.type === "rule" && node.selector === 'body[data-fuyukawa] .nav-links a:hover,\nbody[data-fuyukawa] .nav-links a[aria-current="page"]');
+  assert.ok(defaultHover?.type === "rule");
   assert.ok(defaultHover);
-  assert.equal(defaultHover.nodes.find((node) => node.prop === "background").value, "var(--nav-tint)");
-  assert.equal(defaultHover.nodes.find((node) => node.prop === "color").value, "var(--nav-ink)");
+  assert.equal(declarationValue(defaultHover, "background"), "var(--nav-tint)");
+  assert.equal(declarationValue(defaultHover, "color"), "var(--nav-ink)");
 });
 
 test("shared theme styles use ordered external URLs across client-side page swaps", () => {
@@ -504,6 +523,7 @@ test("shared stylesheet requests bypass stale CDN 404 entries without changing t
 test("idle glass capsule retains its original transparency, blur, radius and dimensions", () => {
   const css = postcss.parse(read("../src/themes/fuyukawa-kagari/styles/refresh.css"));
   const nav = css.nodes.find((node) => node.type === "rule" && node.selector === "body[data-fuyukawa] .nav-links");
+  assert.ok(nav?.type === "rule");
   const values = Object.fromEntries(nav.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
   assert.equal(values.background, "#ffffff45");
   assert.equal(values["backdrop-filter"], "blur(8px)");
@@ -511,6 +531,7 @@ test("idle glass capsule retains its original transparency, blur, radius and dim
   assert.equal(values["border-radius"], "999px");
   assert.equal(values.padding, "5px");
   const link = css.nodes.find((node) => node.type === "rule" && node.selector === "body[data-fuyukawa] .nav-links a");
+  assert.ok(link?.type === "rule");
   const styles = Object.fromEntries(link.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
   assert.equal(styles.background, "transparent");
   assert.equal(styles["min-height"], "46px");

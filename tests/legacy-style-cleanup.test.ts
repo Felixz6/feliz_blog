@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import postcss from 'postcss';
 import { installContextMenu } from '../src/themes/fuyukawa-kagari/lib/layout-runtime.mjs';
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -24,18 +24,19 @@ test('Markdown heading anchors, dynamic TOC depth and active archive styles rema
   assert.match(read('src/themes/fuyukawa-kagari/components/ArticleTocLinks.astro'), /toc-depth-\$\{heading\.depth\}/);
 });
 
-function fixture(t) {
-  const old = new Map();
+function fixture(t: TestContext) {
+  type MockEvent = { key?: string; shiftKey?: boolean; target?: MockElement; preventDefault?: () => void; stopPropagation?: () => void };
+  const old = new Map<string, PropertyDescriptor | undefined>();
   class MockElement {
-    events = new Map(); children = []; dataset = {}; style = {setProperty() {}};
-    offsetWidth = 220; offsetHeight = 340; textContent = ''; focusOptions = null;
-    classes = new Set();
-    classList = {add: value => this.classes.add(value), remove: value => this.classes.delete(value), contains: value => this.classes.has(value)};
-    addEventListener(name, handler) { const handlers=this.events.get(name) ?? []; handlers.push(handler); this.events.set(name,handlers); }
-    async emit(name, event) { for(const handler of this.events.get(name) ?? []) await handler(event); }
-    contains(element) { return element===this || this.children.includes(element); }
-    focus(options) { document.activeElement=this; this.focusOptions=options; }
-    closest(selector) { return selector==='[data-context-action]' && this.dataset.contextAction ? this : null; }
+    events = new Map<string, ((event: MockEvent) => unknown)[]>(); children: MockElement[] = []; dataset: Record<string, string> = {}; style = {setProperty() {}};
+    offsetWidth = 220; offsetHeight = 340; textContent = ''; focusOptions: FocusOptions | null = null;
+    classes = new Set<string>();
+    classList = {add: (value: string) => this.classes.add(value), remove: (value: string) => this.classes.delete(value), contains: (value: string) => this.classes.has(value)};
+    addEventListener(name: string, handler: (event: MockEvent) => unknown) { const handlers=this.events.get(name) ?? []; handlers.push(handler); this.events.set(name,handlers); }
+    async emit(name: string, event: MockEvent) { for(const handler of this.events.get(name) ?? []) await handler(event); }
+    contains(element: MockElement) { return element===this || this.children.includes(element); }
+    focus(options?: FocusOptions) { document.activeElement=this; this.focusOptions=options ?? null; }
+    closest(selector: string) { return selector==='[data-context-action]' && this.dataset.contextAction ? this : null; }
     setAttribute() {}
     getBoundingClientRect() { return {left:20,top:30,width:80,height:30}; }
   }
@@ -43,19 +44,28 @@ function fixture(t) {
     old.set(key,Object.getOwnPropertyDescriptor(globalThis,key));
     Object.defineProperty(globalThis,key,{configurable:true,value:MockElement});
   }
-  t.after(()=>{for(const [key,descriptor] of old) {if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}});
-  const document=new MockElement(), window=new MockElement(), menu=new MockElement();
+  t.after(()=>{for(const [key,descriptor] of old) {if(descriptor)Object.defineProperty(globalThis,key,descriptor);else Reflect.deleteProperty(globalThis,key);}});
+  class MockDocument extends MockElement {
+    body = new MockElement();
+    activeElement: MockElement = this.body;
+    querySelector: (selector: string) => MockElement | null = () => null;
+  }
+  class MockWindow extends MockElement {
+    innerWidth = 390; innerHeight = 844;
+    requestAnimationFrame: (callback: () => void) => number = () => 0;
+  }
+  const document=new MockDocument(), window=new MockWindow(), menu=new MockDocument();
   const origin=new MockElement(), skip=new MockElement(), button=new MockElement();
   document.body=new MockElement(); document.activeElement=origin;
   button.dataset.contextAction='music-autoplay';menu.children=[button];
   menu.querySelector=selector=>selector==='button' || selector.includes('music-autoplay') ? button : null;
-  const queries=[];
+  const queries: string[]=[];
   document.querySelector=selector=>{queries.push(selector);return selector==='[data-context-menu]' ? menu : selector==='.skip-to-content' ? skip : null;};
   window.innerWidth=390;window.innerHeight=844;
-  const frames=[];window.requestAnimationFrame=callback=>{frames.push(callback);return frames.length;};
+  const frames: (() => void)[]=[];window.requestAnimationFrame=callback=>{frames.push(callback);return frames.length;};
   let autoplay=false;
-  const musicPlayer={isAutoplayEnabled:()=>autoplay,setAutoplayEnabled:value=>{autoplay=value;}};
-  installContextMenu({documentRef:document,windowRef:window,musicPlayer});
+  const musicPlayer={isAutoplayEnabled:()=>autoplay,setAutoplayEnabled:(value: boolean)=>{autoplay=value;}};
+  installContextMenu({documentRef:document as unknown as Document,windowRef:window as unknown as Window & typeof globalThis,musicPlayer});
   const open=async(key='ContextMenu')=>{let prevented=false;await window.emit('keydown',{key,shiftKey:key==='F10',preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(menu.classes.has('is-open'),true);assert.equal(document.activeElement,button);};
   return {document,window,menu,origin,skip,button,queries,open,frames};
 }
