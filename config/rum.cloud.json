@@ -1,0 +1,14 @@
+{
+  "accountId": "b0dcecbbf97985487054606fd7b1771d",
+  "projectName": "feliz-blog",
+  "environments": {
+    "production": {
+      "databaseName": "feliz-rum-production",
+      "databaseId": "9a05f61f-7621-4d40-a501-12e2fe9c5c83"
+    },
+    "preview": {
+      "databaseName": "feliz-rum-preview",
+      "databaseId": "4f610524-9e54-4787-8a73-00c22710c9ca"
+    }
+  }
+}

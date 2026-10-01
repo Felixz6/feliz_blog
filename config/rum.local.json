@@ -1,0 +1,12 @@
+{
+  "name": "feliz-blog",
+  "pages_build_output_dir": "../dist",
+  "compatibility_date": "2026-09-24",
+  "vars": { "RUM_ENVIRONMENT": "local" },
+  "d1_databases": [{
+    "binding": "RUM_DB",
+    "database_name": "feliz-rum-local",
+    "database_id": "00000000-0000-0000-0000-000000000001",
+    "migrations_dir": "../migrations/rum"
+  }]
+}
