@@ -2,15 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { installMusicPlayer } from '../src/themes/fuyukawa-kagari/lib/music-player.mjs';
 
+type MockEvent = { type?: string; detail?: { enabled: boolean } };
 class MockElement {
-  events = new Map();
-  attributes = {};
+  events = new Map<string, Set<{ handler: (event: MockEvent) => unknown; once: boolean }>>();
+  attributes: Record<string, string> = {};
   value = '0';
   textContent = '';
   style = { setProperty() {} };
   classList = { toggle() {} };
 
-  addEventListener(name, handler, options = {}) {
+  addEventListener(name: string, handler: (event: MockEvent) => unknown, options: AddEventListenerOptions = {}) {
     const listeners = this.events.get(name) ?? new Set();
     const record = { handler, once: Boolean(options.once) };
     listeners.add(record);
@@ -18,19 +19,19 @@ class MockElement {
     options.signal?.addEventListener('abort', () => listeners.delete(record), { once: true });
   }
 
-  listenerCount(name) { return this.events.get(name)?.size ?? 0; }
+  listenerCount(name: string) { return this.events.get(name)?.size ?? 0; }
 
-  async dispatch(name, event = {}) {
+  async dispatch(name: string, event: MockEvent = {}) {
     const results = [];
     for (const record of [...(this.events.get(name) ?? [])]) {
-      if (record.once) this.events.get(name).delete(record);
+      if (record.once) this.events.get(name)?.delete(record);
       results.push(record.handler(event));
     }
     await Promise.all(results);
   }
 
-  setAttribute(name, value) { this.attributes[name] = value; }
-  dispatchEvent(event) { void this.dispatch(event.type, event); return true; }
+  setAttribute(name: string, value: string) { this.attributes[name] = value; }
+  dispatchEvent(event: MockEvent) { void this.dispatch(event.type ?? "", event); return true; }
 }
 
 const tracks = [
@@ -39,25 +40,27 @@ const tracks = [
   { id: 'c', title: 'Track C', src: '/c.mp3' }
 ];
 
+type CachedState = { trackId?: string; trackSrc?: string; paused?: boolean; currentTime?: number | string; volume?: number };
+type FixtureOptions = { rejectPlay?: boolean; deferPlay?: boolean; instantMetadata?: boolean; initiallyPaused?: boolean; playlist?: typeof tracks; cachedState?: CachedState; storageFailure?: string | null };
+
 function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = false, initiallyPaused = true,
-  playlist = tracks, cachedState = { trackId: 'c', paused: true }, storageFailure = null } = {}) {
-  const nodes = new Map();
+  playlist = tracks, cachedState = { trackId: 'c', paused: true }, storageFailure = null }: FixtureOptions = {}) {
+  const nodes = new Map<string, MockElement>();
   for (const name of ['toggle', 'prev', 'next', 'volume', 'seek', 'current', 'duration', 'note', 'status', 'volume-label']) {
     nodes.set(`[data-music-${name}]`, new MockElement());
   }
   nodes.set('.music-track', new MockElement());
-  const document = new MockElement();
-  document.body = new MockElement();
-  document.querySelector = (selector) => nodes.get(selector);
-  const window = new MockElement();
-  window.location = { origin: 'https://example.test' };
-  const storage = (data = new Map()) => ({
-    getItem: (key) => data.get(key) ?? null,
-    setItem: (key, value) => data.set(key, value)
+  const document = Object.assign(new MockElement(), {
+    body: new MockElement(), querySelector: (selector: string) => nodes.get(selector)
+  });
+  const location = { origin: 'https://example.test' };
+  const storage = (data = new Map<string, string>()) => ({
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => data.set(key, value)
   });
   const cached = new Map([['yuimi-radio-state-v1', JSON.stringify(cachedState)]]);
   const sessionStorage = storage();
-  const pendingPlays = [];
+  const pendingPlays: { resolve: () => void; reject: (reason?: unknown) => void }[] = [];
 
   class MockAudio extends MockElement {
     _src = '';
@@ -74,20 +77,20 @@ function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = fals
 
     get src() { return this._src; }
     get currentSrc() { return this._src; }
-    set src(value) { this._src = new URL(value, window.location.origin).href; this.readyState = 0; }
+    set src(value: string) { this._src = new URL(value, location.origin).href; this.readyState = 0; }
     load() {
       this.loadCount += 1;
       this.paused = true;
       void this.dispatch('pause'); // Changing source/loading pauses real HTMLAudioElement.
       if (instantMetadata) this.readyState = this.HAVE_METADATA;
     }
-    async dispatch(name, event = {}) {
+    async dispatch(name: string, event: MockEvent = {}) {
       if (name === 'loadedmetadata') this.readyState = this.HAVE_METADATA;
       await super.dispatch(name, event);
     }
     async play() {
       this.playCount += 1;
-      if (this.deferPlay) return new Promise((resolve, reject) => pendingPlays.push({ resolve, reject }));
+      if (this.deferPlay) return new Promise<void>((resolve, reject) => pendingPlays.push({ resolve, reject }));
       if (this.rejectPlay) throw new Error('autoplay blocked');
       this.paused = false;
       await this.dispatch('play');
@@ -98,36 +101,36 @@ function fixture({ rejectPlay = false, deferPlay = false, instantMetadata = fals
     }
   }
 
-  window.Audio = MockAudio;
-  window.URL = URL;
-  window.AbortController = AbortController;
-  window.Date = Date;
-  window.Node = MockElement;
-  window.Element = MockElement;
-  window.CustomEvent = class MockCustomEvent {
-    constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
-  };
-  window.queueMicrotask = queueMicrotask;
-  window.localStorage = storage(cached);
-  window.sessionStorage = sessionStorage;
+  class MockCustomEvent {
+    type: string;
+    detail?: { enabled: boolean };
+    constructor(type: string, options: { detail?: { enabled: boolean } } = {}) { this.type = type; this.detail = options.detail; }
+  }
+  const window = Object.assign(new MockElement(), {
+    location, Audio: MockAudio, URL, AbortController, Date,
+    Node: MockElement, Element: MockElement, CustomEvent: MockCustomEvent,
+    queueMicrotask, localStorage: storage(cached), sessionStorage,
+    fetch: async () => ({ json: async () => playlist.map((track) => ({ ...track })) })
+  });
   if (storageFailure) {
-    for (const name of ['localStorage', 'sessionStorage']) {
+    for (const name of ['localStorage', 'sessionStorage'] as const) {
       if (storageFailure === 'getter') {
         Object.defineProperty(window, name, { get() { throw new Error('storage denied'); } });
       } else {
-        window[name][storageFailure] = () => { throw new Error('storage denied'); };
+        window[name][storageFailure as "getItem" | "setItem"] = () => { throw new Error('storage denied'); };
       }
     }
   }
   window.fetch = async () => ({ json: async () => playlist.map((track) => ({ ...track })) });
-  const player = installMusicPlayer(document, window);
+  // The runtime consumes only the browser surfaces implemented by this test double.
+  const player = installMusicPlayer(document as unknown as Document, window as unknown as Window & typeof globalThis) as ReturnType<typeof installMusicPlayer> & { audio: MockAudio };
   return { player, document, window, cached, nodes, pendingPlays, sessionStorage };
 }
 
-async function next(nodes) { await nodes.get('[data-music-next]').dispatch('click'); }
-async function startPlaying({ player, nodes }) {
+async function next(nodes: Map<string, MockElement>) { await nodes.get('[data-music-next]')!.dispatch('click'); }
+async function startPlaying({ player, nodes }: Pick<ReturnType<typeof fixture>, "player" | "nodes">) {
   await player.init();
-  await nodes.get('[data-music-toggle]').dispatch('click');
+  await nodes.get('[data-music-toggle]')!.dispatch('click');
   await player.audio.dispatch('loadedmetadata');
   assert.equal(player.audio.paused, false);
   player.audio.playCount = 0;
@@ -156,7 +159,7 @@ test('A -> B -> C before metadata permits only C to play and update the current 
   await player.audio.dispatch('loadedmetadata');
   assert.equal(player.audio.playCount, 1, 'only the final track may autoplay');
   assert.equal(pendingListeners, 1, 'earlier track listeners must be cancelled');
-  assert.equal(nodes.get('.music-track').textContent, 'Track C');
+  assert.equal(nodes.get('.music-track')!.textContent, 'Track C');
   assert.equal(player.audio.listenerCount('loadedmetadata'), 0);
   await player.audio.dispatch('loadedmetadata');
   assert.equal(player.audio.playCount, 1);
@@ -188,13 +191,13 @@ test('manual pause before metadata prevents the pending track from autoplaying',
   const { player, nodes, sessionStorage } = fixture();
   await startPlaying({ player, nodes });
   await next(nodes);
-  await nodes.get('[data-music-toggle]').dispatch('click');
+  await nodes.get('[data-music-toggle]')!.dispatch('click');
   assert.equal(player.audio.paused, true);
   assert.equal(sessionStorage.getItem('yuimi-radio-session-autoplay-v1'), '0');
   await player.audio.dispatch('loadedmetadata');
   assert.equal(player.audio.playCount, 0);
   assert.equal(player.audio.listenerCount('loadedmetadata'), 0);
-  assert.equal(nodes.get('[data-music-status]').textContent, '已暂停');
+  assert.equal(nodes.get('[data-music-status]')!.textContent, '已暂停');
 });
 
 test('skipping while already paused stays paused', async () => {
@@ -251,7 +254,7 @@ test('a superseded play rejection cannot change the new track state', async () =
   await oldMetadata;
   assert.equal(player.index, 1);
   assert.equal(player.pendingAutoplay, false);
-  assert.equal(nodes.get('[data-music-note]').textContent, '2 / 3');
+  assert.equal(nodes.get('[data-music-note]')!.textContent, '2 / 3');
   assert.equal(player.audio.listenerCount('loadedmetadata'), 1);
 });
 
@@ -275,7 +278,7 @@ test('repeated ClientRouter page loads do not duplicate controls or metadata cal
   await startPlaying({ player, nodes });
   await document.dispatch('astro:page-load'); // HOME -> BLOG
   await document.dispatch('astro:page-load'); // BLOG -> HOME
-  assert.equal(nodes.get('[data-music-next]').listenerCount('click'), 1);
+  assert.equal(nodes.get('[data-music-next]')!.listenerCount('click'), 1);
   assert.equal(player.audio.listenerCount('ended'), 1);
   await next(nodes);
   await next(nodes);
@@ -307,10 +310,10 @@ test('inserting a track preserves the selected file and its progress', async () 
     cachedState: { trackId: 'track-B.mp3', trackSrc: '/B.mp3', currentTime: 35, paused: true } });
   await player.init();
   assert.equal(player.tracks[player.index].src, '/B.mp3');
-  await nodes.get('[data-music-toggle]').dispatch('click');
+  await nodes.get('[data-music-toggle]')!.dispatch('click');
   await player.audio.dispatch('loadedmetadata');
   assert.equal(player.audio.currentTime, 35);
-  assert.equal(JSON.parse(cached.get('yuimi-radio-state-v1')).trackSrc, '/B.mp3');
+  assert.equal(JSON.parse(cached.get('yuimi-radio-state-v1') ?? '{}').trackSrc, '/B.mp3');
 });
 
 test('a cached file path overrides an obsolete positional ID', async () => {
@@ -361,7 +364,7 @@ for (const storageFailure of ['getter', 'getItem', 'setItem']) {
     assert.doesNotThrow(() => f.player.isAutoplayEnabled());
     assert.doesNotThrow(() => f.player.setAutoplayEnabled(true));
     await f.player.init();
-    await f.nodes.get('[data-music-toggle]').dispatch('click');
+    await f.nodes.get('[data-music-toggle]')!.dispatch('click');
     await f.player.audio.dispatch('loadedmetadata');
     assert.equal(f.player.audio.paused, false);
     await f.player.audio.dispatch('timeupdate');
@@ -369,16 +372,16 @@ for (const storageFailure of ['getter', 'getItem', 'setItem']) {
     await next(f.nodes);
     await f.player.audio.dispatch('loadedmetadata');
     assert.equal(f.player.audio.paused, false);
-    await f.nodes.get('[data-music-toggle]').dispatch('click');
+    await f.nodes.get('[data-music-toggle]')!.dispatch('click');
     assert.equal(f.player.audio.paused, true);
   });
 }
 
 test('autoplay preference notifications still fire when persistence fails', async () => {
   const { player, window } = fixture({ storageFailure: 'setItem' });
-  const events = [];
-  window.dispatchEvent = (event) => events.push(event);
+  const events: MockEvent[] = [];
+  window.dispatchEvent = (event) => { events.push(event); return true; };
   player.setAutoplayEnabled(true);
   assert.equal(events[0].type, 'yuimi:music-autoplay-change');
-  assert.equal(events[0].detail.enabled, true);
+  assert.equal(events[0].detail?.enabled, true);
 });

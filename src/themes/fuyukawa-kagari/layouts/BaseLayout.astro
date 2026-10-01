@@ -5,7 +5,7 @@ import mangaHref from "../styles/manga.css?url";
 import refreshPagesHref from "../styles/refresh-pages.css?url";
 import mangaPagesHref from "../styles/manga-pages.css?url";
 import { site } from "@/lib/site";
-import type { BlogPost } from "@/core/content/blog";
+import type { ArticleData } from "@/core/content/blog";
 import { Icon } from "astro-icon/components";
 import { ClientRouter } from "astro:transitions";
 import ThemeLongPressMenu from "@/core/themes/ThemeLongPressMenu.astro";
@@ -24,7 +24,7 @@ interface Props {
   redirectThemedNotFound?: boolean;
   isArticlePage?: boolean;
   needsMangaRuntime?: boolean;
-  article?: BlogPost["data"];
+  article?: ArticleData;
 }
 
 const {
@@ -236,9 +236,9 @@ const themedNotFoundRedirectScript = `(() => {
         <div class="footer-inner">
           <p class="footer-signature-line">© 2026 {site.author} / {site.name}</p>
           <p>二次元手账、开发记录、还有一点点宇宙回声。</p>
-          <p>🛰️ 旅行者一号：<time data-elapsed-from="1977-09-05T12:56:00Z" data-elapsed-mode="minute" dateTime={voyagerOneStart.toISOString()}>{formatInitialElapsed(voyagerOneStart, "minute")}</time> 仍在远航</p>
-          <p>🛰️ 旅行者二号：<time data-elapsed-from="1977-08-20T14:29:00Z" data-elapsed-mode="minute" dateTime={voyagerTwoStart.toISOString()}>{formatInitialElapsed(voyagerTwoStart, "minute")}</time> 仍在远航</p>
-          <p>💍 契约之吻：<time data-elapsed-from="2022-09-24T00:00:00+08:00" data-elapsed-mode="days" dateTime={contractStart.toISOString()}>{formatInitialElapsed(contractStart, "days")}</time>，第二季仍未响应</p>
+          <p>🛰️ 旅行者一号：<time data-elapsed-from="1977-09-05T12:56:00Z" data-elapsed-mode="minute" datetime={voyagerOneStart.toISOString()}>{formatInitialElapsed(voyagerOneStart, "minute")}</time> 仍在远航</p>
+          <p>🛰️ 旅行者二号：<time data-elapsed-from="1977-08-20T14:29:00Z" data-elapsed-mode="minute" datetime={voyagerTwoStart.toISOString()}>{formatInitialElapsed(voyagerTwoStart, "minute")}</time> 仍在远航</p>
+          <p>💍 契约之吻：<time data-elapsed-from="2022-09-24T00:00:00+08:00" data-elapsed-mode="days" datetime={contractStart.toISOString()}>{formatInitialElapsed(contractStart, "days")}</time>，第二季仍未响应</p>
           <p class="footer-status-line">sakura: falling / music: ready / tea: warm</p>
           <p class="manga-art-credit">插画与漫画：葉佐乃《儚いキミは猛攻をはじめる》 · 冬川篝主题手帖</p>
         </div>

@@ -1,6 +1,6 @@
 ---
 import { profileIdentity } from "@/core/data/profile";
-import type { BlogPost } from "@/core/content/blog";
+import type { ArticleData } from "@/core/content/blog";
 import { site } from "@/lib/site";
 import { kagariAssets } from "@/themes/fuyukawa-kagari/assets";
 
@@ -9,7 +9,7 @@ interface Props {
   description: string;
   canonical: URL;
   isArticlePage?: boolean;
-  article?: BlogPost["data"];
+  article?: ArticleData;
 }
 
 const { title, description, canonical, isArticlePage = false, article } = Astro.props;

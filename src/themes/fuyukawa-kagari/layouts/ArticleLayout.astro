@@ -1,4 +1,6 @@
 ---
+import type { MarkdownHeading } from "astro";
+import type { ArticleData } from "@/core/content/blog";
 import BaseLayout from "./BaseLayout.astro";
 import { categoryLabel } from "@/lib/site";
 import { getCanonicalPath } from "@/core/themes/registry";
@@ -7,6 +9,14 @@ import MangaArt from "../components/MangaArt.astro";
 import ArticleMobileToc from "../components/ArticleMobileToc.astro";
 import ArticleTocLinks from "../components/ArticleTocLinks.astro";
 import { site } from "@/lib/site";
+
+interface Props {
+  frontmatter: ArticleData;
+  headings?: MarkdownHeading[];
+  archiveHref?: string;
+  archiveLabel?: string;
+  footerLabel?: string;
+}
 
 const { frontmatter, archiveHref, archiveLabel, footerLabel } = Astro.props;
 const returnHref = archiveHref ?? "/blog/";

@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, readdir, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
@@ -66,7 +67,7 @@ test("cover attributes preserve full-resolution fallback, permit high-DPR select
 });
 
 test("publish exclusions only affect reviewed originals and cannot target public or an unrelated output folder", async () => {
-  await assert.rejects(() => prunePublishedMedia(new URL("../public/", import.meta.url)), /Refusing to prune/);
+  await assert.rejects(() => prunePublishedMedia(fileURLToPath(new URL("../public/", import.meta.url))), /Refusing to prune/);
   assert.equal(new Set(excludedPublicMedia).size, excludedPublicMedia.length);
   assert.ok(excludedPublicMedia.every(name => !/\.\.|^\//.test(name)));
   assert.ok(excludedPublicMedia.every(name => !/solo-v1|blade-v2|\.mp4$|\.mp3$|readme\//.test(name)));

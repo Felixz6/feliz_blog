@@ -47,7 +47,7 @@ test("project cards retain their existing identities while sharing names and lin
     assert.ok(card);
     assert.equal(card.title, projectMetadata[projectId].name);
     assert.equal(card.href, projectMetadata[projectId].href);
-    assert.ok(card.details.includes(projectId));
+    assert.ok(card.details.some((detail: string) => detail === projectId));
   }
 });
 

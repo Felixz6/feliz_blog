@@ -123,14 +123,14 @@ test("SRC research and recon projects are listed under Web Security", () => {
 });
 
 test("Web Development category and Personal Blog placeholder are removed", () => {
-  assert.equal(projectTechLines.some((line) => line.key === "web-development"), false);
-  assert.equal(projectEntries.some((project) => project.id === "personal-blog"), false);
-  assert.equal(projectEntries.some((project) => project.line === "web-development"), false);
+  assert.equal(projectTechLines.map((line): string => line.key).includes("web-development"), false);
+  assert.equal(projectEntries.map((project): string => project.id).includes("personal-blog"), false);
+  assert.equal(projectEntries.map((project): string => project.line).includes("web-development"), false);
 });
 
 test("empty AI project placeholder and filter are not published", () => {
-  assert.equal(projectEntries.some((project) => project.id === "ai-experiments"), false);
-  assert.equal(projectTechLines.some((line) => line.key === "ai"), false);
+  assert.equal(projectEntries.map((project): string => project.id).includes("ai-experiments"), false);
+  assert.equal(projectTechLines.map((line): string => line.key).includes("ai"), false);
 });
 
 test("Projects category summary row is removed while project filters remain", () => {

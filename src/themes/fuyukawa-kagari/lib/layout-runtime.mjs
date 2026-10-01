@@ -4,6 +4,9 @@ import { isNativeContextTarget } from "../../../core/themes/context-menu-routing
 import { createSakuraController } from "./sakura-runtime.mjs";
 import { installMusicPlayer } from "./music-player.mjs";
 
+/**
+ * @param {{ documentRef?: Document, windowRef?: Window & typeof globalThis, musicPlayer?: Pick<ReturnType<typeof installMusicPlayer>, "isAutoplayEnabled" | "setAutoplayEnabled">, debugSakura?: boolean }} options
+ */
 export function installContextMenu({ documentRef = document, windowRef = window, musicPlayer, debugSakura = false } = {}) {
   const document = documentRef;
   const window = windowRef;
