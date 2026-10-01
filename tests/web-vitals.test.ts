@@ -14,7 +14,7 @@ const source = (relativePath: string) => readFileSync(fileURLToPath(new URL(`../
 
 function createHarness(endpoint = "", deliver?: (url: string, body: string) => Promise<any>, path = "/blog/example/") {
   const listeners = new Map<string, Set<(event?: any) => void>>();
-  const callbacks: Record<string, (metric: any) => void> = {};
+  const callbacks: Record<string, Record<string, (metric: any) => void>> = {};
   const registrations: Array<{ name: string; options: any }> = [];
   const sent: Array<{ endpoint: string; body: string }> = [];
   const pendingDeliveries: Promise<any>[] = [];
@@ -27,6 +27,9 @@ function createHarness(endpoint = "", deliver?: (url: string, body: string) => P
     CustomEvent: class { type: string; detail: any; constructor(type: string, init: any) { this.type = type; this.detail = init.detail; } },
     location: { pathname: path, search: "?q=private", hash: "#chapter" },
     innerWidth: 390,
+    performance: { now: () => 0, timeOrigin: Date.parse("2026-09-28T00:00:00Z") },
+    PerformanceObserver: { supportedEntryTypes: ["soft-navigation"] },
+    PerformanceSoftNavigation: class { getLargestInteractionContentfulPaint() {} },
     navigator: { connection: { effectiveType: "4g", saveData: false }, sendBeacon: (url: string, body: string) => {
       sent.push({ endpoint: url, body });
       if (deliver) pendingDeliveries.push(deliver(url, body));
@@ -43,11 +46,11 @@ function createHarness(endpoint = "", deliver?: (url: string, body: string) => P
     removeEventListener: win.removeEventListener
   };
   const register = <T extends Metric>(name: string) => (callback: (metric: T) => void, options?: ReportOpts) => {
-    callbacks[name] = callback;
+    (callbacks[name] ||= {})[options?.reportSoftNavs ? "soft-navigation" : "document"] = callback;
     registrations.push({ name, options });
   };
   const webVitals = { onLCP: register<LCPMetric>("LCP"), onINP: register<INPMetric>("INP"), onCLS: register<CLSMetric>("CLS") };
-  const emit = (name: string, value: number, rating?: string, metadata: Record<string, any> = {}) => callbacks[name]?.({
+  const emit = (name: string, value: number, rating?: string, metadata: Record<string, any> = {}) => callbacks[name]?.[metadata.navigationType === "soft-navigation" ? "soft-navigation" : "document"]?.({
     name, value, rating: rating || "good", id: `${name.toLowerCase()}-sample-id`, navigationType: "navigate", ...metadata
   });
   const fire = (name: string, target: Map<string, Set<(event?: any) => void>> = listeners) => {
@@ -60,8 +63,9 @@ function createHarness(endpoint = "", deliver?: (url: string, body: string) => P
 
 test("registers official web-vitals callbacks and publishes mobile metric snapshots", () => {
   const h = createHarness();
-  assert.deepEqual(h.registrations.map(({ name }) => name), ["LCP", "INP", "CLS"]);
-  assert.ok(h.registrations.every(({ options }) => options.reportAllChanges === true && options.reportSoftNavs === true));
+  assert.deepEqual(h.registrations.map(({ name }) => name), ["LCP", "LCP", "INP", "INP", "CLS", "CLS"]);
+  assert.ok(h.registrations.every(({ options }) => options.reportAllChanges === true));
+  assert.deepEqual(h.registrations.map(({ options }) => options.reportSoftNavs), [false, true, false, true, false, true]);
 
   h.emit("LCP", 2471);
   h.emit("INP", 176);
@@ -82,7 +86,7 @@ test("keeps local snapshots and emits no request when the endpoint is empty", ()
   h.hide();
   assert.equal(h.sent.length, 0);
   assert.equal(h.win.__yuimiWebVitals.metrics.LCP.value, 1890);
-  assert.equal(h.win.__yuimiWebVitals.metrics.CLS.value, 0);
+  assert.equal(h.win.__yuimiWebVitals.metrics.CLS, undefined);
   h.cleanup();
 });
 
@@ -102,7 +106,7 @@ test("sends later hidden-view metric revisions once with the original navigation
   const evaluated = evaluateMobileReports([first, updated], { minimumSamples: 1 });
   assert.equal(evaluated.mobileVisits, 1);
   assert.deepEqual(evaluated.results.find(({ name }) => name === "LCP"), {
-    path: "/blog/example/", name: "LCP", count: 1, p75: 2200, target: 2500, status: "PASS"
+    path: "/blog/example/", measurementScope: "document", name: "LCP", count: 1, p75: 2200, target: 2500, status: "PASS"
   });
   h.cleanup();
 });
@@ -120,7 +124,7 @@ test("finalizes and resets route attribution across Astro soft navigations", () 
   // The old navigation's final LCP callback arrives after Astro activated the
   // next route; metric identity must keep it on the original page view.
   h.emit("LCP", 2400, undefined, {
-    id: "lcp-old", navigationType: "soft-navigation", navigationId: 21,
+    id: "lcp-old", navigationType: "navigate", navigationId: 21,
     navigationURL: "https://example.test/blog/example/", navigationStartTime: 0
   });
   h.emit("INP", 176, undefined, {
@@ -139,7 +143,8 @@ test("finalizes and resets route attribution across Astro soft navigations", () 
   assert.equal(lateOldView.navigationId, JSON.parse(h.sent[0].body).navigationId);
   const nextView = JSON.parse(h.sent[2].body);
   assert.equal(nextView.path, "/projects/");
-  assert.deepEqual([nextView.metrics.LCP.value, nextView.metrics.INP.value, nextView.metrics.CLS.value], [3100, 176, 0]);
+  assert.deepEqual([nextView.metrics.LCP.value, nextView.metrics.INP.value, nextView.metrics.CLS], [3100, 176, undefined]);
+  assert.equal(nextView.measurementScope, "soft-navigation");
   h.cleanup();
 });
 
@@ -175,28 +180,29 @@ test("delivers mobile reports to an HTTP receiver and computes route-level p75",
       const h = createHarness(endpoint, (url, body) => fetch(url, {
         method: "POST", headers: { "content-type": "text/plain;charset=UTF-8" }, body
       }), path);
-      h.emit("LCP", values[0]);
+      h.emit("LCP", values[0] - 200);
       h.emit("INP", values[1]);
       h.emit("CLS", values[2]);
       h.hide();
+      h.emit("LCP", values[0]); // A later revision must update, not duplicate, the visit.
       return h;
     });
     const responses = await Promise.all(harnesses.flatMap((h) => h.pendingDeliveries));
-    assert.deepEqual(responses.map((response) => response.status), [204, 204]);
-    assert.equal(received.length, 2);
-    assert.deepEqual(received.map((report) => report.path).sort(), ["/", "/slow/"]);
+    assert.deepEqual(responses.map((response) => response.status), [204, 204, 204, 204]);
+    assert.equal(received.length, 4);
+    assert.deepEqual(received.map((report) => report.path).sort(), ["/", "/", "/slow/", "/slow/"]);
     assert.ok(received.every((report) => report.deviceClass === "mobile" && report.schema === "yuimi-web-vitals/v2"));
 
     const reportFile = join(tempDirectory, "reports.json");
     writeFileSync(reportFile, JSON.stringify(received));
     const cli = spawnSync(process.execPath, ["scripts/check-vitals-report.mjs", reportFile, "--min-samples=1"], { encoding: "utf8" });
     assert.equal(cli.status, 1, cli.stderr);
-    assert.match(cli.stdout, /PASS \/ LCP: p75 2200 ms \/ 2500 ms \(n=1\)/);
-    assert.match(cli.stdout, /PASS \/ INP: p75 180 ms \/ 200 ms \(n=1\)/);
-    assert.match(cli.stdout, /PASS \/ CLS: p75 0\.040 \/ 0\.1 \(n=1\)/);
-    assert.match(cli.stdout, /FAIL \/slow\/ LCP: p75 2800 ms \/ 2500 ms \(n=1\)/);
-    assert.match(cli.stdout, /FAIL \/slow\/ INP: p75 240 ms \/ 200 ms \(n=1\)/);
-    assert.match(cli.stdout, /FAIL \/slow\/ CLS: p75 0\.120 \/ 0\.1 \(n=1\)/);
+    assert.match(cli.stdout, /PASS \/ \[document\] LCP: p75 2200 ms \/ 2500 ms \(n=1\)/);
+    assert.match(cli.stdout, /PASS \/ \[document\] INP: p75 180 ms \/ 200 ms \(n=1\)/);
+    assert.match(cli.stdout, /PASS \/ \[document\] CLS: p75 0\.040 \/ 0\.1 \(n=1\)/);
+    assert.match(cli.stdout, /FAIL \/slow\/ \[document\] LCP: p75 2800 ms \/ 2500 ms \(n=1\)/);
+    assert.match(cli.stdout, /FAIL \/slow\/ \[document\] INP: p75 240 ms \/ 200 ms \(n=1\)/);
+    assert.match(cli.stdout, /FAIL \/slow\/ \[document\] CLS: p75 0\.120 \/ 0\.1 \(n=1\)/);
 
     const rows = evaluateMobileReports(received, { minimumSamples: 1 }).results;
     assert.deepEqual(rows.map(({ path, name, status }) => [path, name, status]), [
@@ -210,15 +216,18 @@ test("delivers mobile reports to an HTTP receiver and computes route-level p75",
   }
 });
 
+function report(navigationId: string, revision: number, values: Record<string, number>, path = "/", deviceClass = "mobile") {
+  return { schema: "yuimi-web-vitals/v2", documentId: `document-${navigationId}`, navigationId, revision,
+    measurementScope: "document", navigationStartedAt: "2026-09-28T00:00:00Z", navigationStartTime: 0,
+    path, deviceClass, metrics: Object.fromEntries(Object.entries(values).map(([name, value]) => [name,
+      { value, metricId: `${navigationId}-${name}`, navigationType: "navigate", navigationPath: path, navigationStartTime: 0 }])) };
+}
+
 test("evaluates nearest-rank mobile p75 by route and leaves sparse samples inconclusive", () => {
-  const rows = [1, 2, 3, 4].map((value) => ({
-    path: "/",
-    deviceClass: "mobile",
-    metrics: { LCP: value * 1000, INP: value * 80, CLS: value / 100 }
-  }));
-  rows.push({ path: "/desktop-only/", deviceClass: "desktop", metrics: { LCP: 1, INP: 1, CLS: 0 } } as any);
-  const result = evaluateMobileReports(rows, { minimumSamples: 4 });
-  assert.deepEqual(result.results.map(({ name, p75, status }) => [name, p75, status]), [
+  const rows = [1, 2, 3, 4].map((value) => report(`visit-${value}`, 1, { LCP: value * 1000, INP: value * 80, CLS: value / 100 }));
+  rows.push(report("desktop", 1, { LCP: 1, INP: 1, CLS: 0 }, "/desktop-only/", "desktop"));
+  const evaluated = evaluateMobileReports(rows, { minimumSamples: 4 });
+  assert.deepEqual(evaluated.results.map(({ name, p75, status }) => [name, p75, status]), [
     ["CLS", 0.03, "PASS"], ["INP", 240, "FAIL"], ["LCP", 3000, "FAIL"]
   ]);
   assert.equal(webVitalsTargets.LCP, 2500);
@@ -226,15 +235,11 @@ test("evaluates nearest-rank mobile p75 by route and leaves sparse samples incon
 });
 
 test("uses only the highest revision for each navigation when calculating p75", () => {
-  const reports = [
-    { navigationId: "visit-1", revision: 1, path: "/", deviceClass: "mobile", metrics: { LCP: 1000 } },
-    { navigationId: "visit-1", revision: 3, path: "/", deviceClass: "mobile", metrics: { LCP: 5000 } },
-    { navigationId: "visit-1", revision: 2, path: "/", deviceClass: "mobile", metrics: { LCP: 2000 } },
-    { navigationId: "visit-2", revision: 1, path: "/", deviceClass: "mobile", metrics: { LCP: 2400 } }
-  ];
+  const reports = [report("visit-1", 1, { LCP: 1000 }), report("visit-1", 3, { LCP: 5000 }),
+    report("visit-1", 2, { LCP: 2000 }), report("visit-2", 1, { LCP: 2400 })];
   const evaluated = evaluateMobileReports(reports, { minimumSamples: 2 });
   assert.equal(evaluated.mobileVisits, 2);
-  assert.deepEqual(evaluated.results.map(({ name, count, p75, status }) => [name, count, p75, status]), [
+  assert.deepEqual(evaluated.results.filter(({ name }) => name === "LCP").map(({ name, count, p75, status }) => [name, count, p75, status]), [
     ["LCP", 2, 5000, "FAIL"]
   ]);
 });
