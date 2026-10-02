@@ -750,3 +750,98 @@ test("home hero injected windows own independent mount state without modifying g
   a.mount()(); assert.equal(b.window.__yuimiHeroCleanup, before); assert.equal(b.timers.size, 2);
   b.cleanup(); a.cleanup();
 });
+
+// Deliberate saved-callback replay tests the stronger instance contract, not browser cancellation.
+function heroLifetimeFixture() {
+  const f = homeHeroFixture({ hash: "" });
+  const calls = { dom: 0, timeout: 0, clearTimeout: 0, raf: 0, cancelRAF: 0, scroll: 0, navigation: 0, preventDefault: 0, observer: 0, observe: 0, disconnect: 0 };
+  const saved = { timeout: [...f.timers.values()].map(t => () => t.callback()), RAF: [...f.frames.values()].map(fn => () => fn(16)), event: [], IO: [] };
+  const watched = [];
+  const watch = nodes => nodes.forEach(node => {
+    watched.push(node); let text = node.textContent;
+    Object.defineProperty(node, "textContent", { get: () => text, set(value) { calls.dom++; text = value; } });
+    const set = node.style.setProperty;
+    node.style.setProperty = function(...args) { calls.dom++; return set.apply(this, args); };
+    for (const key of ["add", "remove", "toggle"]) {
+      const method = node.classList[key];
+      node.classList[key] = function(...args) { calls.dom++; return method.apply(this, args); };
+    }
+  });
+  watch([f.hero, f.terminal, f.name, f.avatar, f.bubble]);
+  for (const [method, key] of [["setTimeout", "timeout"], ["clearTimeout", "clearTimeout"], ["requestAnimationFrame", "raf"], ["cancelAnimationFrame", "cancelRAF"], ["scrollTo", "scroll"]]) {
+    const original = f.window[method];
+    f.window[method] = function(...args) {
+      calls[key]++;
+      if (method === "setTimeout") saved.timeout.push(() => args[0]());
+      if (method === "requestAnimationFrame") saved.RAF.push(() => args[0](16));
+      return original.apply(this, args);
+    };
+  }
+  for (const method of ["assign", "replace"]) f.window.location[method] = () => { calls.navigation++; };
+  const Observer = f.window.IntersectionObserver;
+  f.window.IntersectionObserver = class extends Observer {
+    constructor(...args) { super(...args); calls.observer++; }
+    observe(...args) { calls.observe++; return super.observe(...args); }
+    disconnect(...args) { calls.disconnect++; return super.disconnect(...args); }
+  };
+  const event = deltaY => ({ deltaY, clientX: 90, preventDefault() { calls.preventDefault++; } });
+  for (const target of [f.window, f.document, f.avatar]) {
+    for (const [type, handlers] of target.events) for (const handler of handlers) {
+      saved.event.push(() => handler(event(200)));
+      if (type === "wheel") saved.event.push(() => handler(event(-60)));
+    }
+  }
+  for (const isIntersecting of [false, true]) saved.IO.push(() => f.observer.callback([{ target: f.hero, isIntersecting }]));
+  f.window.dispatch("wheel", event(200));
+  const settle = [...f.timers.entries()].find(([, t]) => t.delay === 260);
+  f.timers.delete(settle[0]); settle[1].callback();
+  f.avatar.dispatch("pointermove", event(0)); f.avatar.dispatch("dblclick", event(0));
+  const snapshot = () => ({
+    calls: { ...calls }, timers: [...f.timers.keys()], frames: [...f.frames.keys()], cleanup: f.window.__yuimiHeroCleanup,
+    dom: watched.map(n => ({ text: n.textContent, styles: { ...n.styles }, classes: ["is-docked", "is-pulling", "is-poked", "is-visible"].map(c => n.classList.contains(c)) })),
+    listeners: [f.window, f.document, f.avatar].map(n => [...n.events].map(([type, handlers]) => [type, handlers.size]))
+  });
+  const capture = () => Object.fromEntries(Object.entries(saved).map(([key, callbacks]) => [key, callbacks.slice()]));
+  const replay = (callbacks, type) => (type ? callbacks[type] : Object.values(callbacks).flat()).forEach(fn => fn());
+  const replaceRoots = () => {
+    const fresh = homeHeroFixture(); fresh.cleanup(); watch([fresh.hero, fresh.terminal, fresh.name, fresh.avatar, fresh.bubble]);
+    f.document.querySelector = selector => ({ "[data-hero-stage]": fresh.stage, "[data-terminal-typing]": fresh.terminal,
+      "[data-name-typing]": fresh.name, "[data-poke-avatar]": fresh.avatar, "[data-poke-bubble]": fresh.bubble })[selector] ?? null;
+    return fresh;
+  };
+  return { ...f, calls, snapshot, capture, replay, replaceRoots };
+}
+
+for (const type of ["timeout", "RAF", "event", "IO"]) {
+  test(`home hero disposed ${type} replay has zero DOM, resource and interaction effects`, () => {
+    const f = heroLifetimeFixture(), callbacks = f.capture();
+    assert.ok(callbacks[type].length > 0); f.cleanup(); f.cleanup(); const before = f.snapshot();
+    f.replay(callbacks, type); assert.deepEqual(f.snapshot(), before); assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0);
+  });
+}
+
+test("home hero cleanup is idempotent before replay and keeps external resources owned elsewhere", () => {
+  const f = heroLifetimeFixture(), callbacks = f.capture(), external = () => {};
+  const timer = f.window.setTimeout(external, 99), frame = f.window.requestAnimationFrame(external);
+  f.window.addEventListener("scroll", external); f.document.addEventListener("visibilitychange", external);
+  f.cleanup(); const once = f.snapshot(); f.cleanup(); assert.deepEqual(f.snapshot(), once);
+  f.replay(callbacks); assert.deepEqual(f.snapshot(), once);
+  assert.deepEqual([...f.timers.keys()], [timer]); assert.deepEqual([...f.frames.keys()], [frame]);
+  assert.ok(f.window.events.get("scroll").has(external)); assert.ok(f.document.events.get("visibilitychange").has(external));
+});
+
+for (const clearFirst of [true, false]) {
+  test(`home hero stale A callbacks and cleanup preserve live B (${clearFirst ? 'explicit cleanup' : 'replacement mount'})`, () => {
+    const f = heroLifetimeFixture(), callbacks = f.capture(), oldCleanup = f.cleanup;
+    if (clearFirst) oldCleanup();
+    const fresh = f.replaceRoots(), cleanupB = f.mount();
+    assert.notEqual(cleanupB, oldCleanup); assert.equal(f.window.__yuimiHeroCleanup, cleanupB);
+    const before = f.snapshot(); oldCleanup(); oldCleanup(); f.replay(callbacks); assert.deepEqual(f.snapshot(), before);
+    const zero = [...f.timers.entries()].filter(([, t]) => t.delay === 0);
+    assert.equal(zero.length, 2); zero.forEach(([id, t]) => { f.timers.delete(id); t.callback(); });
+    const tick = [...f.timers.entries()].find(([, t]) => t.delay === 58);
+    assert.ok(tick); f.timers.delete(tick[0]); tick[1].callback(); assert.equal(fresh.terminal.textContent, 'p');
+    const bTime = f.snapshot(); f.replay(callbacks); oldCleanup(); assert.deepEqual(f.snapshot(), bTime);
+    cleanupB(); cleanupB(); assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0);
+  });
+}

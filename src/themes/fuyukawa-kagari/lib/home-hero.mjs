@@ -4,8 +4,13 @@ export function mountHomeHero({
   now: nowSource = () => Date.now()
 } = {}) {
     window.__yuimiHeroCleanup?.();
+    let disposed = false;
+    let typingActive = false;
     const heroCleanupTasks = [];
     window.__yuimiHeroCleanup = () => {
+      if (disposed) return;
+      disposed = true;
+      typingActive = false;
       heroCleanupTasks.splice(0).forEach((cleanup) => cleanup());
     };
 
@@ -38,7 +43,6 @@ export function mountHomeHero({
     let pokeClientX = 0;
     const typingTimers = new Set();
     const typingLoops = [];
-    let typingActive = false;
     const heroRect = hero?.getBoundingClientRect();
     let heroIsVisible = Boolean(heroRect && heroRect.bottom > 0 && heroRect.top < (window.innerHeight || 0));
     let heroVisibilityObserver;
@@ -46,6 +50,7 @@ export function mountHomeHero({
     const setTypingTimer = (callback, delay) => {
       if (!typingActive) return;
       const timer = window.setTimeout(() => {
+        if (disposed) return;
         typingTimers.delete(timer);
         if (!typingActive) return;
         callback();
@@ -54,6 +59,7 @@ export function mountHomeHero({
     };
 
     const syncTypingActivity = () => {
+      if (disposed) return;
       const shouldRun = heroIsVisible && document.visibilityState === "visible";
       if (typingActive === shouldRun) return;
       typingActive = shouldRun;
@@ -114,7 +120,10 @@ export function mountHomeHero({
     }
 
     const initialScrollFrame = !window.location.hash
-      ? window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }))
+      ? window.requestAnimationFrame(() => {
+        if (disposed) return;
+        window.scrollTo({ top: 0, left: 0 });
+      })
       : 0;
     heroCleanupTasks.push(() => window.cancelAnimationFrame(initialScrollFrame));
 
@@ -133,6 +142,7 @@ export function mountHomeHero({
       pendingProgress = progress;
       if (progressFrame) return;
       progressFrame = window.requestAnimationFrame(() => {
+        if (disposed) return;
         progressFrame = 0;
         setProgress(pendingProgress);
       });
@@ -149,6 +159,7 @@ export function mountHomeHero({
     };
 
     const settlePull = () => {
+      if (disposed) return;
       if (state !== "pulling") return;
 
       if (pull / pullDistance >= dockThreshold) {
@@ -172,11 +183,13 @@ export function mountHomeHero({
 
       window.clearTimeout(releaseTimer);
       releaseTimer = window.setTimeout(() => {
+        if (disposed) return;
         state = "passed";
       }, releaseDelay);
     };
 
     const handleHeroWheel = (event) => {
+      if (disposed) return;
       if (!stage || !hero) return;
 
       const atHeroTop = window.scrollY <= 2 && stage.getBoundingClientRect().top >= -2;
@@ -254,8 +267,10 @@ export function mountHomeHero({
     };
 
     const handleHeroScroll = () => {
+      if (disposed) return;
       if (heroScrollFrame) return;
       heroScrollFrame = window.requestAnimationFrame(() => {
+        if (disposed) return;
         heroScrollFrame = 0;
         updateHeroScroll();
       });
@@ -266,6 +281,7 @@ export function mountHomeHero({
 
     if (hero && typeof window.IntersectionObserver === "function") {
       heroVisibilityObserver = new window.IntersectionObserver((entries) => {
+        if (disposed) return;
         const entry = entries.find((candidate) => candidate.target === hero) ?? entries[0];
         if (!entry) return;
         heroIsVisible = entry.isIntersecting;
@@ -292,14 +308,17 @@ export function mountHomeHero({
       pokeBubble.classList.add("is-visible");
       window.clearTimeout(bubbleTimer);
       bubbleTimer = window.setTimeout(() => {
+        if (disposed) return;
         pokeBubble.classList.remove("is-visible");
       }, 1700);
     };
 
     const handlePokeMove = (event) => {
+      if (disposed) return;
       pokeClientX = event.clientX;
       if (pokePointerFrame) return;
       pokePointerFrame = window.requestAnimationFrame(() => {
+        if (disposed) return;
         pokePointerFrame = 0;
         const rect = pokeAvatar.getBoundingClientRect();
         const offset = ((pokeClientX - rect.left) / rect.width - 0.5) * 2;
@@ -308,12 +327,14 @@ export function mountHomeHero({
     };
 
     const handlePokeLeave = () => {
+      if (disposed) return;
       window.cancelAnimationFrame(pokePointerFrame);
       pokePointerFrame = 0;
       pokeAvatar.style.setProperty("--flower-sway", "0deg");
     };
 
     const handlePokeDoubleClick = (event) => {
+      if (disposed) return;
       event.preventDefault();
       const now = nowSource();
       if (now - lastPokeAt < 10000) {
@@ -327,7 +348,10 @@ export function mountHomeHero({
       pokeAvatar.classList.add("is-poked");
       showPokeBubble("\u6233\u5230\u4e86~");
       window.clearTimeout(pokeTimer);
-      pokeTimer = window.setTimeout(() => pokeAvatar.classList.remove("is-poked"), 720);
+      pokeTimer = window.setTimeout(() => {
+        if (disposed) return;
+        pokeAvatar.classList.remove("is-poked");
+      }, 720);
     };
 
     pokeAvatar?.addEventListener("pointermove", handlePokeMove);

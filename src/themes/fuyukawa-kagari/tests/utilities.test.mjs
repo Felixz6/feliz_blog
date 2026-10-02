@@ -305,8 +305,8 @@ test("article image viewer stays out of homepage code and loads only when its di
 
 test("home hero scroll and pointer handlers batch layout work through requestAnimationFrame", () => {
   const homeHero = read("lib/home-hero.mjs");
-  assert.match(homeHero, /const handleHeroScroll = \(\) => \{\s*if \(heroScrollFrame\) return;\s*heroScrollFrame = window\.requestAnimationFrame/);
-  assert.match(homeHero, /const handlePokeMove = \(event\) => \{\s*pokeClientX = event\.clientX;\s*if \(pokePointerFrame\) return;\s*pokePointerFrame = window\.requestAnimationFrame/);
+  assert.match(homeHero, /const handleHeroScroll = \(\) => \{\s*if \(disposed\) return;\s*if \(heroScrollFrame\) return;\s*heroScrollFrame = window\.requestAnimationFrame/);
+  assert.match(homeHero, /const handlePokeMove = \(event\) => \{\s*if \(disposed\) return;\s*pokeClientX = event\.clientX;\s*if \(pokePointerFrame\) return;\s*pokePointerFrame = window\.requestAnimationFrame/);
 });
 
 test("music manifest and audio wait for music-dock intent, then playback loads one track", async () => {
