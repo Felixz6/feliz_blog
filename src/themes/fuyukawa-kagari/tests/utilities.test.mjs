@@ -303,10 +303,8 @@ test("article image viewer stays out of homepage code and loads only when its di
   assert.match(layoutRuntime, /loadArticleImageViewer\(\);\s*document\.addEventListener\("astro:page-load", loadArticleImageViewer\);/);
 });
 
-test("home scroll handlers batch layout work through requestAnimationFrame", () => {
-  const homeRuntime = read("lib/home-runtime.mjs");
+test("home hero scroll and pointer handlers batch layout work through requestAnimationFrame", () => {
   const homeHero = read("lib/home-hero.mjs");
-  assert.match(homeRuntime, /const onScroll = \(\) => \{\s*if \(disposed\) return;\s*if \(state\.scrollFrame\) return;\s*state\.scrollFrame = window\.requestAnimationFrame/);
   assert.match(homeHero, /const handleHeroScroll = \(\) => \{\s*if \(heroScrollFrame\) return;\s*heroScrollFrame = window\.requestAnimationFrame/);
   assert.match(homeHero, /const handlePokeMove = \(event\) => \{\s*pokeClientX = event\.clientX;\s*if \(pokePointerFrame\) return;\s*pokePointerFrame = window\.requestAnimationFrame/);
 });
@@ -422,255 +420,121 @@ test("music manifest and audio wait for music-dock intent, then playback loads o
   for (const controller of ["controlAbort", "audioAbort", "unlockAbort"]) player[controller]?.abort();
 });
 
-// Direct-import fixtures for the page-owned homepage runtime (no source extraction/VM).
+// Direct-import clock fixtures; no source extraction/VM or animation dependencies.
 function homeFixture(config = {}) {
-  const document = new Element(), window = new Element(), stage = new Element(), canvas = new Element();
-  const date = new Element(), time = new Element();
-  const timers = new Map(), frames = new Map(), observers = [], calls = [];
-  const delays = [], cancelled = [];
-  let id = 0, elapsed = 0;
-  let currentDate = new Date('2026-10-02T03:04:05Z');
-  let rect = { width: 800, height: 600, top: 1100, bottom: 1700 };
-  document.documentElement = { dataset: { yuimiPerformance: config.profile ?? 'full' }, clientHeight: 1000, scrollTop: 0 };
-  document.body = { scrollTop: 0 };
+  const document = new Element(), window = new Element(), stage = new Element();
+  const date = new Element(), time = new Element(), timers = new Map(), delays = [];
+  const nodes = { '[data-home-clock]': stage, '[data-home-date]': date, '[data-home-time]': time };
+  let id = 0, currentDate = new Date('2026-10-02T03:04:05Z');
   document.visibilityState = config.hidden ? 'hidden' : 'visible';
-  const nodes = { '[data-tag-rain]': stage, '[data-tag-rain-canvas]': canvas, '[data-home-date]': date, '[data-home-time]': time };
-  document.querySelector = (selector) => nodes[selector] ?? null;
-  stage.dataset = { tags: config.rawTags ?? JSON.stringify(config.tags ?? []) };
-  stage.getBoundingClientRect = () => rect;
-  const ctx = new Proxy({}, {
-    get(target, key) {
-      if (key === 'measureText') return (text) => { calls.push(['measureText', text]); return { width: text.length * 9 }; };
-      if (['save', 'restore', 'setTransform', 'clearRect', 'translate', 'rotate', 'beginPath', 'roundRect', 'fill', 'stroke', 'fillText'].includes(key)) {
-        return (...args) => calls.push([key, ...args]);
-      }
-      return target[key];
-    },
-    set(target, key, value) { target[key] = value; calls.push(['set', key, value]); return true; }
-  });
-  canvas.getContext = (kind) => { assert.equal(kind, '2d'); return config.noContext ? null : ctx; };
-  Object.assign(window, {
-    innerHeight: 1000, devicePixelRatio: config.dpr ?? 2, scrollY: 0,
-    performance: { now: () => elapsed },
-    matchMedia: (query) => { assert.equal(query, '(prefers-reduced-motion: reduce)'); return { matches: !!config.reduced }; },
-    setTimeout: (fn, delay) => { delays.push(delay); timers.set(++id, fn); return id; },
-    clearTimeout: (token) => timers.delete(token),
-    requestAnimationFrame: (fn) => { frames.set(++id, fn); return id; },
-    cancelAnimationFrame: (token) => { cancelled.push(token); frames.delete(token); }
-  });
-  if (!config.noObserver) window.IntersectionObserver = class {
-    constructor(callback, options) { this.callback = callback; this.options = options; this.disconnected = false; observers.push(this); }
-    observe(target) { this.target = target; }
-    disconnect() { this.disconnected = true; }
+  document.querySelector = (selector) => {
+    assert.ok(!selector.includes('canvas'), 'clock must not look for Canvas');
+    return nodes[selector] ?? null;
   };
+  window.setTimeout = (fn, delay) => { delays.push(delay); timers.set(++id, fn); return id; };
+  window.clearTimeout = (token) => timers.delete(token);
+  for (const key of ['requestAnimationFrame', 'cancelAnimationFrame', 'IntersectionObserver', 'performance', 'matchMedia']) {
+    Object.defineProperty(window, key, { get() { throw new Error(`clock must not access ${key}`); } });
+  }
   for (const selector of config.missing ?? []) delete nodes[selector];
-  let cleanup;
-  const mount = () => (cleanup = mountHomeRuntime({ document, window, now: () => currentDate, random: () => 0.5 }));
-  const frame = (timestamp = elapsed + 16.67) => {
-    elapsed = timestamp;
-    const pending = [...frames.values()]; frames.clear(); pending.forEach((fn) => fn(timestamp));
-  };
-  const fireClock = () => { const pending = [...timers.values()]; timers.clear(); pending.forEach((fn) => fn()); };
-  const inView = () => { rect = { ...rect, top: 300, bottom: 900 }; window.scrollY = 100; };
-  const start = () => { inView(); window.dispatch('scroll'); frame(); };
-  if (!config.noMount) mount();
-  return { document, window, stage, canvas, date, time, ctx, calls, nodes, timers, frames, observers, delays, cancelled,
-    mount, frame, fireClock, inView, start, stop: () => cleanup(), setDate: (value) => { currentDate = value; },
-    setRect: (value) => { rect = { ...rect, ...value }; } };
+  const mount = () => mountHomeRuntime({ document, window, now: () => currentDate });
+  const cleanup = config.noMount ? () => {} : mount();
+  const fireClock = () => { const pending = [...timers.values()]; timers.clear(); pending.forEach(fn => fn()); };
+  return { document, window, stage, date, time, nodes, timers, delays, mount, cleanup, fireClock,
+    setDate: (value) => { currentDate = value; } };
 }
-const ownedListeners = (f) => [
-  f.document.events.get('visibilitychange')?.size ?? 0,
-  f.window.events.get('scroll')?.size ?? 0,
-  f.window.events.get('resize')?.size ?? 0,
-  f.window.events.get('pagehide')?.size ?? 0
-];
-const homeSnapshot = (f) => JSON.stringify({ calls: f.calls, date: f.date.textContent, time: f.time.textContent,
-  width: f.canvas.width, height: f.canvas.height, styles: f.canvas.style,
-  raining: f.stage.classList.contains('is-raining'), fading: f.stage.classList.contains('is-fading'), timers: f.timers.size, frames: f.frames.size });
+const clockListeners = (f) => f.document.events.get('visibilitychange')?.size ?? 0;
+const clockSnapshot = (f) => ({ date: f.date.textContent, time: f.time.textContent, timers: f.timers.size, listeners: clockListeners(f) });
 
-test('homepage cold mount preserves empty tags, clock format, dimensions and observer thresholds', () => {
-  const f = homeFixture();
-  assert.equal(f.date.textContent, new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' }).format(new Date('2026-10-02T03:04:05Z')));
-  assert.equal(f.time.textContent, new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date('2026-10-02T03:04:05Z')));
-  assert.deepEqual(f.delays, [1000]);
-  assert.equal(f.timers.size, 1);
-  assert.equal(f.canvas.width, 1600); assert.equal(f.canvas.height, 1360);
-  assert.equal(f.canvas.style.width, '800px'); assert.equal(f.canvas.style.height, '680px');
-  assert.deepEqual(f.observers[0].options, { rootMargin: '-34% 0px -42% 0px', threshold: 0.02 });
-  assert.equal(f.observers[0].target, f.stage);
-  f.start();
-  assert.equal(f.stage.classList.contains('is-raining'), false);
-  assert.equal(f.frames.size, 0);
-  assert.deepEqual(ownedListeners(f), [2, 1, 1, 1]);
-  f.stop(); assert.deepEqual(ownedListeners(f), [0, 0, 0, 0]);
-});
-
-test('homepage clock ticks each second, pauses hidden, resumes immediately and keeps pagehide behavior', () => {
-  const f = homeFixture({ tags: ['Tag'] });
+test('homepage clock preserves zh-CN date, 24-hour time and 1000ms cadence without Canvas', () => {
+  const f = homeFixture(), now = new Date('2026-10-02T03:04:05Z');
+  assert.equal(f.date.textContent, new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' }).format(now));
+  assert.equal(f.time.textContent, new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now));
+  assert.deepEqual(f.delays, [1000]); assert.equal(f.timers.size, 1); assert.equal(clockListeners(f), 1);
   const original = f.time.textContent;
   f.setDate(new Date('2026-10-02T03:04:06Z')); f.fireClock();
-  assert.notEqual(f.time.textContent, original); assert.equal(f.timers.size, 1);
-  f.start(); f.frame();
+  assert.notEqual(f.time.textContent, original); assert.deepEqual(f.delays, [1000, 1000]);
+  f.cleanup();
+});
+
+test('homepage clock pauses hidden, resumes immediately and preserves pagehide semantics', () => {
+  const f = homeFixture(), original = f.time.textContent;
   f.document.visibilityState = 'hidden'; f.document.dispatch('visibilitychange');
-  assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0);
-  const hidden = f.time.textContent;
-  f.setDate(new Date('2026-10-02T03:04:09Z')); f.fireClock(); assert.equal(f.time.textContent, hidden);
+  assert.equal(f.timers.size, 0);
+  f.setDate(new Date('2026-10-02T03:04:09Z')); f.fireClock(); assert.equal(f.time.textContent, original);
   f.document.visibilityState = 'visible'; f.document.dispatch('visibilitychange');
-  assert.notEqual(f.time.textContent, hidden); assert.equal(f.timers.size, 1); assert.equal(f.frames.size, 1);
-  f.window.dispatch('pagehide'); assert.equal(f.frames.size, 0);
-  assert.equal(f.timers.size, 1, 'original pagehide only cancels rain; the clock is not paused until visibilitychange');
-  f.stop(); assert.equal(f.timers.size, 0);
+  assert.notEqual(f.time.textContent, original); assert.equal(f.timers.size, 1);
+  f.window.dispatch('pagehide'); assert.equal(f.timers.size, 1);
+  assert.equal(f.window.events.size, 0, 'clock has no rain-only pagehide, resize or scroll listener');
+  f.cleanup(); assert.equal(f.timers.size, 0);
 });
 
-test('homepage duplicate mount returns the same cleanup without resetting animation or duplicating resources', () => {
-  const f = homeFixture({ tags: ['One', 'Two'] }); f.start(); f.frame(100);
-  const before = homeSnapshot(f), cleanup = f.mount();
-  assert.equal(f.mount(), cleanup); assert.equal(homeSnapshot(f), before);
-  assert.equal(f.observers.length, 1); assert.deepEqual(ownedListeners(f), [2, 1, 1, 1]);
-  cleanup(); cleanup(); assert.equal(f.frames.size, 0); assert.equal(f.timers.size, 0);
-  f.mount(); cleanup(); assert.deepEqual(ownedListeners(f), [2, 1, 1, 1]);
-  f.stop();
+test('homepage hidden cold mount waits for visibility before updating or scheduling', () => {
+  const f = homeFixture({ hidden: true });
+  assert.equal(f.timers.size, 0); assert.equal(f.time.textContent, '');
+  f.document.visibilityState = 'visible'; f.document.dispatch('visibilitychange');
+  assert.notEqual(f.time.textContent, ''); assert.equal(f.timers.size, 1); f.cleanup();
 });
 
-for (const missing of [['[data-tag-rain]'], ['[data-tag-rain-canvas]']]) {
-  test(`homepage missing ${missing[0]} exits without resources and later entry mounts`, () => {
+test('homepage repeated mounts reuse one clock and idempotent cleanup cannot dispose a later mount', () => {
+  const f = homeFixture(), before = clockSnapshot(f);
+  assert.equal(f.mount(), f.cleanup); assert.equal(f.mount(), f.cleanup); assert.deepEqual(clockSnapshot(f), before);
+  f.cleanup(); f.cleanup(); assert.equal(f.timers.size, 0); assert.equal(clockListeners(f), 0);
+  const next = f.mount(); f.cleanup(); assert.equal(f.timers.size, 1); assert.equal(clockListeners(f), 1);
+  next(); assert.equal(f.timers.size, 0);
+});
+
+for (const missing of [['[data-home-clock]'], ['[data-home-date]', '[data-home-time]']]) {
+  test(`homepage missing ${missing.join(' and ')} exits and later entry mounts`, () => {
+    const f = homeFixture({ missing }); f.cleanup(); f.cleanup();
+    assert.equal(f.timers.size, 0); assert.equal(clockListeners(f), 0);
+    f.nodes['[data-home-clock]'] = f.stage; f.nodes['[data-home-date]'] = f.date; f.nodes['[data-home-time]'] = f.time;
+    const stop = f.mount(); assert.equal(f.timers.size, 1); stop();
+  });
+}
+for (const missing of ['[data-home-date]', '[data-home-time]']) {
+  test(`homepage clock can update its remaining target without ${missing}`, () => {
     const f = homeFixture({ missing });
-    assert.deepEqual(ownedListeners(f), [0, 0, 0, 0]); assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0);
-    f.stop(); f.stop();
-    f.nodes[missing[0]] = missing[0] === '[data-tag-rain]' ? f.stage : f.canvas;
-    f.mount(); assert.equal(f.timers.size, 1); f.stop();
+    assert.equal(f.timers.size, 1); assert.notEqual(missing.includes('date') ? f.time.textContent : f.date.textContent, '');
+    f.cleanup();
   });
 }
-test('homepage missing Canvas context exits without timers, RAF or observers', () => {
-  const f = homeFixture({ noContext: true }); f.stop(); f.stop();
-  assert.deepEqual(ownedListeners(f), [0, 0, 0, 0]); assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0); assert.equal(f.observers.length, 0);
-  assert.equal(f.calls.length, 0);
-});
-
-test('homepage scroll fallback uses exact trigger bounds and coalesces scroll events', () => {
-  const f = homeFixture({ tags: ['One'], noObserver: true }); f.frame();
-  f.window.scrollY = 100; f.setRect({ top: 461, bottom: 900 }); f.window.dispatch('scroll'); f.frame();
-  assert.equal(f.stage.classList.contains('is-raining'), false);
-  f.setRect({ top: 460, bottom: 339 }); f.window.dispatch('scroll'); f.frame();
-  assert.equal(f.stage.classList.contains('is-raining'), false);
-  f.setRect({ top: 460, bottom: 340 });
-  for (let i = 0; i < 5; i++) f.window.dispatch('scroll');
-  assert.equal(f.frames.size, 1); f.frame(); assert.equal(f.stage.classList.contains('is-raining'), true);
-  f.frame(100); assert.equal(f.calls.filter(x => x[0] === 'fillText').length, 1);
-  f.stop();
-});
-
-test('homepage observer starts once; top<=4 resets and scrolling can start again', () => {
-  const f = homeFixture({ tags: ['One', 'Two'] }); f.frame();
-  f.inView(); f.observers[0].callback([{ isIntersecting: true }]);
-  assert.equal(f.observers[0].disconnected, true); assert.equal(f.stage.classList.contains('is-raining'), true);
-  f.frame(100); f.window.scrollY = 5; f.window.dispatch('scroll'); f.frame(150);
-  assert.equal(f.stage.classList.contains('is-raining'), true);
-  f.window.scrollY = 4; f.window.dispatch('scroll'); f.frame(200);
-  assert.equal(f.stage.classList.contains('is-raining'), false); assert.equal(f.frames.size, 0);
-  const before = f.calls.filter(x => x[0] === 'fillText').length;
-  f.start(); f.frame(300);
-  assert.equal(f.calls.filter(x => x[0] === 'fillText').length, before + 1);
-  f.stop();
-});
-
-for (const [profile, ceiling, interval] of [['full', 2, 0], ['mobile', 1.15, 1000 / 30], ['lite', 1, 1000 / 24]]) {
-  test(`homepage ${profile} preserves DPR cap and frame cadence`, () => {
-    const f = homeFixture({ profile, tags: ['One'] });
-    assert.equal(f.canvas.width, Math.floor(800 * ceiling));
-    assert.equal(f.canvas.height, Math.floor(680 * ceiling));
-    f.start(); f.frame(100);
-    const clears = f.calls.filter(x => x[0] === 'clearRect').length;
-    f.frame(110);
-    assert.equal(f.calls.filter(x => x[0] === 'clearRect').length, clears + (interval ? 0 : 1));
-    f.stop();
+for (const context of [null, () => { throw new Error('Canvas unavailable'); }]) {
+  test(`homepage clock ignores unrelated Canvas with ${context === null ? 'null' : 'throwing'} context`, () => {
+    const f = homeFixture({ noMount: true });
+    f.nodes['[data-tag-rain-canvas]'] = { getContext: context === null ? () => null : context };
+    const stop = f.mount(); assert.equal(f.timers.size, 1); assert.notEqual(f.time.textContent, ''); stop();
   });
 }
 
-test('homepage deterministic labels retain deduplication, colors, font, size and drop cadence', () => {
-  const f = homeFixture({ tags: ['One', 'Two', 'One', 'Three', 'Four', 'Five', 'Six'] });
-  f.start(); f.frame(100);
-  assert.deepEqual(f.calls.filter(x => x[0] === 'measureText').map(x => x[1]), ['One', 'Two', 'Three', 'Four', 'Five', 'Six']);
-  assert.equal(f.calls.filter(x => x[0] === 'fillText').length, 1);
-  assert.ok(f.calls.some(x => x[0] === 'roundRect' && x[3] === 96 && x[4] === 44 && x[5] === 22));
-  assert.ok(f.calls.some(x => x[0] === 'set' && x[1] === 'font' && x[2] === "850 18px 'Cascadia Code', 'Fira Code', Consolas, sans-serif"));
-  f.frame(269); assert.equal(f.calls.filter(x => x[0] === 'fillText').length, 2);
-  f.frame(270); assert.equal(f.calls.filter(x => x[0] === 'fillText').length, 4);
-  for (let t = 440; t <= 1120; t += 170) f.frame(t);
-  const fills = f.calls.filter(x => x[0] === 'set' && x[1] === 'fillStyle').map(x => x[2]);
-  for (const color of ['#fff5bf', '#ffddea', '#dff2ff', '#dff5ea', '#eee4ff']) assert.ok(fills.includes(color), color);
-  f.stop();
+test('homepage cleanup ignores late callbacks and leaves other module timers/listeners untouched', () => {
+  const f = homeFixture(), callbacks = [...f.timers.values(), ...f.document.events.get('visibilitychange')];
+  const external = () => {}, timer = f.window.setTimeout(external, 99);
+  f.document.addEventListener('visibilitychange', external); f.window.addEventListener('scroll', external);
+  f.cleanup(); f.cleanup();
+  assert.equal(f.timers.size, 1); assert.ok(f.timers.has(timer)); assert.equal(clockListeners(f), 1);
+  assert.ok(f.document.events.get('visibilitychange').has(external)); assert.ok(f.window.events.get('scroll').has(external));
+  const before = clockSnapshot(f); f.setDate(new Date('2026-10-02T03:04:09Z'));
+  callbacks.forEach(fn => fn()); assert.deepEqual(clockSnapshot(f), before);
 });
 
-test('homepage resize updates Canvas dimensions and stays isolated from lifecycle teardown', () => {
-  const f = homeFixture({ tags: ['One'] }); f.start(); f.frame(100);
-  f.setRect({ width: 400, height: 300 }); f.window.dispatch('resize');
-  assert.equal(f.canvas.width, 800); assert.equal(f.canvas.height, 760);
-  assert.equal(f.canvas.style.width, '400px'); assert.equal(f.canvas.style.height, '380px');
-  assert.equal(f.frames.size, 1); assert.equal(f.timers.size, 1); f.stop();
-});
-
-test('homepage reduced motion retains class and clock without observer or rain RAF', () => {
-  const f = homeFixture({ reduced: true, tags: ['One'] });
-  assert.equal(f.stage.classList.contains('is-reduced-motion'), true);
-  assert.equal(f.observers.length, 0); assert.equal(f.frames.size, 0); assert.equal(f.timers.size, 1);
-  assert.deepEqual(ownedListeners(f), [2, 0, 1, 1]);
-  f.document.dispatch('visibilitychange'); assert.equal(f.frames.size, 0); f.stop();
-});
-
-for (const rawTags of ['broken JSON', '{}', '[]']) {
-  test(`homepage ${rawTags} tag input keeps the original empty-rain behavior`, () => {
-    const f = homeFixture({ rawTags }); f.start(); f.frame();
-    assert.equal(f.stage.classList.contains('is-raining'), false); assert.equal(f.timers.size, 1); f.stop();
-  });
-}
-
-test('homepage existing hidden-mount behavior is preserved rather than silently fixed', () => {
-  const f = homeFixture({ hidden: true, tags: ['One'] });
-  assert.equal(f.timers.size, 0); f.inView(); f.observers[0].callback([{ isIntersecting: true }]);
-  f.frame(100);
-  assert.ok(f.calls.some(x => x[0] === 'fillText'), 'original state.visible starts true until visibilitychange');
-  f.document.dispatch('visibilitychange'); assert.equal(f.frames.size, 0); f.stop();
-});
-
-test('homepage cleanup cancels all owned resources, ignores late callbacks and leaves other modules untouched', () => {
-  const f = homeFixture({ tags: ['One'] }); f.start(); f.frame(100); f.window.dispatch('scroll');
-  const callbacks = [...f.frames.values(), ...f.timers.values(), ...f.document.events.get('visibilitychange'),
-    ...f.window.events.get('resize'), ...f.window.events.get('scroll'), ...f.window.events.get('pagehide')];
-  const externalListener = () => {};
-  f.window.addEventListener('scroll', externalListener);
-  const externalFrame = f.window.requestAnimationFrame(() => {}), externalTimer = f.window.setTimeout(() => {}, 99);
-  f.stop(); f.stop();
-  assert.equal(f.timers.size, 1); assert.ok(f.timers.has(externalTimer));
-  assert.equal(f.frames.size, 1); assert.ok(f.frames.has(externalFrame));
-  assert.deepEqual(ownedListeners(f), [0, 1, 0, 0]); assert.ok(f.window.events.get('scroll').has(externalListener));
-  assert.equal(f.observers[0].disconnected, true);
-  const before = homeSnapshot(f);
-  callbacks.forEach(fn => fn(1000)); f.observers[0].callback([{ isIntersecting: true }]);
-  assert.equal(homeSnapshot(f), before);
-});
-
-test('homepage replacing roots disposes old DOM and old cleanup cannot remove the new mount', () => {
-  const f = homeFixture({ tags: ['Old'] }); f.start(); f.frame(100);
-  const oldCleanup = f.mount(), oldTime = f.time.textContent, oldResize = [...f.window.events.get('resize')][0];
-  const freshStage = new Element(), freshCanvas = new Element(), freshTime = new Element();
-  freshStage.dataset = { tags: '[]' }; freshStage.getBoundingClientRect = f.stage.getBoundingClientRect;
-  freshCanvas.getContext = () => f.ctx;
-  f.nodes['[data-tag-rain]'] = freshStage; f.nodes['[data-tag-rain-canvas]'] = freshCanvas; f.nodes['[data-home-time]'] = freshTime;
-  f.mount(); oldCleanup(); oldResize();
-  assert.deepEqual(ownedListeners(f), [2, 1, 1, 1]);
+test('homepage replacing roots freezes old DOM; old cleanup does not remove the new mount', () => {
+  const f = homeFixture(), oldTime = f.time.textContent, late = [...f.timers.values(), ...f.document.events.get('visibilitychange')];
+  const freshTime = new Element(); f.nodes['[data-home-clock]'] = new Element(); f.nodes['[data-home-time]'] = freshTime;
+  const stop = f.mount(); f.cleanup(); late.forEach(fn => fn());
+  assert.equal(f.timers.size, 1); assert.equal(clockListeners(f), 1);
   f.setDate(new Date('2026-10-02T03:04:09Z')); f.fireClock();
-  assert.equal(f.time.textContent, oldTime); assert.notEqual(freshTime.textContent, oldTime); f.stop();
+  assert.equal(f.time.textContent, oldTime); assert.notEqual(freshTime.textContent, oldTime); stop();
 });
 
-test('homepage drop completion retains calm/4800ms fade trigger and 5200ms fade ending', () => {
-  const f = homeFixture({ tags: ['One'] }); f.start(); f.frame(100); f.frame(270);
-  f.frame(5071); assert.equal(f.stage.classList.contains('is-fading'), true);
-  f.frame(10270); assert.equal(f.stage.classList.contains('is-fading'), true);
-  f.frame(10271); assert.equal(f.stage.classList.contains('is-fading'), false);
-  assert.equal(f.stage.classList.contains('is-raining'), false); assert.equal(f.frames.size, 0);
-  const draws = f.calls.filter(x => x[0] === 'fillText').length;
-  f.inView(); f.window.dispatch('scroll'); f.frame(10300);
-  assert.equal(f.calls.filter(x => x[0] === 'fillText').length, draws, 'done rain does not restart until reset at top');
-  f.stop();
+test('homepage rain removal retains the static stage, background, welcome, clock and anchor', () => {
+  const home = read('pages/HomePage.astro');
+  assert.match(home, /class="tag-rain-stage" id="main-content" data-home-clock/);
+  assert.match(home, /href="#main-content"/); assert.match(home, /home-content-bg__image/);
+  assert.match(home, /home-welcome-bubble/); assert.match(home, /data-home-date/); assert.match(home, /data-home-time/);
+  assert.doesNotMatch(home, /fallingTags|data-tags|data-tag-rain|<canvas/);
+  assert.doesNotMatch(read('styles/theme.css'), /\.tag-rain-canvas/);
+  assert.match(read('styles/theme.css'), /\.tag-rain-stage/);
+  assert.match(read('styles/refresh.css'), /\.tag-rain-stage \{ min-height: 640px/);
+  assert.match(read('styles/refresh.css'), /\.tag-rain-stage \{ min-height: 700px/);
 });
