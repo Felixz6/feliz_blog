@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import vm from "node:vm";
 import test from "node:test";
 import sharp from "sharp";
 import postcss from "postcss";
 import { parse } from "@astrojs/compiler";
+import { mountHomeHero } from "../lib/home-hero.mjs";
 import { springStep, layerOffsets, nearestRailIndex, mountMangaScene, mountAlbum, mountArchive, mountChapterRail, mountArticleToc } from "../lib/manga-runtime.mjs";
 
 const root = process.cwd();
@@ -509,12 +509,9 @@ test("extracted profile reveal still docks, releases scrolling, resets and clean
     cancelAnimationFrame: (frame) => frames.delete(frame),
     scrollTo() {}
   });
-  const context = vm.createContext({
-    window, document, history: {}, location: { hash: "#keep-position" },
-    requestAnimationFrame: (callback) => { frames.set(++id, callback); return id; },
-    cancelAnimationFrame: (frame) => frames.delete(frame)
-  });
-  vm.runInContext((await read("lib/home-hero.mjs")).replace("export function", "function") + "\nvar cleanup = mountHomeHero();", context);
+  window.history = {};
+  window.location = { hash: "#keep-position" };
+  const cleanup = mountHomeHero({ document, window });
   const wheel = (deltaY) => {
     const event = { deltaY, prevented: false, preventDefault() { this.prevented = true; } };
     window.dispatch("wheel", event);
@@ -538,12 +535,12 @@ test("extracted profile reveal still docks, releases scrolling, resets and clean
   assert.equal(wheel(-60).prevented, true);
   flushFrames();
   assert.equal(styles["--profile-opacity"], "0");
-  context.cleanup();
+  cleanup();
   assert.equal(timers.size, 0);
   assert.ok([...window.events.values()].every((handlers) => handlers.size === 0));
 });
 
-test("home typing pauses offscreen and hidden, while scroll and pointer work batch per frame", async () => {
+function homeHeroFixture(config = {}) {
   const makeNode = (rect = { top: 0, bottom: 700, left: 0, width: 1200, height: 700 }) => {
     const events = new Map(), classes = new Set(), styles = {};
     return {
@@ -570,7 +567,7 @@ test("home typing pauses offscreen and hidden, while scroll and pointer work bat
   const bubble = makeNode(), document = makeNode(), window = makeNode();
   stage.querySelector = () => hero;
   name.dataset.nameLines = JSON.stringify(["Feliz"]);
-  document.visibilityState = "visible";
+  document.visibilityState = config.hidden ? "hidden" : "visible";
   document.documentElement = { dataset: {} };
   document.querySelector = (selector) => ({
     "[data-hero-stage]": stage,
@@ -581,27 +578,30 @@ test("home typing pauses offscreen and hidden, while scroll and pointer work bat
   })[selector] ?? null;
 
   const timers = new Map(), frames = new Map();
-  let nextId = 0, observer;
+  let nextId = 0, observer, time = 20000;
   Object.assign(window, {
-    innerHeight: 800, scrollY: 0,
-    setTimeout(callback, delay) { timers.set(++nextId, { callback, delay }); return nextId; },
-    clearTimeout(id) { timers.delete(id); },
-    requestAnimationFrame(callback) { frames.set(++nextId, callback); return nextId; },
-    cancelAnimationFrame(id) { frames.delete(id); },
-    scrollTo() {},
+    innerHeight: 800, scrollY: 0, history: { scrollRestoration: "auto" }, location: { hash: config.hash ?? "#keep-position" },
+    setTimeout(callback, delay) { assert.equal(this, window); timers.set(++nextId, { callback, delay }); return nextId; },
+    clearTimeout(id) { assert.equal(this, window); timers.delete(id); },
+    requestAnimationFrame(callback) { assert.equal(this, window); frames.set(++nextId, callback); return nextId; },
+    cancelAnimationFrame(id) { assert.equal(this, window); frames.delete(id); },
+    scrollTo(options) { assert.equal(this, window); window.lastScroll = options; },
     IntersectionObserver: class {
       constructor(callback) { observer = { callback, disconnected: false, disconnect() { this.disconnected = true; } }; }
       observe() {}
       disconnect() { observer.disconnected = true; }
     }
   });
-  const context = vm.createContext({
-    window, document, history: {}, location: { hash: "#keep-position" },
-    requestAnimationFrame: window.requestAnimationFrame,
-    cancelAnimationFrame: window.cancelAnimationFrame
-  });
-  vm.runInContext((await read("lib/home-hero.mjs")).replace("export function", "function") + "\nvar cleanup = mountHomeHero();", context);
+  if (config.noObserver) delete window.IntersectionObserver;
+  const mount = () => mountHomeHero({ document, window, now: () => time });
+  const cleanup = mount();
+  const flushFrames = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn(16)); };
+  return { hero, stage, terminal, name, avatar, bubble, document, window, timers, frames, observer,
+    cleanup, mount, flushFrames, setTime: value => { time = value; } };
+}
 
+test("home typing pauses offscreen and hidden, while scroll and pointer work batch per frame", async () => {
+  const { hero, terminal, name, avatar, document, window, timers, frames, observer, cleanup } = homeHeroFixture();
   assert.equal(timers.size, 2, "both hero typewriters start while the hero is visible");
   observer.callback([{ target: hero, isIntersecting: false }]);
   assert.equal(timers.size, 0, "offscreen hero clears its typing timers");
@@ -645,10 +645,108 @@ test("home typing pauses offscreen and hidden, while scroll and pointer work bat
   assert.equal(frames.size, 0, "pointerleave cancels a pending stale sway update");
   assert.equal(avatar.styles["--flower-sway"], "0deg");
 
-  context.cleanup();
+  cleanup();
   assert.equal(timers.size, 0);
   assert.equal(frames.size, 0);
   assert.ok(observer.disconnected);
   assert.ok([...window.events.values()].every((handlers) => handlers.size === 0));
   assert.ok([...document.events.values()].every((handlers) => handlers.size === 0));
+});
+
+test("home hero retains replacement mounts, idempotent cleanup and one listener set", () => {
+  const f = homeHeroFixture(), oldObserver = f.observer;
+  const next = f.mount();
+  assert.notEqual(next, f.cleanup, "existing repeat-mount mechanism replaces rather than reuses cleanup");
+  assert.equal(f.window.__yuimiHeroCleanup, next); assert.ok(oldObserver.disconnected);
+  assert.equal(f.timers.size, 2);
+  for (const type of ["wheel", "scroll", "resize", "pageshow"]) assert.equal(f.window.events.get(type).size, 1);
+  assert.equal(f.document.events.get("visibilitychange").size, 1);
+  for (const type of ["pointermove", "pointerleave", "dblclick"]) assert.equal(f.avatar.events.get(type).size, 1);
+  f.cleanup(); f.cleanup(); assert.equal(f.timers.size, 2, "old cleanup cannot destroy the replacement mount");
+  next(); next(); assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0);
+  assert.ok([...f.window.events.values(), ...f.document.events.values(), ...f.avatar.events.values()].every(s => s.size === 0));
+});
+
+test("home hero cleanup removes queued work and listeners without consuming other module resources", () => {
+  const f = homeHeroFixture(); f.flushFrames();
+  f.window.dispatch("wheel", { deltaY: 200, preventDefault() {} });
+  f.avatar.dispatch("pointermove", { clientX: 90 }); f.avatar.dispatch("dblclick", { preventDefault() {} });
+  const ownedTimerIds = [...f.timers.keys()], ownedFrameIds = [...f.frames.keys()];
+  let externalTicks = 0; const external = () => { externalTicks++; };
+  const timer = f.window.setTimeout(external, 99), frame = f.window.requestAnimationFrame(external);
+  f.window.addEventListener("scroll", external); f.document.addEventListener("visibilitychange", external);
+  f.cleanup(); f.cleanup();
+  assert.ok(ownedTimerIds.every(id => !f.timers.has(id))); assert.ok(ownedFrameIds.every(id => !f.frames.has(id)));
+  assert.deepEqual([...f.timers.keys()], [timer]); assert.deepEqual([...f.frames.keys()], [frame]);
+  assert.ok(f.window.events.get("scroll").has(external)); assert.ok(f.document.events.get("visibilitychange").has(external));
+  const before = JSON.stringify([f.hero.styles, f.avatar.styles, f.terminal.textContent, f.name.textContent, f.bubble.textContent]);
+  f.window.dispatch("wheel", { deltaY: 200, preventDefault() { assert.fail("disposed listener ran"); } });
+  f.window.dispatch("scroll"); f.document.dispatch("visibilitychange"); f.avatar.dispatch("pointermove", { clientX: 10 });
+  f.timers.get(timer).callback(); f.flushFrames();
+  assert.equal(externalTicks, 4);
+  assert.equal(JSON.stringify([f.hero.styles, f.avatar.styles, f.terminal.textContent, f.name.textContent, f.bubble.textContent]), before);
+});
+
+test("home hero dependency injection preserves browser receivers, initial scroll and hash restoration", () => {
+  const f = homeHeroFixture({ hash: "" });
+  assert.equal(f.window.history.scrollRestoration, "manual"); assert.equal(f.window.lastScroll, undefined);
+  f.flushFrames(); assert.deepEqual(f.window.lastScroll, { top: 0, left: 0 }); f.cleanup();
+  const anchored = homeHeroFixture(); anchored.flushFrames(); assert.equal(anchored.window.lastScroll, undefined); anchored.cleanup();
+});
+
+test("home hero retains exact 0.56 docking threshold and 260/120ms settling/release", () => {
+  for (const [deltaY, docked] of [[145, false], [146, true]]) {
+    const f = homeHeroFixture(); f.flushFrames();
+    f.window.dispatch("wheel", { deltaY, preventDefault() {} });
+    const timer = [...f.timers.entries()].find(([, t]) => t.delay === 260); assert.ok(timer);
+    f.timers.delete(timer[0]); timer[1].callback(); f.flushFrames();
+    assert.equal(f.hero.classList.contains("is-docked"), docked);
+    assert.equal(f.hero.styles["--profile-opacity"], docked ? "1" : "0");
+    assert.equal([...f.timers.values()].some(t => t.delay === 120), docked); f.cleanup();
+  }
+});
+
+test("home hero clock injection retains avatar cooldown, poke duration and bubble messages", () => {
+  const f = homeHeroFixture();
+  f.avatar.dispatch("dblclick", { preventDefault() {} });
+  assert.ok(f.avatar.classList.contains("is-poked")); assert.equal(f.bubble.textContent, "戳到了~");
+  assert.ok([...f.timers.values()].some(t => t.delay === 720)); assert.ok([...f.timers.values()].some(t => t.delay === 1700));
+  f.setTime(29999); f.avatar.dispatch("dblclick", { preventDefault() {} });
+  assert.equal(f.bubble.textContent, "操作太快啦，休息一下吧");
+  f.setTime(30000); f.avatar.dispatch("dblclick", { preventDefault() {} }); assert.equal(f.bubble.textContent, "戳到了~");
+  f.cleanup(); assert.equal(f.timers.size, 0); assert.equal(f.frames.size, 0);
+});
+
+test("home hero scroll fallback and hidden cold mount retain typing pause and resume", () => {
+  const f = homeHeroFixture({ noObserver: true, hidden: true });
+  assert.equal(f.timers.size, 0); f.document.visibilityState = "visible"; f.document.dispatch("visibilitychange");
+  assert.equal(f.timers.size, 2);
+  f.hero.getBoundingClientRect = () => ({ top: 900, bottom: 1600 }); f.window.dispatch("scroll"); f.flushFrames();
+  assert.equal(f.timers.size, 0);
+  f.hero.getBoundingClientRect = () => ({ top: 0, bottom: 700 }); f.window.dispatch("scroll"); f.flushFrames();
+  assert.equal(f.timers.size, 2); f.cleanup();
+});
+
+test("home hero typing retains complete line order and write, hold, erase and gap cadence", () => {
+  const f = homeHeroFixture();
+  const fire = delay => { const timer = [...f.timers.entries()].find(([, t]) => t.delay === delay); assert.ok(timer, `expected ${delay}ms`); f.timers.delete(timer[0]); timer[1].callback(); };
+  const lines = ['pin --dev-notes --anime-diary', 'collect "blue moments" && write', 'npm run scrapbook', 'echo "做自己想做，想自己所想"'];
+  fire(0);
+  for (let index = 0; index < lines.length; index++) {
+    for (let count = 0; count < lines[index].length; count++) fire(58);
+    assert.equal(f.terminal.textContent, lines[index]); fire(1250);
+    for (let count = 0; count < lines[index].length; count++) fire(32);
+    assert.equal(f.terminal.textContent, ''); fire(360);
+  }
+  fire(58); assert.equal(f.terminal.textContent, 'p', 'line sequence wraps without changing the gap');
+  fire(0); for (let count = 0; count < 5; count++) fire(96);
+  assert.equal(f.name.textContent, 'Feliz'); fire(1500);
+  for (let count = 0; count < 5; count++) fire(46);
+  assert.equal(f.name.textContent, ''); f.cleanup();
+});
+
+test("home hero injected windows own independent mount state without modifying globalThis", () => {
+  const a = homeHeroFixture(), b = homeHeroFixture(), before = b.window.__yuimiHeroCleanup;
+  a.mount()(); assert.equal(b.window.__yuimiHeroCleanup, before); assert.equal(b.timers.size, 2);
+  b.cleanup(); a.cleanup();
 });
