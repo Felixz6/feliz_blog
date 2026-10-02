@@ -6,8 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExpressiveCode from "rehype-expressive-code";
-import * as pagefind from "pagefind";
-import { fileURLToPath } from "node:url";
+import { pagefindIntegration } from "./scripts/lib/pagefind-integration.mjs";
 import expressiveCodeDomCopyPlugin from "./src/core/expressive-code-dom-copy-plugin.mjs";
 import rehypeRemoveExpressiveCodeCopyData from "./src/core/rehype-remove-expressive-code-copy-data.mjs";
 
@@ -46,51 +45,6 @@ const expressiveCodeOptions = {
     }
   }
 };
-
-const pagefindIntegration = () => ({
-  name: "site-pagefind",
-  hooks: {
-    "astro:build:done": async ({ dir, logger }) => {
-      try {
-        const { index, errors } = await pagefind.createIndex({
-          forceLanguage: "zh",
-          includeCharacters: "_-:"
-        });
-
-        if (!index || errors.length) {
-          throw new Error(`Pagefind index was not created: ${errors.join(", ") || "missing index"}`);
-        }
-
-        const distDir = fileURLToPath(dir);
-        const addResult = await index.addDirectory({
-          path: distDir,
-          glob: "**/*.html"
-        });
-
-        if (!Number.isFinite(addResult.page_count) || addResult.page_count <= 0) {
-          throw new Error(`Pagefind indexing failed: ${addResult.errors.join(", ") || "no pages indexed"}`);
-        }
-
-        if (addResult.errors.length) {
-          logger.warn(`Pagefind indexing warnings: ${addResult.errors.join(", ")}`);
-        }
-
-        const writeResult = await index.writeFiles({
-          outputPath: fileURLToPath(new URL("./pagefind", dir))
-        });
-
-        if (writeResult.errors.length) {
-          throw new Error(`Pagefind index write failed: ${writeResult.errors.join(", ")}`);
-        } else {
-          logger.info(`Pagefind indexed ${addResult.page_count} pages.`);
-        }
-
-      } finally {
-        await pagefind.close();
-      }
-    }
-  }
-});
 
 export default defineConfig({
   site: "https://felizx.com",
