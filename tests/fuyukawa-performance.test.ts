@@ -12,6 +12,7 @@ const layoutSource = readSource("src/themes/fuyukawa-kagari/layouts/BaseLayout.a
 const musicPlayerSource = readSource("src/themes/fuyukawa-kagari/lib/music-player.mjs");
 const layoutRuntimeSource = readSource("src/themes/fuyukawa-kagari/lib/layout-runtime.mjs");
 const homeSource = readSource("src/themes/fuyukawa-kagari/pages/HomePage.astro");
+const homeRuntimeSource = readSource("src/themes/fuyukawa-kagari/lib/home-runtime.mjs");
 const refreshStyles = readSource("src/themes/fuyukawa-kagari/styles/refresh.css");
 const layeredHeroSource = readSource("src/themes/fuyukawa-kagari/components/LayeredHero.astro");
 
@@ -25,8 +26,8 @@ test("homepage local signal uses only the date and time", () => {
   assert.doesNotMatch(homeSource, /本地时间/);
   assert.match(homeSource, /data-home-date/);
   assert.match(homeSource, /data-home-time/);
-  assert.match(homeSource, /const homeDateFormatter = new Intl\.DateTimeFormat/);
-  assert.match(homeSource, /const homeTimeFormatter = new Intl\.DateTimeFormat/);
+  assert.match(homeRuntimeSource, /const homeDateFormatter = new Intl\.DateTimeFormat/);
+  assert.match(homeRuntimeSource, /const homeTimeFormatter = new Intl\.DateTimeFormat/);
   assert.doesNotMatch(homeSource, /data-home-weather|api\.open-meteo\.com|ipwho\.is|apis\.map\.qq\.com/);
 });
 
@@ -93,10 +94,10 @@ test("portrait mobile hero uses its own manga crop while desktop keeps the origi
 });
 
 test("Fuyukawa pauses the second-by-second clock while hidden", () => {
-  assert.match(homeSource, /const scheduleHomeClock =/);
-  assert.match(homeSource, /document\.visibilityState !== "visible"/);
-  assert.match(homeSource, /document\.addEventListener\("visibilitychange", handleClockVisibility\)/);
-  assert.doesNotMatch(homeSource, /setInterval\(updateHomeClock, 1000\)/);
+  assert.match(homeRuntimeSource, /const scheduleHomeClock =/);
+  assert.match(homeRuntimeSource, /document\.visibilityState !== "visible"/);
+  assert.match(homeRuntimeSource, /document\.addEventListener\("visibilitychange", handleClockVisibility\)/);
+  assert.doesNotMatch(homeRuntimeSource, /setInterval\(updateHomeClock, 1000\)/);
 });
 
 test("music manifest and audio source are deferred until music-player intent", () => {
