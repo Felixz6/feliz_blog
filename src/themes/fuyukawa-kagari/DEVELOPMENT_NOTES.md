@@ -8,6 +8,13 @@ repository-wide history remain in the root note.
 
 ## Current State
 
+- October 2, 2026: the user permanently retires homepage tag rain and supersedes
+  the historical tag-canvas preservation agreement. Physics, Canvas, rain data,
+  scheduling and rain-only listeners are removed; do not restore them from the
+  older notes. Keep the stage layout/background, welcome, clock and main-content
+  anchor. The clock mounts independently of Canvas and retains its visibility
+  pause/resume and page-local cleanup. Hero, music, search and RUM are unchanged.
+
 - September 20 follow-up: the public Fuyukawa layout no longer includes the
   Live2D widget, CDN loader, fallback display, controls, styles, or drag anchor;
   the music-only utility dock remains.
@@ -75,7 +82,9 @@ repository-wide history remain in the root note.
 - Existing preview: `http://127.0.0.1:4321/themes/fuyukawa-kagari/`.
 - Presentation uses a theme body attribute and a final stylesheet so legacy
   interaction styles remain available. No shared configuration or assets changed.
-- Preserve the homepage reveal state machine, tag canvas and music.
+- Historical September 9 agreement: preserve the homepage reveal state machine,
+  tag canvas and music. The October 2, 2026 user decision above supersedes only
+  tag-canvas retention; reveal and music preservation still apply.
 - Blog search now rejects stale async results and reinitializes after navigation;
   project filters reinitialize after navigation and expose pressed states.
 - Revised implementation and non-browser verification are complete; visual
@@ -198,7 +207,9 @@ repository-wide history remain in the root note.
   of truth. Search intentionally continues searching the whole archive.
 - Existing profile reveal states are preserved by a VM interaction test.
   Hero cleanup now cancels initial-scroll and avatar timers. Before-swap cleanup
-  also stops the old tag-rain/notice runtime and releases the notice body lock.
+  also stopped the old tag-rain/notice runtime and released the notice body lock
+  at that historical checkpoint; tag rain is permanently removed on October 2,
+  2026, as recorded above.
 - Theme tests: 26/26. Repository tests: 181/181. Production: 74 routes and
   75 Pagefind pages. All 17 unchanged performance budgets pass.
   Home HTML 93.5/97.7 KiB; Home CSS 92.7/109.4 KiB (previously 106.0 KiB).

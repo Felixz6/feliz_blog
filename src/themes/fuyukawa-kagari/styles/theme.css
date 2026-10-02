@@ -1461,15 +1461,6 @@ body[data-fuyukawa][data-navigating="true"] #page-content {
   align-self: end;
 }
 
-.tag-rain-canvas {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 3;
-  display: block;
-  width: 100%;
-  height: calc(100% + 80px);
-  pointer-events: none;
-}
 
 @media (max-width: 980px) {
   .tag-rain-stage {

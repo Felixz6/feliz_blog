@@ -13,7 +13,6 @@ import HomeHeroRuntime from "../components/HomeHeroRuntime.astro";
 
 const recentPosts = (await getPublishedPosts()).slice(0, 3);
 
-const fallingTags: string[] = [];
 const initialRenderTime = new Date();
 const initialHomeDate = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",
@@ -121,7 +120,7 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
 
   <div class="home-content-bg">
     <img class="home-content-bg__image" src={kagariAssets.pageBackground} alt="" width="1920" height="1360" loading="lazy" decoding="async" fetchpriority="low" />
-    <section class="tag-rain-stage" id="main-content" data-tag-rain data-tags={JSON.stringify(fallingTags)} aria-label="Blog topic tags">
+    <section class="tag-rain-stage" id="main-content" data-home-clock aria-label="Home welcome and local time">
       <div class="home-art-word">
         <span>{site.name}</span>
         <small>anime notes / tiny toys / dev memo</small>
@@ -136,7 +135,6 @@ const initialHomeTime = new Intl.DateTimeFormat("zh-CN", {
         <p>喜欢的故事、偶然的灵感，还有今天想分享的小事。</p>
         <span aria-hidden="true">”</span>
       </div>
-      <canvas class="tag-rain-canvas" data-tag-rain-canvas aria-hidden="true"></canvas>
     </section>
   </div>
 

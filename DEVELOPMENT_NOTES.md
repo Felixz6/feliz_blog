@@ -146,6 +146,13 @@
 
 ## Architecture Decision
 
+- October 2, 2026 superseding decision: the user permanently removes homepage
+  tag rain, including its Canvas, data, physics and dedicated scheduling/listeners.
+  Earlier Canvas ownership/preservation/performance notes below are historical,
+  not a restoration plan. Retain the existing homepage stage layout, background,
+  welcome, clock and main-content anchor; the clock is now independent of Canvas.
+  This decision does not change hero, music, search, RUM or other pages.
+
 - Shared layer: content collections, article queries, site metadata, category labels, SEO inputs, and theme registry/path helpers.
 - Fuyukawa Kagari layer: existing pages, layouts, theme CSS at `src/themes/fuyukawa-kagari/styles/theme.css`, navigation presentation, footer copy, Sakura, pig scrollbar, tool dock, music player, Live2D, notice, weather/IP signal, Canvas tag rain, and related assets.
 - Blank layer: independent document layout, navigation, pages, article presentation, CSS, context menu, and visible theme return control. It does not load Kagari CSS, assets, remote Live2D, music, weather, or notice runtime.
