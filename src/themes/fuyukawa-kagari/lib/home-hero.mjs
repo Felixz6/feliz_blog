@@ -1,4 +1,8 @@
-export function mountHomeHero() {
+export function mountHomeHero({
+  document = globalThis.document,
+  window = globalThis.window,
+  now: nowSource = () => Date.now()
+} = {}) {
     window.__yuimiHeroCleanup?.();
     const heroCleanupTasks = [];
     window.__yuimiHeroCleanup = () => {
@@ -105,14 +109,14 @@ export function mountHomeHero() {
       typingLoops.push(() => scheduleTick(nextDelay));
     };
 
-    if ("scrollRestoration" in history) {
-      history.scrollRestoration = "manual";
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
     }
 
-    const initialScrollFrame = !location.hash
-      ? requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }))
+    const initialScrollFrame = !window.location.hash
+      ? window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }))
       : 0;
-    heroCleanupTasks.push(() => cancelAnimationFrame(initialScrollFrame));
+    heroCleanupTasks.push(() => window.cancelAnimationFrame(initialScrollFrame));
 
     const setProgress = (progress) => {
       if (!hero) return;
@@ -311,7 +315,7 @@ export function mountHomeHero() {
 
     const handlePokeDoubleClick = (event) => {
       event.preventDefault();
-      const now = Date.now();
+      const now = nowSource();
       if (now - lastPokeAt < 10000) {
         showPokeBubble("\u64cd\u4f5c\u592a\u5feb\u5566\uff0c\u4f11\u606f\u4e00\u4e0b\u5427");
         return;
