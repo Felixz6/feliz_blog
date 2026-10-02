@@ -4,6 +4,7 @@ import vm from "node:vm";
 import test from "node:test";
 import postcss from "postcss";
 import { parse } from "@astrojs/compiler";
+import { mountBlogSearch } from "../lib/blog-search.mjs";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const css = read("styles/refresh.css") + "\n" + read("styles/refresh-pages.css");
@@ -253,35 +254,50 @@ function node(dataset = {}) {
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-function searchFixture(pagefind, href = "https://example.test/blog/") {
-  const input = node();
-  const output = node();
-  const searchMeta = node();
+function eventTarget(target = {}) {
+  const listeners = new Map();
+  const events = new Map();
+  return Object.assign(target, {
+    listeners, events,
+    addEventListener(key, listener) {
+      if (!listeners.has(key)) listeners.set(key, new Set());
+      listeners.get(key).add(listener);
+      events.set(key, () => Promise.all([...listeners.get(key)].map((fn) => fn())));
+    },
+    removeEventListener(key, listener) {
+      listeners.get(key)?.delete(listener);
+      if (!listeners.get(key)?.size) events.delete(key);
+    }
+  });
+}
+
+function searchFixture(pagefind, href = "https://example.test/blog/", config = {}) {
+  const input = eventTarget(node());
+  const output = eventTarget(node());
+  const searchMeta = eventTarget(node());
   searchMeta.hidden = true;
-  const summary = node();
-  const moreButton = node();
+  const summary = eventTarget(node());
+  const moreButton = eventTarget(node());
   moreButton.hidden = true;
-  const loadMoreError = node();
+  const loadMoreError = eventTarget(node());
   loadMoreError.hidden = true;
-  const documentEvents = new Map();
-  const windowEvents = new Map();
+  const timerDelays = [];
   const timers = new Map();
   const location = new URL(href);
   let timerId = 0;
-  const document = {
-    querySelector: (selector) => ({
+  const elements = {
       "[data-blog-search]": input,
       "[data-blog-search-results]": output,
       "[data-blog-search-meta]": searchMeta,
       "[data-blog-search-summary]": summary,
       "[data-blog-search-more]": moreButton,
       "[data-blog-search-error]": loadMoreError
-    })[selector],
-    querySelectorAll: () => [],
-    addEventListener: (key, value) => documentEvents.set(key, value),
-    removeEventListener: (key, value) => { if (documentEvents.get(key) === value) documentEvents.delete(key); }
   };
-  const window = {
+  const document = eventTarget({
+    querySelector: (selector) => config.absent ? null : elements[selector],
+    querySelectorAll: () => config.cards ?? []
+  });
+  const window = eventTarget({
     location,
     history: {
       state: null,
@@ -290,16 +306,11 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
         location.href = new URL(target, location.href).href;
       }
     },
-    addEventListener: (key, value) => windowEvents.set(key, value),
-    removeEventListener: (key, value) => { if (windowEvents.get(key) === value) windowEvents.delete(key); },
-    setTimeout: (callback) => { timers.set(++timerId, callback); return timerId; },
+    setTimeout: (callback, delay) => { timerDelays.push(delay); timers.set(++timerId, callback); return timerId; },
     clearTimeout: (id) => timers.delete(id)
-  };
-  const context = vm.createContext({
-    document, window, URL,
-    Function: function () { return () => Promise.resolve(pagefind); }
   });
-  const run = () => vm.runInContext(inlineScript("pages/BlogIndexPage.astro"), context);
+  let cleanup;
+  const run = () => (cleanup = mountBlogSearch({ document, window, loadPagefind: config.loadPagefind ?? (() => Promise.resolve(pagefind)) }));
   const flush = async () => {
     const callbacks = [...timers.values()];
     timers.clear();
@@ -312,7 +323,7 @@ function searchFixture(pagefind, href = "https://example.test/blog/") {
     await flush();
   };
   run();
-  return { input, output, searchMeta, summary, moreButton, loadMoreError, window, windowEvents, timers, type, flush, run, documentEvents };
+  return { input, output, searchMeta, summary, moreButton, loadMoreError, document, window, windowEvents: window.events, elements, timers, timerDelays, type, flush, run, stop: () => cleanup() };
 }
 
 test("search ignores stale asynchronous results and clears pending results", async () => {
@@ -341,14 +352,14 @@ test("search ignores stale asynchronous results and clears pending results", asy
   assert.equal(fixture.output.innerHTML, "");
 });
 
-test("search teardown invalidates old work and script can reinitialize", async () => {
+test("search teardown invalidates old work and mount can reinitialize", async () => {
   let resolveSearch;
   const fixture = searchFixture({
     options: async () => {},
     search: () => new Promise((resolve) => { resolveSearch = resolve; })
   });
   await fixture.type("search");
-  fixture.documentEvents.get("astro:before-swap")();
+  fixture.stop();
   assert.equal(fixture.input.events.has("input"), false);
   const previous = fixture.output.innerHTML;
   resolveSearch({ results: [] });
@@ -485,6 +496,265 @@ test("search restores shared query URLs on load and popstate", async () => {
   assert.equal(fixture.input.value, "RISC-V");
   await fixture.flush();
   assert.deepEqual(queries, ["Steam", "RISC-V"]);
+});
+
+const deferred = () => {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+};
+const searchItem = (title) => ({ url: "/blog/note/", meta: { title }, excerpt: "<mark>note</mark>" });
+const snapshotSearch = (fixture) => Object.fromEntries(
+  ["input", "output", "searchMeta", "summary", "moreButton", "loadMoreError"].map((key) => {
+    const { value, innerHTML, textContent, hidden, disabled } = fixture[key];
+    return [key, { value, innerHTML, textContent, hidden, disabled }];
+  })
+);
+
+test("blog page owns only bundled loading and lifecycle wiring, not the global layout", () => {
+  const page = read("pages/BlogIndexPage.astro");
+  assert.match(page, /<script>\s*import \{ mountBlogSearch \} from "\.\.\/lib\/blog-search\.mjs"/);
+  assert.match(page, /astro:page-load", start/);
+  assert.match(page, /astro:before-swap", dispose/);
+  assert.match(page, /start\(\);\s*<\/script>/);
+  assert.doesNotMatch(page, /is:inline|data-astro-rerun|pagefind\.search|fallbackLocalSearch|showMoreResults/);
+  assert.doesNotMatch(read("layouts/BaseLayout.astro") + read("lib/layout-runtime.mjs"), /mountBlogSearch|blog-search\.mjs/);
+});
+
+test("absent blog controls add no listeners; later entry mounts normally", async () => {
+  let loads = 0;
+  const config = { absent: true, loadPagefind: async () => {
+    loads++;
+    return { options: async () => {}, search: async () => ({ results: [] }) };
+  } };
+  const fixture = searchFixture(null, "https://example.test/about/", config);
+  fixture.stop(); fixture.stop();
+  assert.equal(fixture.window.events.size, 0);
+  assert.equal(fixture.input.events.size, 0);
+  assert.equal(fixture.document.events.size, 0);
+  assert.equal(loads, 0);
+  config.absent = false;
+  fixture.window.location.href = "https://example.test/blog/?q=entry";
+  fixture.run();
+  await fixture.flush();
+  assert.equal(loads, 1);
+  assert.equal(fixture.input.value, "entry");
+  assert.equal(fixture.summary.textContent, "共找到 0 篇笔记");
+});
+
+test("duplicate mounts preserve results and register each listener only once; cleanup is idempotent", async () => {
+  const fixture = searchFixture({ options: async () => {}, search: async () => ({ results: [searchItem("Stable")] }) });
+  await fixture.type("stable");
+  const before = snapshotSearch(fixture);
+  const cleanup = fixture.run();
+  assert.equal(fixture.run(), cleanup);
+  assert.deepEqual(snapshotSearch(fixture), before);
+  assert.equal(fixture.input.listeners.get("input").size, 1);
+  assert.equal(fixture.moreButton.listeners.get("click").size, 1);
+  assert.equal(fixture.window.listeners.get("popstate").size, 1);
+  const staleInput = [...fixture.input.listeners.get("input")][0];
+  const stalePopstate = [...fixture.window.listeners.get("popstate")][0];
+  cleanup(); cleanup();
+  staleInput(); stalePopstate();
+  assert.deepEqual(snapshotSearch(fixture), before);
+  assert.equal(fixture.timers.size, 0);
+  assert.equal(fixture.input.events.size, 0);
+  assert.equal(fixture.moreButton.events.size, 0);
+  assert.equal(fixture.window.events.size, 0);
+  fixture.run(); cleanup();
+  assert.equal(fixture.input.listeners.get("input").size, 1);
+  await fixture.type("again");
+  assert.match(fixture.output.innerHTML, /Stable/);
+});
+
+test("rapid input retains the 180ms debounce, last query, shared loader and excerpt options", async () => {
+  const queries = [], options = [];
+  let loads = 0;
+  const fixture = searchFixture(null, "https://example.test/blog/?category=tech&other=keep#archive", {
+    loadPagefind: async () => {
+      loads++;
+      return { options: async (value) => options.push(value), search: async (query) => { queries.push(query); return { results: [] }; } };
+    }
+  });
+  const state = { index: 7 };
+  fixture.window.history.state = state;
+  for (const value of ["C", "CT", "  CTF  "]) {
+    fixture.input.value = value;
+    await fixture.input.events.get("input")();
+  }
+  assert.equal(fixture.timers.size, 1);
+  assert.deepEqual(fixture.timerDelays, [180, 180, 180]);
+  assert.equal(loads, 0);
+  await fixture.flush();
+  await fixture.type("RISC-V");
+  assert.deepEqual(queries, ["CTF", "RISC-V"]);
+  assert.equal(loads, 1);
+  assert.deepEqual(options, [{ excerptLength: 18 }]);
+  assert.equal(fixture.window.history.state, state);
+  assert.equal(fixture.window.location.hash, "#archive");
+  assert.equal(fixture.window.location.search, "?category=tech&other=keep&q=RISC-V");
+});
+
+test("cleanup cancels debounce and even an already queued callback cannot touch the old DOM", async () => {
+  let loads = 0;
+  const fixture = searchFixture(null, "https://example.test/blog/?q=queued", { loadPagefind: async () => { loads++; } });
+  const queued = [...fixture.timers.values()][0];
+  fixture.stop();
+  const before = snapshotSearch(fixture);
+  assert.equal(fixture.timers.size, 0);
+  await queued();
+  assert.deepEqual(snapshotSearch(fixture), before);
+  assert.equal(loads, 0);
+});
+
+test("a late loader after cleanup never launches search or mutates old controls", async () => {
+  const loader = deferred();
+  let searches = 0;
+  const fixture = searchFixture(null, "https://example.test/blog/", { loadPagefind: () => loader.promise });
+  await fixture.type("pending");
+  fixture.stop();
+  const before = snapshotSearch(fixture);
+  loader.resolve({ options: async () => {}, search: async () => { searches++; return { results: [] }; } });
+  await settle();
+  assert.equal(searches, 0);
+  assert.deepEqual(snapshotSearch(fixture), before);
+});
+
+test("loader rejection is retryable and local fallback preserves ordering, escaping, links and pagination", async () => {
+  let loads = 0;
+  const cards = Array.from({ length: 7 }, (_, index) => ({
+    textContent: `Steam ${index}`,
+    querySelector: (selector) => ({
+      ".blog-post-title-link": index === 0 ? null : { getAttribute: () => `/blog/local-${index}/` },
+      ".post-cover-frame": { getAttribute: () => "/blog/cover/" },
+      h2: { textContent: `Steam <${index}>` },
+      p: { textContent: "  <unsafe>& excerpt  " }
+    })[selector]
+  }));
+  const fixture = searchFixture(null, "https://example.test/blog/", {
+    cards,
+    loadPagefind: () => {
+      if (++loads === 1) throw new Error("Import failed");
+      return { options: async () => {}, search: async () => ({ results: [searchItem("Recovered import")] }) };
+    }
+  });
+  await fixture.type("sTeAm");
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 5 篇");
+  assert.match(fixture.output.innerHTML, /href="\/blog\/cover\/"/);
+  assert.match(fixture.output.innerHTML, /Steam &lt;0&gt;/);
+  assert.match(fixture.output.innerHTML, /&lt;unsafe&gt;&amp; excerpt/);
+  assert.doesNotMatch(fixture.output.innerHTML, /<unsafe>/);
+  await fixture.moreButton.events.get("click")();
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 7 篇");
+  assert.ok(fixture.output.innerHTML.indexOf("Steam &lt;0&gt;") < fixture.output.innerHTML.indexOf("Steam &lt;6&gt;"));
+  await fixture.type("retry");
+  assert.equal(loads, 2);
+  assert.match(fixture.output.innerHTML, /Recovered import/);
+});
+
+for (const phase of ["search", "first batch", "load more"]) {
+  for (const outcome of ["resolve", "reject"]) {
+    test(`cleanup blocks late ${phase} ${outcome}, including error and finally writes`, async () => {
+      const pending = deferred();
+      const fixture = searchFixture({
+        options: async () => {},
+        search: () => phase === "search" ? pending.promise : Promise.resolve({
+          results: Array.from({ length: phase === "load more" ? 7 : 1 }, (_, index) => ({
+            data: () => (phase === "first batch" || index >= 5) ? pending.promise : Promise.resolve(searchItem(`Result ${index}`))
+          }))
+        })
+      });
+      await fixture.type("late");
+      if (phase === "load more") {
+        fixture.moreButton.events.get("click")();
+        assert.equal(fixture.moreButton.disabled, true);
+      }
+      fixture.stop();
+      const before = snapshotSearch(fixture);
+      if (outcome === "resolve") pending.resolve(phase === "search" ? { results: [searchItem("Late")] } : searchItem("Late"));
+      else pending.reject(new Error("Late failure"));
+      await settle();
+      assert.deepEqual(snapshotSearch(fixture), before);
+      assert.equal(fixture.window.events.size, 0);
+      assert.equal(fixture.input.events.size, 0);
+      assert.equal(fixture.moreButton.events.size, 0);
+    });
+  }
+}
+
+test("stale pagination cannot append to a newer query or release its loading state", async () => {
+  const oldBatch = deferred(), newBatch = deferred();
+  const fixture = searchFixture({
+    options: async () => {},
+    search: async (query) => ({ results: Array.from({ length: 7 }, (_, index) => ({
+      data: () => query === "new" ? newBatch.promise : index >= 5 ? oldBatch.promise : Promise.resolve(searchItem(`Old ${index}`))
+    })) })
+  });
+  await fixture.type("old");
+  fixture.moreButton.events.get("click")();
+  await fixture.type("new");
+  const before = snapshotSearch(fixture);
+  assert.equal(fixture.moreButton.disabled, true);
+  oldBatch.resolve(searchItem("Stale more"));
+  await settle();
+  assert.deepEqual(snapshotSearch(fixture), before);
+  newBatch.resolve(searchItem("New batch"));
+  await settle();
+  assert.doesNotMatch(fixture.output.innerHTML, /Old|Stale more/);
+  assert.equal(fixture.summary.textContent, "共找到 7 篇笔记，已显示 5 篇");
+  assert.equal(fixture.moreButton.disabled, false);
+});
+
+test("disconnected controls reject queued work and fragment finally writes", async () => {
+  const pending = deferred();
+  const fixture = searchFixture({ options: async () => {}, search: async () => ({ results: [{ data: () => pending.promise }] }) });
+  await fixture.type("detach");
+  fixture.input.isConnected = false;
+  const before = snapshotSearch(fixture);
+  pending.resolve(searchItem("Detached"));
+  await settle();
+  assert.deepEqual(snapshotSearch(fixture), before);
+  fixture.stop();
+});
+
+test("leaving and returning use fresh DOM and old cleanup cannot remove new listeners", async () => {
+  const pending = deferred();
+  const fixture = searchFixture({ options: async () => {}, search: () => pending.promise });
+  await fixture.type("old page");
+  const oldCleanup = fixture.run();
+  const before = snapshotSearch(fixture);
+  const newControls = Object.fromEntries(Object.keys(fixture.elements).map((key) => [key, eventTarget(node())]));
+  Object.assign(fixture.elements, newControls);
+  const newCleanup = mountBlogSearch({ document: fixture.document, window: fixture.window, loadPagefind: async () => ({
+    options: async () => {}, search: async () => ({ results: [searchItem("Returned page")] })
+  }) });
+  oldCleanup();
+  pending.resolve({ results: [searchItem("Old page result")] });
+  await fixture.flush();
+  assert.deepEqual(snapshotSearch(fixture), before);
+  assert.equal(fixture.input.events.size, 0);
+  assert.equal(fixture.window.listeners.get("popstate").size, 1);
+  assert.match(newControls["[data-blog-search-results]"].innerHTML, /Returned page/);
+  newCleanup(); newCleanup();
+  assert.equal(fixture.window.events.size, 0);
+});
+
+test("back/forward popstate restores changed or empty queries without rewriting history", async () => {
+  const queries = [];
+  const fixture = searchFixture({ options: async () => {}, search: async (query) => { queries.push(query); return { results: [] }; } }, "https://example.test/blog/?q=initial");
+  let rewrites = 0;
+  fixture.window.history.replaceState = () => rewrites++;
+  await fixture.flush();
+  for (const query of ["back", "forward", ""]) {
+    fixture.window.location.href = `https://example.test/blog/?category=tech${query ? `&q=${query}` : ""}#archive`;
+    await fixture.window.events.get("popstate")();
+    await fixture.flush();
+    assert.equal(fixture.input.value, query);
+  }
+  assert.deepEqual(queries, ["initial", "back", "forward"]);
+  assert.equal(rewrites, 0);
+  assert.equal(fixture.output.innerHTML, "");
+  assert.equal(fixture.searchMeta.hidden, true);
 });
 
 test("blog archive and article tags and categories are linked to shareable search URLs", () => {
