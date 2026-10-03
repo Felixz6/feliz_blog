@@ -36,7 +36,11 @@
 
 ## 接收、存储、导出
 
-本仓库保持 Astro `output: "static"`，新增 `functions/api/rum.ts` 与 D1 增量迁移。`public/_routes.json` 仅包含精确路径 `/api/rum`，其他页面/资源不调用 Function；没有 HTTP 导出接口、独立 Worker 或监控面板。采集端点仍默认空，本地实现不代表生产已接通。生产目前仍为 `de7fc63`，测量修正基线为 `bf3a4da`。
+本仓库保持 Astro `output: "static"`，使用 `functions/api/rum.ts` 与 D1 增量迁移。`public/_routes.json` 仅包含精确路径 `/api/rum`，其他页面/资源不调用 Function；没有 HTTP 导出接口、独立 Worker 或监控面板。
+
+**历史接入准备（2026-10-01）**：采集端点当时默认空，本地实现不代表生产已接通；当时生产为 `de7fc63`，测量修正基线为 `bf3a4da`，不是当前线上版本说明。
+
+最近一次线上前置核对（**2026-10-02 20:48–20:51，北京时间**）确认端点为生产 `/api/rum`、预览为空；与[2026-10-02 历史生产发布报告](/Users/feliz/Documents/feliz_blog/.codex-artifacts/production-release-20261002/RELEASE_REPORT.md)中的配置一致。**本轮未重新查询云端**，该结论只对应当时的核对，不是 2026-10-03 的实时云状态。
 
 ### 接收与持久化契约
 
@@ -106,19 +110,107 @@ npm run rum:cloud -- cleanup --authorize-cloud \
   --account="$ACCOUNT" --database="$PRODUCTION_DB" --environment=production
 ```
 
-迁移 `0001_rum.sql` 保留现有采集契约，`0002_cloud_admin.sql` 增量增加管理身份、导出代数及合成导航登记；都可重复执行，无 drop/覆盖旧 revision。云端用 `wrangler d1 migrations apply RUM_DB --remote --config=<明确账户及数据库的管理员配置>` 记录迁移历史；禁止将本地虚拟配置用于云端。迁移后管理员一次性写入与实际库匹配的 `rum_admin_identity`，工具核验成功后再接收合成数据。生产库本轮只有迁移/身份元数据，没有 RUM 记录。
+迁移 `0001_rum.sql` 保留现有采集契约，`0002_cloud_admin.sql` 增量增加管理身份、导出代数及合成导航登记；都可重复执行，无 drop/覆盖旧 revision。云端用 `wrangler d1 migrations apply RUM_DB --remote --config=<明确账户及数据库的管理员配置>` 记录迁移历史；禁止将本地虚拟配置用于云端。迁移后管理员一次性写入与实际库匹配的 `rum_admin_identity`，工具核验成功后再接收合成数据。**2026-10-01 预览接入验收时**，生产库只有迁移/身份元数据、没有 RUM 记录；不将其作为当前生产数据状态。
 
 云端导出**不使用本地停服锁**：主库的 SQL 触发器对 navigation、revision、conflict 和合成分类的所有插入/更新/删除递增环境代数。工具读取起始代数和 row_id 高水位，按访问开始时间 `[from,to)` 选择未隔离导航，分页导出窗口内全部保存 revision，再核对结束代数。期间出现迟到 revision、隔离或清理变化时，丢弃整批结果并重试（最多 3 次）；持续变化则退出 1，不发布部分文件，也不覆盖已有导出。通过的结果是最后检查时刻之前的一致快照，之后到达的 revision/冲突由下一次导出体现。高水位单独不足以防止分页途中发生隔离。
 
 默认导出 `cohort=natural`，排除管理员预先登记的合成 navigationId；仅预览支持 `--cohort=synthetic`。受控测试先将唯一 ID 数组写入本地 0600 JSON，再用 `register-synthetic --ids=/absolute/private/path/ids.json` 登记，**之后**才 POST。同源接收契约不增加可伪造的 cohort 字段。合成验收文件与自然样本文件分开保存；现有统计器仍接受 `{reports:[...]}`，额外 export 元数据仅记录窗口/代数/分页，不含凭据或原始请求头。导出文件原子替换，权限 0600。
 
-清理按不可变开始时间单条 DELETE + 外键级联执行，不先读计数再删除；并发迟到请求在接收器被 35 天规则拒绝。合成登记仅在超过 35 天且对应导航已删除时清理。**每日自动清理另列待办，本轮不新增调度。**
+清理按不可变开始时间单条 DELETE + 外键级联执行，不先读计数再删除；并发迟到请求在接收器被 35 天规则拒绝。合成登记仅在超过 35 天且对应导航已删除时清理。**每日自动清理现已完成仓库侧准备，模板未启用；见下节。**
 
-### 生产／预览绑定、发布与回滚
+### 35 天清理自动化准备（2026-10-02，尚未启用）
 
-Pages 项目 `feliz-blog` 的生产分支保持 `main`；`codex/rum-cloud-preview` 只发布预览。绑定对照以 `config/rum.cloud.json` 和验收记录为准：production 的 `RUM_DB` 指向生产库、`RUM_ENVIRONMENT=production`；preview 指向预览库、`RUM_ENVIRONMENT=preview`。运行时变量修改不会把已有生产部署替换为新代码，本轮检查生产部署号和编译端点前后不变。
+以下“本轮”指 **2026-10-02 仓库侧准备阶段**；其未执行云端清理等描述为历史边界。2026-10-03 已另行获批完成的 A 预览验收见后文，不代表自动化发布或启用。
 
-两个环境的 `PUBLIC_WEB_VITALS_ENDPOINT` 均保持空（未设置亦为空），所以自然访问不自动上报。云端合成请求只向**验收部署专属的预览 URL**发送，不向生产域名发送。`public/_routes.json` 与构建产物均仅 include `/api/rum`；普通页面和静态资源由 Pages 静态层处理。发布前核对 Git 规则：若该分支被配置为生产分支或工作流触发生产部署，应停止推送和发布。
+**唯一推荐：GitHub Actions 每日调用现有 `rum:cloud cleanup` 实现。** 当前仓库没有已跟踪的 Actions／cron／launchd 调度入口；可以复用的执行入口是 `npm run rum:cloud -- cleanup`。新增 `rum:retention` 只增加激活、凭据检查和结构化运行日志，内部调用同一个 `cloudMain(['cleanup', ...argv])`，不复制 SQL，不新增公开接口、Worker 或依赖。
+
+仓库已存在 GitHub origin，因此此方案无需单独维护常驻主机。Cloudflare Cron 需要 Worker 的 `scheduled()` 入口，不能直接运行此 Node 管理 CLI；主机 cron／launchd 还需维护在线主机和凭据。此处选择 Actions 是维护成本判断，不是对调度实时性的承诺。[GitHub 定时事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)、[Cloudflare Cron](https://developers.cloudflare.com/workers/configuration/cron-triggers/)、[D1 Wrangler 管理命令](https://developers.cloudflare.com/d1/wrangler-commands/)。
+
+模板位于 `/Users/feliz/Documents/feliz_blog/config/automation/rum-retention.yml.disabled`，**不在 `.github/workflows`，扩展名也不是可运行工作流**。本轮没有创建云资源、配置凭据、调用云端清理、提交、推送或部署。不要将模板存在误记为调度已启用。
+
+拟采用每天 UTC 19:17（北京时间次日 03:17），生产环境单独串行，`cancel-in-progress: false`、10 分钟超时，只允许 `Felixz6/feliz_blog` 的 `refs/heads/main`。模板只有 schedule／workflow_dispatch，无 push／PR 入口；preview 不在每日任务中，不做可选环境参数。未来需要预览清理时应使用明确预览参数的独立人工命令，而不是切换生产任务数据库。
+
+保留阈值仍由现有 CLI 按执行时刻减 **35×24 小时**计算，比较不可变 `navigation_started_at < cutoff`；恰好截止保留，晚到 revision／`sampledAt` 不延长寿命，外键级联 revisions/conflicts，过期迟到接收仍是 410。模板不传 `--now`，避免过期固定时钟。每日执行意味着过期行的物理删除要等下一次成功任务（通常最多再等一个周期，延迟／漏跑会更久），不是精确到毫秒的 TTL；接收端 410 边界不变。若业务要求物理存储绝不超过 35 天，需另行确认调度要求，不能把本模板作为实时保证。
+
+#### 启用前人工确认（本轮全部留待单独授权）
+
+1. 核对 GitHub 默认分支确实为 main、目标仓库、Actions 可用及配额、推送触发的 Pages 生产发布规则；本地分支不是云端默认分支的证据。审批此次源码及模板交付方式，避免推送代码同时意外部署页面。
+2. 人工核对 `config/rum.cloud.json` 与 Cloudflare 实际账户、两个不同数据库绑定、各库 `rum_admin_identity`、外键、导出代数迁移一致；本轮只有本地配置及隔离证据，没有重新执行生产身份查询。
+3. 本地配置的账户为 `b0dcecbbf97985487054606fd7b1771d`；production 库为 `9a05f61f-7621-4d40-a501-12e2fe9c5c83`，preview 库为 `4f610524-9e54-4787-8a73-00c22710c9ca`。上述是仓库配置值，启用前仍需独立确认线上绑定。
+4. 凭据由人工保管并批准后提供：secret `RUM_RETENTION_API_TOKEN`；variables `RUM_RETENTION_ACCOUNT_ID`、`RUM_RETENTION_PRODUCTION_DB_ID` 必须与已确认配置相同。最终激活变量 `RUM_RETENTION_ENABLED=true` 只能在单独批准后设置。本轮均未设置。
+5. 最小 Cloudflare 产品权限：目标账户的 **Account → D1 → Edit**（只读不足以 DELETE）；不需要 Pages／Workers 部署、DNS 或账户设置写权限。不要把账户级 D1 Edit 描述成单表 DELETE 专用权限或单数据库沙箱，CLI 双重身份检查是额外防串库措施。[官方 D1 token 权限](https://developers.cloudflare.com/d1/tutorials/import-to-d1-with-rest-api/)。GitHub 运行 token 仅 `contents: read`；配置 secrets／激活调度是人工管理权限，不属于运行 token。
+6. 确认删除影响、数据恢复来源和负责人；上线前记录已确认目标的只读状态、截止时间和预期过期量。明确批准首次真实删除及后续每日删除。先做已授权预览验收再人工批准生产首跑，不能用本地 SQLite 传输替身声称云端调度已通过。
+7. 授权后才将模板复制为 `.github/workflows/rum-retention.yml` 并通过批准流程送到默认分支。保持激活变量为空／false 时人工运行会失败，而不是跳过后显示成功。确认固定 Node 24.21.0／Wrangler 4.145.0 可下载、[checkout v6](https://github.com/actions/checkout/tree/v6)／[setup-node v6](https://github.com/actions/setup-node/tree/v6) 版本审批和通知负责人后，才设置 true 并首次手动执行。
+
+#### 准确执行命令（未来授权后的命令，本轮未执行）
+
+```sh
+cd /Users/feliz/Documents/feliz_blog
+# shell 中仅引用已有批准环境变量，不把 token 放入参数或仓库。
+# production 的明确目标；RUM_RETENTION_ENABLED 必须已经经批准设为 true。
+npm run rum:retention -- --authorize-cloud \
+  --account=b0dcecbbf97985487054606fd7b1771d \
+  --database=9a05f61f-7621-4d40-a501-12e2fe9c5c83 --environment=production
+# 独立预览命令，绝不复用生产数据库。
+npm run rum:retention -- --authorize-cloud \
+  --account=b0dcecbbf97985487054606fd7b1771d \
+  --database=4f610524-9e54-4787-8a73-00c22710c9ca --environment=preview
+```
+
+两条命令都要求 `CLOUDFLARE_API_TOKEN` 非空、`CLOUDFLARE_ACCOUNT_ID` 与参数相同、`RUM_RETENTION_ENABLED=true`。自动化拒绝 OAuth/global-key 回退、账户选择歧义、环境或数据库不匹配；原有人工 `rum:cloud` 的凭据方式保持。凭据认证及库内身份成功后才 DELETE；无效 token／SQL 或传输失败退出 1。管理员配置 JSON 固定 account_id／database_id，不读 Pages 隐式环境绑定。
+
+#### 日志、失败及漏跑发现
+
+- 标准输出包含 JSON `rum-retention.started`／`succeeded`／`failed`（UTC 时间、已验证的账户／数据库／环境，失败 stage），以及现有 CLI 的 removed、cutoff、35 days、exclusive 汇总；不打印 token、原始错误／SQL、navigationId 或报告。成功仅在两条现有清理语句及连接清理全部完成后记录。任何失败退出 1；第二条失败也失败，**可能已有部分删除**，不能解读为零删除或整体事务回退。
+- 使用 Actions run 状态和日志发现执行失败；模板 `if: failure()` 输出 error annotation，未使用 `continue-on-error`。超时／取消同样不能记为成功。GitHub 失败通知由值班人开启，并检查实际通知到达；定时任务通知接收者与最后修改 cron 的用户有关。[GitHub 定时事件说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)。
+- Actions 定时可能延迟或丢弃；公开仓库 60 天无活动可自动停用；任务不存在时没有“失败 run”，所以失败邮件不能证明无漏跑。值班人至少每日核查最近成功时间，超过 **36 小时**视为缺跑／停用并人工处理；36 小时是运维检查阈值，不是 RUM 统计门槛。本轮不新建外部监控。
+
+```sh
+# 上线后只读检查（本轮未调用 GitHub）：
+gh run list --repo Felixz6/feliz_blog --workflow rum-retention.yml --all --limit 10 \
+  --json databaseId,event,status,conclusion,createdAt,updatedAt,url
+gh run view RUN_ID --repo Felixz6/feliz_blog --log-failed
+```
+
+[官方 run list](https://cli.github.com/manual/gh_run_list)、[官方 run view](https://cli.github.com/manual/gh_run_view)。诊断身份／权限／服务错误后再按同一明确目标重跑；删除幂等，不增加绕过身份检查的恢复入口。不上传 raw Wrangler 日志、数据库文件或导出内容作为 Actions artifacts。
+
+#### 停止调度、代码回滚、数据恢复分别处理
+
+- **停止调度**（未来上线后才适用）：将激活变量改为 false，停用 workflow；还要取消／等待已经开始的 run，检查其实际完成状态。已开始的数据库操作可能已经提交，停用不能撤销它。
+  `gh workflow disable rum-retention.yml --repo Felixz6/feliz_blog`；运行中任务用 `gh run cancel RUN_ID --repo Felixz6/feliz_blog`。本轮没有线上 workflow 要停用。[官方停用命令](https://cli.github.com/manual/gh_workflow_disable)。
+- **代码回滚**：本轮可执行 `ROLLBACK.sh` 仅对明确的隔离副本恢复 package、管理 CLI、文档并移除本轮新增文件；执行前核对修改后 SHA，遇到新改动失败退出，禁止指向原仓库。它不调用 GitHub／Cloudflare，不停止已上线调度，不修改数据库、不反向迁移。
+- **数据恢复**：已 DELETE 的记录不会因代码回滚或任务停用重新出现。需单独授权，核对目标库、备份／Time Travel 可用窗口，记录恢复可能覆盖期间新写入的风险，并独立验证数据。D1 Time Travel 是整库恢复操作，不当作本轮回滚脚本的一部分；本轮不执行恢复。[官方 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/)。
+
+#### 历史隔离验收与边界（2026-10-02）
+
+下列测试及 `verify` 结果属于该日期的隔离验收历史证据；本轮文档修订未重跑数据库验收、UI 回归或完整 `verify`，正式发布门禁留待获批发布阶段。
+
+```sh
+# Node 24.21.0；不启用 RUM_CLOUD_E2E，不读取真实凭据。
+node --test tests/rum-retention.test.ts tests/rum-cloud.test.ts tests/rum-receiver.test.ts
+npm run verify
+git diff --check
+```
+
+测试只创建临时独立 SQLite 合成库，应用现有两份迁移并启用外键；测试传输替身替换 `RUM_WRANGLER_CLI`，实际执行现有 cloud CLI 产生的 SQL，没有远程调用。环境中丢弃继承的 Cloudflare 凭据，只使用假 token，分别创建生产形状／预览形状隔离库。覆盖 cutoff−1ms 删除、cutoff／cutoff+1ms／近期访问及近期冲突保留、晚到 revisions 不延寿、级联、重复执行、环境错误、库内身份错误、无凭据、数据库错误／畸形响应、第二语句部分提交失败、导出分页期间清理触发代数重试及失败不覆盖旧导出。另复用现有持续并发三次失败测试和接收端 410 回归。
+
+这证明仓库管理流程和 SQL 语义，不证明 Cloudflare 在线 token 权限、GitHub runner 或调度已启用；合成记录不计入自然样本，统计门槛及采集口径不变。验收工件位于 `/Users/feliz/Documents/feliz_blog/.codex-artifacts/rum-retention-prep-20261002/`。
+
+### 发布前状态与 A 验收（2026-10-03 文档整理）
+
+**2026-10-03 A 基础预览验收**（北京时间 11:10:59–11:17:07）仅操作预览库，沿用固定 `T=2026-10-02T13:20:00.000Z`、`C=2026-08-28T13:20:00.000Z`（`1787923200000`）。C−1ms 导航删除，恰好 C 与 C+1ms 保留；首次 `removed=1`，外键级联删除 old 的 2 revisions、1 conflict，证明近期 revision 不延寿；首次数据库核验通过后重复同基准清理，`removed=0`，Q/R 不变。两次均退出 0 并通过既有身份检查。[本轮真实验证记录](/Users/feliz/Documents/feliz_blog/.codex-artifacts/rum-retention-preview-A-live-20261003-110854/VERIFICATION.txt)。
+
+剩余 **2 导航、2 revisions、1 conflict、3 合成登记**保留合成登记隔离，未额外清除，不作为自然样本。自然统计仍须排除受控及合成数据，按 28 天窗口、路径 × 口径 × 指标分别计算 p75；不足 30 个有效样本保持无结论，不宣称真实性能提升。
+
+**本批未完成**：A 的 HTTP 410 实测、GitHub Secret 执行验证、实际恢复、生产首跑、每日调度。历史本地接收端 410 回归不替代真实预览请求，本地 OAuth 验收成功不证明 Secret／Actions 执行可用。
+
+**本批保留准备及本文更正尚未发布**：仍是本地工作区的原七文件交付范围，模板仍在非激活位置，未新增 `.github/workflows` 文件或设置 `true`；不要写成“自动清理已上线”。2026-10-02 的生产采集接通与本批保留自动化交付是不同阶段。诊断工件不进入提交；依据 2026-10-02 前置核对，后续推送 `main` 可能触发既有 Pages 自动发布，提交、推送及部署需分别获批，本轮不实际发布。
+
+### 生产／预览绑定、发布与回滚（2026-10-01 历史阶段）
+
+该历史验收中，Pages 项目 `feliz-blog` 的生产分支为 `main`；`codex/rum-cloud-preview` 只发布预览。绑定对照以 `config/rum.cloud.json` 和验收记录为准：production 的 `RUM_DB` 指向生产库、`RUM_ENVIRONMENT=production`；preview 指向预览库、`RUM_ENVIRONMENT=preview`。运行时变量修改不会把已有生产部署替换为新代码，该阶段检查生产部署号和编译端点前后不变。
+
+**历史阶段（2026-10-01）**：两个环境的 `PUBLIC_WEB_VITALS_ENDPOINT` 当时均为空（未设置亦为空），所以该阶段自然访问不自动上报；不是当前端点说明。云端合成请求只向**验收部署专属的预览 URL**发送，不向生产域名发送。`public/_routes.json` 与构建产物均仅 include `/api/rum`；普通页面和静态资源由 Pages 静态层处理。发布前核对 Git 规则：若该分支被配置为生产分支或工作流触发生产部署，应停止推送和发布。
 
 额外验收命令（均为显式 opt-in）：
 
@@ -131,9 +223,9 @@ RUM_CLOUD_E2E=1 RUM_PREVIEW_URL=https://DEPLOY_ID.feliz-blog.pages.dev \
   node --test tests/rum-cloud-preview.test.ts
 ```
 
-应用回滚：停止该预览分支的后续发布，保留空采集端点；将应用文件恢复为发布前版本，只重新发布预览。生产在本轮未发布，不需要生产回滚。**不删 D1、不 drop 表、不反向执行迁移、不清空已存数据；保留数据库绑定、管理身份、合成标记和全部 revision/conflict**。本地 `ROLLBACK.sh` 只在明确副本目录恢复文件，验证 D1 文件哈希不变；不能当作删库或云端迁移回退工具。
+该预览接入阶段的应用回滚：停止该预览分支的后续发布，保留空采集端点；将应用文件恢复为发布前版本，只重新发布预览。生产在该阶段未发布，不需要生产回滚。**不删 D1、不 drop 表、不反向执行迁移、不清空已存数据；保留数据库绑定、管理身份、合成标记和全部 revision/conflict**。该阶段的本地 `ROLLBACK.sh` 只在明确副本目录恢复文件，验证 D1 文件哈希不变；不能当作删库或云端迁移回退工具。
 
-下一轮开启生产采集的最少操作：单独授权合并/生产发布已验收代码；核对生产接收函数绑定与数据库身份，再单独将生产构建变量 `PUBLIC_WEB_VITALS_ENDPOINT=/api/rum` 并重建；验证一次真实移动访问的实际写入/读回及完整链路（不将本轮预览合成数据迁入生产）。每日清理自动化另行确认。自然样本充足前页面性能仍为“尚无结论”，预览合成 p75 不作为真实用户表现。
+**历史后续计划（2026-10-01，不是当前待执行步骤）**：单独授权合并/生产发布已验收代码；核对生产接收函数绑定与数据库身份，再单独设置生产构建变量 `PUBLIC_WEB_VITALS_ENDPOINT=/api/rum` 并重建；验证真实移动访问的实际写入/读回及完整链路，不将预览合成数据迁入生产。生产接通已于 2026-10-02 另行获批完成；每日清理自动化仍需另行批准。自然样本充足前页面性能仍为“尚无结论”，预览合成 p75 不作为真实用户表现。
 
 ## 统计
 
