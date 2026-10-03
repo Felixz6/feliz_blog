@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { runInNewContext } from 'node:vm';
 import { quote } from '../scripts/rum-cloud.mjs';
 import { receiveRum, RETENTION_MS } from '../server/rum.ts';
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -125,10 +126,146 @@ test('failed CLI export during cleanup leaves the existing output untouched', ()
     assert.equal(r.status, 1); assert.equal(readFileSync(out, 'utf8'), 'existing-output'); assert.deepEqual(f.ids(), ['recent']);
   } finally { f.close(); }
 });
-test('workflow is inert, production-only, serialized, guarded and uses the existing CLI without SQL/deploy', () => {
-  const file = readFileSync(join(root, 'config/automation/rum-retention.yml.disabled'), 'utf8');
-  assert.ok(!existsSync(join(root, '.github/workflows/rum-retention.yml')));
+test('workflow is delivered, production-only, serialized, guarded and uses the existing CLI without SQL/deploy', () => {
+  const file = readFileSync(join(root, '.github/workflows/rum-retention.yml'), 'utf8');
+  assert.ok(existsSync(join(root, '.github/workflows/rum-retention.yml')));
+  assert.ok(!existsSync(join(root, 'config/automation/rum-retention.yml.disabled')));
   for (const text of ["cron: '17 19 * * *'", 'cancel-in-progress: false', 'contents: read', 'persist-credentials: false', 'timeout-minutes: 10', 'test "$ENABLED" = true', 'test "$REF" = refs/heads/main', '--environment=production', 'npm run rum:retention', 'if: failure()']) assert.ok(file.includes(text), text);
   assert.doesNotMatch(file, /continue-on-error|\bon:\s*\n\s*(push|pull_request)|DELETE FROM|wrangler deploy|pages deploy/);
   const code = readFileSync(wrapper, 'utf8'); assert.doesNotMatch(code, /DELETE FROM|35\s*\*|RETENTION_MS/); assert.match(code, /await cloudMain/);
+});
+
+// Exercise the workflow's actual conditions and shell blocks, not a second CLI.
+// This is a narrow expression model + isolated commands, not a GitHub runner.
+function workflowJob(name: string) {
+  const file = readFileSync(join(root, '.github/workflows/rum-retention.yml'), 'utf8');
+  const section = file.match(new RegExp(`^  ${name}:\\n([\\s\\S]*?)(?=^  [a-z]+:\\n|(?![\\s\\S]))`, 'm'))?.[1];
+  assert.ok(section, name);
+  const condition = section.match(/^    if: >-\n((?:      .*\n)+)/m)?.[1];
+  assert.ok(condition, `${name} job condition`);
+  const expression = condition.trim().replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+    .replace(/([a-z_]+\.[a-z_A-Z]+)\s*==\s*('[^']*')/g, 'equal($1, $2)');
+  const scripts = [...section.matchAll(/^        run: \|\n((?:          .*(?:\n|$))+)/gm)]
+    .map(match => match[1].split('\n').map(line => line.slice(10)).join('\n'));
+  assert.equal(scripts.length, 2, `${name}: guard and existing CLI only`);
+  return { file, section, expression, scripts };
+}
+function runWorkflow(f: ReturnType<typeof fixture>, event: string, operation: string | undefined, enabled: string,
+  extra: Record<string, string> = {}, repository = 'Felixz6/feliz_blog', ref = 'refs/heads/main') {
+  const file = readFileSync(join(root, '.github/workflows/rum-retention.yml'), 'utf8');
+  const selected = operation ?? (event === 'workflow_dispatch' ? file.match(/^        default: '([^']+)'$/m)?.[1] : '');
+  const context = { github: { event_name: event, repository, ref }, inputs: { operation: selected },
+    vars: { RUM_RETENTION_ENABLED: enabled },
+    // GitHub compares strings case-insensitively; exact shell/CLI gates still apply.
+    equal: (left: string, right: string) => left.toLowerCase() === right.toLowerCase() };
+  const eligible = ['preflight', 'cleanup'].filter(name => runInNewContext(workflowJob(name).expression, context));
+  assert.ok(eligible.length <= 1, 'paths must be mutually exclusive');
+  if (!eligible.length) return { job: 'skipped', status: 0, signal: null, stdout: '', stderr: '' };
+  const job = eligible[0];
+  const env = { ...f.env, ENABLED: enabled, RUM_RETENTION_ENABLED: enabled, REPOSITORY: repository, REF: ref,
+    CLOUDFLARE_ACCOUNT_ID: manifest.accountId, RUM_DATABASE_ID: manifest.environments.production.databaseId,
+    CI: 'true', WRANGLER_SEND_METRICS: 'false', ...extra };
+  // The inherited real credentials are already removed by fixture(); this
+  // transport points only to the local synthetic database and fake token.
+  const r = spawnSync('/bin/bash', ['--noprofile', '--norc', '-e', '-c', workflowJob(job).scripts.join('\n')],
+    { cwd: root, env, encoding: 'utf8' });
+  return { job, status: r.status, signal: r.signal, stdout: r.stdout, stderr: r.stderr };
+}
+test('workflow structure: default read-only choice, fixed production credentials, independent job gates', () => {
+  const p = workflowJob('preflight'), c = workflowJob('cleanup');
+  assert.match(p.file, /operation:\n        description:.*\n        required: true\n        type: choice\n        default: '只读预检'\n        options:\n          - '只读预检'\n          - '清理'/);
+  assert.deepEqual([...p.file.matchAll(/^      ([a-z_]+):$/gm)].map(x => x[1]), ['operation']);
+  assert.doesNotMatch(p.section, /RUM_RETENTION_ENABLED|npm run rum:retention|cleanup --|succeeded/);
+  assert.match(p.scripts[1], /npm run rum:cloud -- status --authorize-cloud/);
+  assert.match(c.scripts[1], /npm run rum:retention -- --authorize-cloud/);
+  for (const job of [p, c]) {
+    for (const text of ['secrets.RUM_RETENTION_API_TOKEN', 'vars.RUM_RETENTION_ACCOUNT_ID', 'vars.RUM_RETENTION_PRODUCTION_DB_ID',
+      '--environment=production', 'timeout-minutes: 10', 'persist-credentials: false', "node-version: '24.21.0'", "CI: 'true'", "WRANGLER_SEND_METRICS: 'false'"])
+      assert.ok(job.section.includes(text), text);
+    assert.doesNotMatch(job.scripts.join('\n'), /\$\{\{\s*inputs\.|\beval\b|\$@|--command|--environment=preview|set -x/);
+  }
+  for (const guard of ['CLOUDFLARE_API_TOKEN//[[:space:]]/', 'test -n "$CLOUDFLARE_ACCOUNT_ID"', 'test -n "$RUM_DATABASE_ID"',
+    'test -z "${CLOUDFLARE_API_KEY:-}"', 'test -z "${CLOUDFLARE_EMAIL:-}"']) {
+    assert.ok(p.scripts[1].indexOf(guard) >= 0 && p.scripts[1].indexOf(guard) < p.scripts[1].indexOf('npm run'));
+  }
+});
+test('isolated manual default/preflight uses only identity SELECT + status SELECT, even when disabled', () => {
+  for (const enabled of ['false', 'true']) {
+    const f = fixture('production'); try {
+      f.seed('old', cutoff-1, true); f.seed('recent', now);
+      const before = f.db.prepare('SELECT * FROM rum_export_epoch ORDER BY environment').all();
+      const r = runWorkflow(f, 'workflow_dispatch', undefined, enabled);
+      assert.equal(r.job, 'preflight'); assert.equal(r.status, 0, r.stderr);
+      assert.equal(r.signal, null); assert.doesNotMatch(r.stdout+r.stderr, /cleanup|succeeded|fake-isolated-token/);
+      const sql = readFileSync(f.queries, 'utf8').trim().split('\n'); assert.equal(sql.length, 2);
+      assert.match(sql[0], /^SELECT account_id,database_id,environment FROM rum_admin_identity/);
+      assert.match(sql[1], /^SELECT .* AS navigations/);
+      assert.ok(sql.every(q => q.startsWith('SELECT '))); assert.doesNotMatch(sql.join('\n'), /\b(DELETE|INSERT|UPDATE|CREATE|DROP)\b/);
+      assert.deepEqual(f.ids(), ['old', 'recent']);
+      assert.deepEqual(f.db.prepare('SELECT * FROM rum_export_epoch ORDER BY environment').all(), before);
+      console.log(`PASS WORKFLOW ISOLATED default: enabled=${enabled}; job=preflight; queries=2 SELECT; generation unchanged.`);
+    } finally { f.close(); }
+  }
+});
+test('disabled manual/scheduled cleanup is skipped, not failed or reported as success', () => {
+  const f = fixture('production'); try {
+    f.seed('old', cutoff-1);
+    for (const enabled of ['false', '', 'FALSE', ' false ']) for (const event of ['workflow_dispatch', 'schedule']) {
+      const r = runWorkflow(f, event, '清理', enabled); assert.equal(r.job, 'skipped'); assert.equal(r.status, 0);
+      assert.equal(r.stdout+r.stderr, '');
+    }
+    assert.equal(readFileSync(f.queries, 'utf8'), ''); assert.deepEqual(f.ids(), ['old']);
+    console.log('PASS WORKFLOW ISOLATED disabled: manual/schedule skipped; queries=0; no cleanup success/failure output.');
+  } finally { f.close(); }
+});
+test('enabled scheduled or explicit manual cleanup alone reaches unchanged retention CLI', () => {
+  for (const event of ['workflow_dispatch', 'schedule']) {
+    const f = fixture('production'); try {
+      f.seed('old', Date.now()-RETENTION_MS-86400000, true); f.seed('recent', Date.now());
+      // A schedule cannot enter preflight even if it carries that input.
+      const r = runWorkflow(f, event, event === 'schedule' ? '只读预检' : '清理', 'true');
+      assert.equal(r.job, 'cleanup'); assert.equal(r.status, 0, r.stderr); assert.match(r.stdout, /removed=1;/);
+      assert.match(r.stdout, /rum-retention.succeeded/); assert.deepEqual(f.ids(), ['recent']);
+      const sql = readFileSync(f.queries, 'utf8'); assert.match(sql, /DELETE FROM rum_navigations/);
+      assert.match(sql, /DELETE FROM rum_synthetic_navigations/); assert.doesNotMatch(sql, / AS navigations/);
+      console.log(`PASS WORKFLOW ISOLATED ${event}: enabled=true; job=cleanup; original CLI removed=1.`);
+    } finally { f.close(); }
+  }
+});
+test('unknown event/input/repository/ref cannot select a path; uppercase TRUE fails exact cleanup guard', () => {
+  const f = fixture('production'); try {
+    f.seed('old', cutoff-1);
+    for (const [event, operation, repository, ref] of [
+      ['push', '清理', 'Felixz6/feliz_blog', 'refs/heads/main'],
+      ['workflow_dispatch', 'arbitrary SQL', 'Felixz6/feliz_blog', 'refs/heads/main'],
+      ['workflow_dispatch', '只读预检', 'other/repo', 'refs/heads/main'],
+      ['workflow_dispatch', '清理', 'Felixz6/feliz_blog', 'refs/heads/preview'],
+    ]) assert.equal(runWorkflow(f, event, operation, 'true', {}, repository, ref).job, 'skipped');
+    const r = runWorkflow(f, 'workflow_dispatch', '清理', 'TRUE');
+    assert.equal(r.job, 'cleanup'); assert.equal(r.status, 1); assert.doesNotMatch(r.stdout+r.stderr, /succeeded|fake-isolated-token/);
+    assert.equal(readFileSync(f.queries, 'utf8'), ''); assert.deepEqual(f.ids(), ['old']);
+  } finally { f.close(); }
+});
+test('preflight rejects missing/ambiguous credentials and incorrect configured targets before transport', () => {
+  const f = fixture('production'); try {
+    for (const extra of [{ CLOUDFLARE_API_TOKEN: '' }, { CLOUDFLARE_API_TOKEN: ' \t\n ' }, { CLOUDFLARE_ACCOUNT_ID: '' },
+      { RUM_DATABASE_ID: '' }, { CLOUDFLARE_API_KEY: 'fake-global-key' }, { CLOUDFLARE_EMAIL: 'fake@example.invalid' },
+      { CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32) }, { RUM_DATABASE_ID: manifest.environments.preview.databaseId }] as Record<string, string>[]) {
+      const r = runWorkflow(f, 'workflow_dispatch', '只读预检', 'false', extra);
+      assert.equal(r.job, 'preflight'); assert.equal(r.status, 1); assert.doesNotMatch(r.stdout+r.stderr, /fake-isolated-token|fake-global-key|succeeded/);
+    }
+    assert.equal(readFileSync(f.queries, 'utf8'), '');
+  } finally { f.close(); }
+});
+test('preflight stored identity or query failure stops after identity SELECT without credential leakage', () => {
+  for (const [field, value] of [['account_id', 'a'.repeat(32)], ['database_id', manifest.environments.preview.databaseId], ['environment', 'preview'], ['', '']]) {
+    const f = fixture('production'); try {
+      f.seed('old', cutoff-1);
+      if (field) f.db.exec(`UPDATE rum_admin_identity SET ${field}=${quote(value)}`);
+      const r = runWorkflow(f, 'workflow_dispatch', '只读预检', 'false', field ? {} : { RUM_TEST_FAIL: 'SELECT account_id' });
+      assert.equal(r.status, 1); assert.doesNotMatch(r.stdout+r.stderr, /fake-isolated-token|secret-that-must-not-leak|SIMULATED_DATABASE_FAILURE|succeeded/);
+      const sql = readFileSync(f.queries, 'utf8').trim().split('\n'); assert.equal(sql.length, 1);
+      assert.match(sql[0], /^SELECT account_id/); assert.doesNotMatch(sql[0], /DELETE|INSERT|UPDATE/); assert.deepEqual(f.ids(), ['old']);
+    } finally { f.close(); }
+  }
 });
