@@ -1,0 +1,109 @@
+# Active workflow: manual dispatch defaults to read-only production preflight.
+# Scheduled/manual cleanup requires exact RUM_RETENTION_ENABLED=true; delivery alone does not enable deletion.
+name: RUM retention
+on:
+  schedule:
+    - cron: '17 19 * * *' # UTC 19:17 = Asia/Shanghai next day 03:17
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: '生产库操作（只读预检不执行清理）'
+        required: true
+        type: choice
+        default: '只读预检'
+        options:
+          - '只读预检'
+          - '清理'
+permissions:
+  contents: read
+concurrency:
+  group: rum-retention-production
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' && inputs.operation == '只读预检' &&
+          github.repository == 'Felixz6/feliz_blog' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Repository guard
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          set -eu
+          test "$REPOSITORY" = Felixz6/feliz_blog
+          test "$REF" = refs/heads/main
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      - name: Read-only identity and status with existing CLI
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.RUM_RETENTION_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.RUM_RETENTION_ACCOUNT_ID }}
+          RUM_DATABASE_ID: ${{ vars.RUM_RETENTION_PRODUCTION_DB_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+          CI: 'true'
+        shell: bash
+        run: |
+          set -eu
+          # Fail before CLI invocation; never fall back to OAuth/global-key auth.
+          test -n "${CLOUDFLARE_API_TOKEN//[[:space:]]/}"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$RUM_DATABASE_ID"
+          test -z "${CLOUDFLARE_API_KEY:-}"
+          test -z "${CLOUDFLARE_EMAIL:-}"
+          npm run rum:cloud -- status --authorize-cloud \
+            --account="$CLOUDFLARE_ACCOUNT_ID" --database="$RUM_DATABASE_ID" --environment=production
+      - name: Preflight failure discovery
+        if: failure()
+        run: echo '::error::RUM read-only preflight failed; no cleanup was requested. Inspect sanitized run output.'
+  cleanup:
+    # false/missing activation skips the job; it is not a failed cleanup run.
+    # Actions string equality ignores case; the existing shell and CLI gates below remain exact.
+    if: >-
+      ${{ vars.RUM_RETENTION_ENABLED == 'true' &&
+          github.repository == 'Felixz6/feliz_blog' && github.ref == 'refs/heads/main' &&
+          (github.event_name == 'schedule' ||
+           (github.event_name == 'workflow_dispatch' && inputs.operation == '清理')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Explicit activation and repository guard
+        env:
+          ENABLED: ${{ vars.RUM_RETENTION_ENABLED }}
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          set -eu
+          test "$ENABLED" = true
+          test "$REPOSITORY" = Felixz6/feliz_blog
+          test "$REF" = refs/heads/main
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      # No npm ci/build/deploy: existing administration CLI uses only Node built-ins.
+      - name: Cleanup with existing CLI
+        env:
+          RUM_RETENTION_ENABLED: ${{ vars.RUM_RETENTION_ENABLED }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.RUM_RETENTION_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.RUM_RETENTION_ACCOUNT_ID }}
+          RUM_DATABASE_ID: ${{ vars.RUM_RETENTION_PRODUCTION_DB_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+          CI: 'true'
+        run: |
+          set -eu
+          npm run rum:retention -- --authorize-cloud \
+            --account="$CLOUDFLARE_ACCOUNT_ID" --database="$RUM_DATABASE_ID" --environment=production
+      - name: Failure discovery
+        if: failure()
+        run: echo '::error::RUM retention failed; inspect run logs. A partial deletion is possible; rerun only after diagnosis.'
