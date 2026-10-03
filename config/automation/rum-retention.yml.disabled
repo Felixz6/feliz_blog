@@ -1,0 +1,50 @@
+# INERT TEMPLATE: not inside .github/workflows, not a .yml workflow.
+# Activation requires separate authorization, secrets, identity review and default-branch delivery.
+name: RUM retention
+on:
+  schedule:
+    - cron: '17 19 * * *' # UTC 19:17 = Asia/Shanghai next day 03:17
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rum-retention-production
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Explicit activation and repository guard
+        env:
+          ENABLED: ${{ vars.RUM_RETENTION_ENABLED }}
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          set -eu
+          test "$ENABLED" = true
+          test "$REPOSITORY" = Felixz6/feliz_blog
+          test "$REF" = refs/heads/main
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      # No npm ci/build/deploy: existing administration CLI uses only Node built-ins.
+      - name: Cleanup with existing CLI
+        env:
+          RUM_RETENTION_ENABLED: ${{ vars.RUM_RETENTION_ENABLED }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.RUM_RETENTION_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.RUM_RETENTION_ACCOUNT_ID }}
+          RUM_DATABASE_ID: ${{ vars.RUM_RETENTION_PRODUCTION_DB_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+          CI: 'true'
+        run: |
+          set -eu
+          npm run rum:retention -- --authorize-cloud \
+            --account="$CLOUDFLARE_ACCOUNT_ID" --database="$RUM_DATABASE_ID" --environment=production
+      - name: Failure discovery
+        if: failure()
+        run: echo '::error::RUM retention failed; inspect run logs. A partial deletion is possible; rerun only after diagnosis.'

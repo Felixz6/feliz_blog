@@ -21,7 +21,8 @@
     "check:built-tests": "node --test tests/manga-runtime-scope.test.ts tests/pagefind-alias.test.ts",
     "check:rum": "tsc -p tsconfig.rum.json",
     "rum:local": "node scripts/rum-local.mjs",
-    "rum:cloud": "node scripts/rum-cloud.mjs"
+    "rum:cloud": "node scripts/rum-cloud.mjs",
+    "rum:retention": "node scripts/rum-retention.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",

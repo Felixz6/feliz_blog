@@ -60,7 +60,7 @@ export async function createRemoteQuery(options) {
     // Never echo raw remote error text, SQL, telemetry payloads or credentials.
     if (result.status!==0) throw new Error('Authorized cloud D1 command failed; no export published.');
     let batches; try { batches=JSON.parse(result.stdout); } catch { throw new Error('Invalid cloud D1 response.'); }
-    if (!Array.isArray(batches) || batches.some(x => x.success!==true || x.meta?.served_by_primary===false)) throw new Error('Cloud D1 query must succeed on the primary.');
+    if (!Array.isArray(batches) || !batches.length || batches.some(x => x?.success!==true || !Array.isArray(x.results) || x.meta?.served_by_primary===false)) throw new Error('Cloud D1 query must succeed on the primary.');
     return batches.flatMap(x=>x.results || []);
   };
   return {query,close:()=>rm(config,{force:true})};
