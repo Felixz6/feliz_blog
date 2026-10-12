@@ -1,4 +1,5 @@
 import { installNavigationFeedback } from "./navigation-feedback.mjs";
+import { installTabTitleFeedback } from "./tab-title-feedback.mjs";
 import { installWebVitals } from "../../../core/web-vitals.mjs";
 import { isNativeContextTarget } from "../../../core/themes/context-menu-routing.mjs";
 import { createSakuraController } from "./sakura-runtime.mjs";
@@ -161,6 +162,7 @@ export function installLayoutRuntime({ documentRef = document, windowRef = windo
   const window = windowRef;
   installWebVitals({ endpoint });
   installNavigationFeedback(document, window);
+  installTabTitleFeedback(document, window);
 
   let articleImageViewerLoad;
   const loadArticleImageViewer = () => {
