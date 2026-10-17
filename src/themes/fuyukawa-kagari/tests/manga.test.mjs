@@ -7,7 +7,7 @@ import sharp from "sharp";
 import postcss from "postcss";
 import { parse } from "@astrojs/compiler";
 import { mountHomeHero } from "../lib/home-hero.mjs";
-import { springStep, layerOffsets, nearestRailIndex, mountMangaScene, mountAlbum, mountArchive, mountChapterRail, mountArticleToc } from "../lib/manga-runtime.mjs";
+import { springStep, layerOffsets, mountMangaScene, mountAlbum, mountArchive, mountArticleToc } from "../lib/manga-runtime.mjs";
 
 const root = process.cwd();
 const theme = path.join(root, "src/themes/fuyukawa-kagari");
@@ -371,33 +371,12 @@ test("article TOC highlights the current chapter in every navigation and cleans 
   assert.ok([...win.events.values()].every((handlers) => handlers.size === 0));
 });
 
-test("chapter controls target real leaf positions and account for track ends", () => {
-  assert.equal(nearestRailIndex([0, 324, 648], 600), 2);
-  const root = element(), previous = element(), next = element(), label = element();
-  const track = Object.assign(element(), { scrollLeft: 0, scrollWidth: 972, clientWidth: 400, scrollTo(value) { this.scrollLeft = Math.min(value.left, this.scrollWidth - this.clientWidth); } });
-  const items = [0, 324, 648].map((offsetLeft) => ({ offsetLeft }));
-  root.querySelectorAll = () => items;
-  root.querySelector = (selector) => ({ "[data-rail-track]": track, "[data-rail-prev]": previous, "[data-rail-next]": next, "[data-rail-position]": label })[selector];
-  const frames = [];
-  const win = Object.assign(element(), { matchMedia: () => ({ matches: true }), requestAnimationFrame: (callback) => { frames.push(callback); return frames.length; }, cancelAnimationFrame() {} });
-  const cleanup = mountChapterRail(root, win);
-  assert.equal(previous.disabled, true);
-  next.dispatch("click");
-  assert.equal(track.scrollLeft, 324);
-  track.dispatch("scroll"); frames.pop()();
-  assert.equal(label.textContent, "02 / 03");
-  next.dispatch("click"); next.dispatch("click");
-  track.dispatch("scroll"); frames.pop()();
-  assert.equal(next.disabled, true);
-  cleanup();
-});
-
-test("home chapter rail exposes intended routes and numbers About as the third chapter", async () => {
+test("home chapter rail exposes intended routes without redundant position and arrow controls", async () => {
   const source = await read("components/ChapterRail.astro");
   const routes = [...source.matchAll(/route: "([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(routes, ["/blog/", "/projects/", "/about/"]);
   assert.match(source, /route: "\/about\/", label: "03 \/ Dear reader"/);
-  assert.match(source, /data-rail-position[^>]*>01 \/ 03</);
+  assert.doesNotMatch(source, /manga-rail-controls|data-rail-/);
 });
 
 test("offscreen home chapter artwork stays lazy, asynchronously decoded, and low priority", async () => {

@@ -117,50 +117,6 @@ export function mountMangaScene(root, win = window, doc = document) {
   };
 }
 
-export function nearestRailIndex(offsets, left) {
-  return offsets.reduce((best, offset, i) => Math.abs(offset - left) < Math.abs(offsets[best] - left) ? i : best, 0);
-}
-
-export function mountChapterRail(root, win = window) {
-  const track = root.querySelector("[data-rail-track]");
-  const items = [...root.querySelectorAll("[data-rail-item]")];
-  const previous = root.querySelector("[data-rail-prev]");
-  const next = root.querySelector("[data-rail-next]");
-  const position = root.querySelector("[data-rail-position]");
-  if (!track || !items.length || !previous || !next) return () => {};
-  let frame = 0;
-  const offsets = () => items.map((item) => item.offsetLeft - items[0].offsetLeft);
-  const update = () => {
-    frame = 0;
-    const index = nearestRailIndex(offsets(), track.scrollLeft);
-    previous.disabled = track.scrollLeft <= 2;
-    next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 2;
-    if (position) position.textContent = `${String(index + 1).padStart(2, "0")} / ${String(items.length).padStart(2, "0")}`;
-  };
-  const schedule = () => { if (!frame) frame = win.requestAnimationFrame(update); };
-  const move = (direction) => {
-    const positions = offsets();
-    const index = clamp(nearestRailIndex(positions, track.scrollLeft) + direction, 0, items.length - 1);
-    track.scrollTo({ left: positions[index], behavior: win.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-  };
-  const prevClick = () => move(-1), nextClick = () => move(1);
-  previous.addEventListener("click", prevClick);
-  next.addEventListener("click", nextClick);
-  track.addEventListener("scroll", schedule, { passive: true });
-  win.addEventListener("resize", schedule, { passive: true });
-  const observer = win.ResizeObserver ? new win.ResizeObserver(schedule) : null;
-  observer?.observe(track);
-  update();
-  return () => {
-    win.cancelAnimationFrame(frame);
-    observer?.disconnect();
-    previous.removeEventListener("click", prevClick);
-    next.removeEventListener("click", nextClick);
-    track.removeEventListener("scroll", schedule);
-    win.removeEventListener("resize", schedule);
-  };
-}
-
 export function mountAlbum(root) {
   const tabs = [...root.querySelectorAll("[data-album-tab]")];
   const pages = [...root.querySelectorAll("[data-album-page]")];
