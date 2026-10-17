@@ -8,18 +8,13 @@ const chapters: { route: string; label: string; title: string; note: string; ima
   { route: "/about/", label: "03 / Dear reader", title: "关于这里的我", note: "喜欢的故事，总想与你聊聊", image: "hand-note", sticker: "kagari-thinking" }
 ];
 ---
-<section class="chapter-rail" data-manga-rail aria-labelledby="chapter-rail-title">
+<section class="chapter-rail" aria-labelledby="chapter-rail-title">
   <header class="manga-section-heading">
     <div><p class="section-kicker">A little table of contents</p><h2 id="chapter-rail-title">故事，从哪一页开始？</h2></div>
-    <div class="manga-rail-controls">
-      <span data-rail-position aria-live="polite">01 / 03</span>
-      <button type="button" data-rail-prev aria-label="上一章" title="上一章" aria-controls="home-chapters"><Icon name="tabler:arrow-left" /></button>
-      <button type="button" data-rail-next aria-label="下一章" title="下一章" aria-controls="home-chapters"><Icon name="tabler:arrow-right" /></button>
-    </div>
   </header>
-  <div class="chapter-track" id="home-chapters" data-rail-track tabindex="0" role="group" aria-label="手帖章节">
+  <div class="chapter-track" tabindex="0" role="group" aria-label="手帖章节">
     {chapters.map((chapter) => (
-      <a class="chapter-leaf" data-rail-item href={chapter.route}>
+      <a class="chapter-leaf" href={chapter.route}>
         <span class="chapter-number">{chapter.label}</span>
         <div class="chapter-picture"><MangaArt image={chapter.image} fetchpriority="low" /></div>
         <MangaArt image={chapter.sticker} class="chapter-sticker" fetchpriority="low" />

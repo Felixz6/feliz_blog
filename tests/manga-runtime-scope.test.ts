@@ -23,7 +23,7 @@ const builtHome = new URL("index.html", dist);
 const builtOutputIsCurrent = existsSync(builtHome)
   && sourceFiles.every((file) => statSync(builtHome).mtimeMs >= statSync(file).mtimeMs);
 
-const markers = ["data-manga-scene", "data-manga-rail", "data-manga-album", "data-manga-archive", "data-article-shell"];
+const markers = ["data-manga-scene", "data-manga-album", "data-manga-archive", "data-article-shell"];
 const moduleUrls = (html: string) => [...html.matchAll(/<script\b(?=[^>]*\btype="module")(?=[^>]*\bsrc="([^"]+)")[^>]*>/g)]
   .map((match) => match[1]);
 
@@ -31,10 +31,10 @@ test("built pages request MangaRuntime exactly where its interaction roots exist
   skip: builtOutputIsCurrent ? false : "run npm run build before checking generated page scripts"
 }, () => {
   const pages = [
-    ["index.html", ["data-manga-scene", "data-manga-rail"]],
+    ["index.html", ["data-manga-scene"]],
     ["blog/index.html", ["data-manga-archive"]],
     ["about/index.html", ["data-manga-album"]],
-    ["themes/fuyukawa-kagari/index.html", ["data-manga-scene", "data-manga-rail"]],
+    ["themes/fuyukawa-kagari/index.html", ["data-manga-scene"]],
     ["themes/fuyukawa-kagari/blog/index.html", ["data-manga-archive"]],
     ["themes/fuyukawa-kagari/about/index.html", ["data-manga-album"]],
     ["projects/index.html", []],
@@ -96,7 +96,6 @@ test("MangaRuntime initializes cold pages once and cleans up across repeated sof
   vm.runInNewContext(runnable, {
     document,
     mountMangaScene: mount("scene"),
-    mountChapterRail: mount("rail"),
     mountAlbum: mount("album"),
     mountArchive: mount("archive"),
     mountArticleToc: mount("article-toc")
@@ -119,7 +118,7 @@ test("MangaRuntime initializes cold pages once and cleans up across repeated sof
   assert.equal(events.filter((event) => event === "mount:archive:blog-from-article").length, 1);
 
   // BLOG -> HOME -> BLOG.
-  currentRoots = { "[data-manga-scene]": ["home-scene"], "[data-manga-rail]": ["home-rail"] };
+  currentRoots = { "[data-manga-scene]": ["home-scene"] };
   fire("astro:before-swap"); fire("astro:page-load");
   assert.equal(events.filter((event) => event === "dispose:archive:blog-from-article").length, 1);
   currentRoots = { "[data-manga-archive]": ["blog-from-home"] };
@@ -127,12 +126,10 @@ test("MangaRuntime initializes cold pages once and cleans up across repeated sof
   fire("astro:page-load");
   assert.equal(events.filter((event) => event === "mount:archive:blog-from-home").length, 1);
 
-  currentRoots = { "[data-manga-scene]": ["home-scene"], "[data-manga-rail]": ["home-rail"] };
+  currentRoots = { "[data-manga-scene]": ["home-scene"] };
   fire("astro:before-swap"); fire("astro:page-load");
   assert.equal(events.filter((event) => event === "mount:scene:home-scene").length, 2);
   assert.equal(events.filter((event) => event === "dispose:scene:home-scene").length, 1);
-  assert.equal(events.filter((event) => event === "mount:rail:home-rail").length, 2);
-  assert.equal(events.filter((event) => event === "dispose:rail:home-rail").length, 1);
   assert.doesNotMatch(component, /__yuimiHomeRainCleanup/);
   assert.doesNotMatch(events.join("\n"), /home-rain-cleanup/);
   assert.equal(listeners.get("astro:page-load")?.size, 1);

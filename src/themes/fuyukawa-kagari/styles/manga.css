@@ -10,11 +10,6 @@ body[data-fuyukawa] .manga-art-credit { grid-column: 1 / -1; padding-top: 16px; 
 body[data-fuyukawa] .manga-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 body[data-fuyukawa] .manga-section-heading h2 { margin: 0; font-size: 1.7rem; line-height: 1.45; color: var(--manga-ink); }
 body[data-fuyukawa] .manga-section-heading .section-kicker { margin-bottom: 8px; }
-body[data-fuyukawa] .manga-rail-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-body[data-fuyukawa] .manga-rail-controls > span { font-family: Consolas, monospace; font-size: .74rem; color: var(--ink-soft); margin-right: 10px; }
-body[data-fuyukawa] .manga-rail-controls button { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--manga-rule); border-radius: 50%; background: transparent; color: var(--accent); cursor: pointer; }
-body[data-fuyukawa] .manga-rail-controls svg { width: 18px; height: 18px; }
-body[data-fuyukawa] .manga-rail-controls button:disabled { opacity: .32; cursor: default; }
 
 /* The archive has a book spine and an illustrated opening, not a dashboard. */
 body[data-fuyukawa] .blog-title-copy > .manga-handwritten { display: block; margin-top: 18px; }
@@ -22,14 +17,8 @@ body[data-fuyukawa] .blog-title-copy > .manga-handwritten { display: block; marg
 /* The personal notebook mixes a profile margin, complete colour plates and lists. */
 body[data-fuyukawa] .memory-album .manga-section-heading h2 { font-size: 1.3rem; }
 
-@media (hover: hover) and (pointer: fine) {
-  body[data-fuyukawa] .manga-rail-controls button:not(:disabled):hover { background: #e8f1f9; }
-}
 @media (max-width: 760px) {
   body[data-fuyukawa] .manga-section-heading { gap: 16px; flex-wrap: wrap; }
   body[data-fuyukawa] .manga-section-heading h2 { font-size: 1.4rem; }
   body[data-fuyukawa] .blog-title-copy > .manga-handwritten { font-size: .72rem; }
-}
-@media (max-width: 480px) {
-  body[data-fuyukawa] .manga-rail-controls { margin-left: auto; }
 }
