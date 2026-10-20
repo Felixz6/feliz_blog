@@ -87,9 +87,9 @@ test('RUM local admin requires explicit local authorization and rejects remote o
   assert.throws(()=>parseOptions(['cleanup','--authorize-local','--now=2099-01-01T00:00:00Z']));
   assert.throws(()=>parseOptions(['export','--authorize-local','--out=x','--from=2026-10-01T00:00:00Z','--to=2026-10-01T00:00:00Z']));
 });
-test('RUM routes whitelist only /api/rum, with no public export endpoint', () => {
+test('Pages routes include the RUM receiver, mail sender, and guest-message APIs', () => {
   const routes=JSON.parse(readFileSync(new URL('../public/_routes.json',import.meta.url),'utf8'));
-  assert.deepEqual(routes,{version:1,include:['/api/rum'],exclude:[]});
+  assert.deepEqual(routes,{version:1,include:['/api/rum','/api/send','/api/message'],exclude:[]});
   const config=JSON.parse(readFileSync(new URL('../config/rum.local.json',import.meta.url),'utf8'));
   assert.equal(config.vars.RUM_ENVIRONMENT,'local'); assert.equal(config.d1_databases[0].database_id,'00000000-0000-0000-0000-000000000001');
 });

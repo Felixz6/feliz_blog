@@ -81,6 +81,11 @@ const nowDoing = currentSignals;
         </ul>
       </div>
       <MangaArt image="kagari-tea" class="about-side-character" />
+      <a class="about-mail-terminal" href="/tools/transmit/index.html" aria-label="打开 Resend-zmd 邮件终端">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3.5 6.5h17v11h-17z"/><path d="m4 7 8 6 8-6"/><path d="M18.5 17.5 21 20"/></svg>
+        <span><strong>邮件终端</strong><small>Resend-zmd</small></span>
+        <span class="about-mail-terminal-arrow" aria-hidden="true">↗</span>
+      </a>
     </aside>
 
     <section class="about-readme" aria-label={`${site.name} profile`}>
@@ -183,6 +188,14 @@ const nowDoing = currentSignals;
             </article>
           ))}
         </div>
+
+        <a class="about-message-link" href="/message/index.html">
+          <span class="about-message-link-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3.5 5.5h17v13h-17z"/><path d="m4 6 8 6 8-6"/></svg>
+          </span>
+          <span class="about-message-link-copy"><strong>访客给我留言</strong><small>想交流或反馈？写下你想说的话</small></span>
+          <span class="about-message-link-arrow" aria-hidden="true">↗</span>
+        </a>
       </section>
     </section>
   </section>
@@ -298,6 +311,43 @@ const nowDoing = currentSignals;
       margin-top: 2px;
       color: var(--pink);
     }
+
+    .about-mail-terminal {
+      display: inline-flex;
+      align-items: center;
+      justify-self: center;
+      gap: 10px;
+      max-width: 100%;
+      padding: 10px 13px;
+      color: var(--ink);
+      text-decoration: none;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 5px 14px rgba(49, 66, 95, 0.06);
+    }
+
+    .about-mail-terminal:hover,
+    .about-mail-terminal:focus-visible {
+      border-color: var(--pink);
+      outline: none;
+    }
+
+    .about-mail-terminal svg {
+      width: 21px;
+      height: 21px;
+      flex: 0 0 auto;
+      color: var(--pink);
+    }
+
+    .about-mail-terminal strong,
+    .about-mail-terminal small {
+      display: block;
+    }
+
+    .about-mail-terminal strong { font-size: 0.83rem; }
+    .about-mail-terminal small { margin-top: 2px; color: var(--ink-soft); font-size: 0.68rem; }
+    .about-mail-terminal-arrow { margin-left: auto; color: var(--ink-soft); }
 
     .about-readme {
       display: grid;
@@ -444,6 +494,40 @@ const nowDoing = currentSignals;
       font-weight: 800;
       background: var(--pink-soft);
       border-radius: 999px;
+    }
+
+    .about-message-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+      padding: 16px 20px;
+      color: var(--ink);
+      text-decoration: none;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .about-message-link:hover,
+    .about-message-link:focus-visible {
+      border-color: var(--pink);
+      box-shadow: 0 8px 24px rgba(88, 110, 145, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .about-message-link:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+    .about-message-link-icon { display: grid; place-items: center; width: 42px; height: 42px; color: var(--pink); background: var(--pink-soft); border-radius: 10px; }
+    .about-message-link-icon svg { width: 22px; height: 22px; }
+    .about-message-link-copy { display: grid; gap: 3px; }
+    .about-message-link-copy strong { font-weight: 800; }
+    .about-message-link-copy small { color: var(--ink-soft); }
+    .about-message-link-arrow { margin-left: auto; color: var(--ink-soft); font-size: 1.2rem; }
+
+    @media (max-width: 760px) {
+      .about-message-link { padding: 14px; }
+      .about-message-link-copy small { font-size: 0.85rem; }
     }
 
     @media (max-width: 1080px) {

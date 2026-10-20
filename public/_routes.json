@@ -1,5 +1,9 @@
 {
   "version": 1,
-  "include": ["/api/rum"],
+  "include": [
+    "/api/rum",
+    "/api/send",
+    "/api/message"
+  ],
   "exclude": []
 }
