@@ -76,8 +76,15 @@ export async function sendContactMessage(request: Request, env: ContactEnvironme
     const upstream = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(email), redirect: 'error'
     });
-    return upstream.ok ? response(200, { ok: true }) : response(502, { message: '邮件服务暂不可用，请稍后重试' });
+    if (upstream.ok) return response(200, { ok: true });
+    const providerError: unknown = await upstream.clone().json().catch(() => null);
+    const rawType = providerError && typeof providerError === 'object' ? (providerError as Record<string, unknown>).name : null;
+    const errorType = typeof rawType === 'string' && /^[a-z\d_-]{1,64}$/i.test(rawType) ? rawType : 'unknown';
+    console.error('[contact] Resend rejected request', { status: upstream.status, errorType });
+    return response(502, { message: `Resend 拒绝请求：HTTP ${upstream.status}（${errorType}）` });
   } catch (error) {
-    return response(error instanceof InvalidRequest ? error.status : 502, { message: error instanceof InvalidRequest ? '请求格式无效' : '邮件服务暂不可用，请稍后重试' });
+    if (error instanceof InvalidRequest) return response(error.status, { message: '请求格式无效' });
+    console.error('[contact] Resend request failed', error instanceof Error ? error.name : 'unknown');
+    return response(502, { message: '连接 Resend 失败，请查看 Cloudflare Functions 日志' });
   }
 }
