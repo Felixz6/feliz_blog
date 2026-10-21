@@ -35,6 +35,20 @@ test('contact endpoint sends only the fixed recipient and sender with the server
   assert.equal(response.headers.get('cache-control'), 'no-store');
 });
 
+test('contact endpoint surfaces only the Resend status and error type when rejected', async () => {
+  const response = await sendContactMessage(request(), env, async () => new Response(JSON.stringify({ name: 'restricted_api_key', message: 'private provider detail' }), { status: 403 }));
+  assert.equal(response.status, 502);
+  const result = await response.json() as { message: string };
+  assert.match(result.message, /HTTP 403（restricted_api_key）/);
+  assert.doesNotMatch(result.message, /private provider detail|owner@example.com|contact@example.com/);
+});
+
+test('contact endpoint distinguishes a Resend network failure', async () => {
+  const response = await sendContactMessage(request(), env, async () => { throw new TypeError('network unavailable'); });
+  assert.equal(response.status, 502);
+  assert.match((await response.json() as { message: string }).message, /连接 Resend 失败/);
+});
+
 test('contact endpoint accepts bounded attachments and silently drops the honeypot', async () => {
   let calls = 0;
   const attachmentResponse = await sendContactMessage(request({ ...payload, attachments: [{ filename: '../note.txt', content: 'aGVsbG8=' }] }), env, async (_input, init) => {
