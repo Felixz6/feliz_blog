@@ -24,6 +24,7 @@ test('contact endpoint sends only the fixed recipient and sender with the server
     called = true;
     assert.equal(input, 'https://api.resend.com/emails');
     assert.equal(init?.method, 'POST');
+    assert.equal(init?.redirect, 'manual');
     assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer re_test_server_key');
     assert.equal(new Headers(init?.headers).get('x-api-key'), null);
     assert.deepEqual(JSON.parse(String(init?.body)), { from: 'contact@example.com', to: ['owner@example.com'], subject: '来信', text: '你好，博客！' });
@@ -47,6 +48,21 @@ test('contact endpoint distinguishes a Resend network failure', async () => {
   const response = await sendContactMessage(request(), env, async () => { throw new TypeError('network unavailable'); });
   assert.equal(response.status, 502);
   assert.match((await response.json() as { message: string }).message, /连接 Resend 失败/);
+});
+
+test('contact endpoint rejects upstream redirects without following them', async () => {
+  let calls = 0;
+  let redirect: RequestRedirect | undefined;
+  const response = await sendContactMessage(request(), env, async (_input, init) => {
+    calls++;
+    redirect = init?.redirect;
+    return new Response(null, { status: 302, headers: { location: 'https://unexpected.example/' } });
+  });
+  assert.equal(calls, 1);
+  assert.equal(redirect, 'manual');
+  assert.equal(response.status, 502);
+  assert.equal(response.headers.get('location'), null);
+  assert.doesNotMatch(await response.text(), /unexpected\.example|re_test_server_key/);
 });
 
 test('contact endpoint accepts bounded attachments and silently drops the honeypot', async () => {

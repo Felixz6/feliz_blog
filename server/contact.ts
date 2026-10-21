@@ -74,7 +74,7 @@ export async function sendContactMessage(request: Request, env: ContactEnvironme
     const email = { from, to: [to], subject, [mode === 'html' ? 'html' : 'text']: body, ...(attachments.length ? { attachments } : {}) };
     // shortcut: origin checks and a honeypot are the current spam controls; add an edge rate limit if abuse appears.
     const upstream = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(email), redirect: 'error'
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(email), redirect: 'manual'
     });
     if (upstream.ok) return response(200, { ok: true });
     const providerError: unknown = await upstream.clone().json().catch(() => null);

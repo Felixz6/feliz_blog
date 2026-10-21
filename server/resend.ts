@@ -40,8 +40,9 @@ export async function sendResend(request: Request, fetcher: typeof fetch = fetch
   try {
     const body = await readBody(request);
     const upstream = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body, redirect: 'error'
+      method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body, redirect: 'manual'
     });
+    if (upstream.status >= 300 && upstream.status < 400) return response(502, { message: 'Resend API unavailable' });
     return new Response(upstream.body, { status: upstream.status, headers: { 'Cache-Control': 'no-store', 'Content-Type': upstream.headers.get('content-type') || 'application/json' } });
   } catch (error) {
     return response(error instanceof InvalidRequest ? error.status : 502, error instanceof InvalidRequest ? undefined : { message: 'Resend API unavailable' });
