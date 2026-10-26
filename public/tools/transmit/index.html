@@ -489,12 +489,12 @@ async function send(){
   if(!from)return toast('请填写发件人','err');
   if(!to.list.length)return toast('请至少添加一个收件人','err');
   if(!subject)return toast('请填写主题','err');
-  if(!body.trim())return toast('邮件内容不能为空','err');
+  if(!body.trim()&&!atts.length)return toast('请填写正文或添加附件','err');
   const payload={from,to:to.list,subject};
   if(cc.list.length)payload.cc=cc.list;
   if(bcc.list.length)payload.bcc=bcc.list;
   if($('#replyTo').value.trim())payload.reply_to=$('#replyTo').value.trim();
-  payload[mode]=body;
+  if(body.trim())payload[mode]=body;
   if(atts.length)payload.attachments=atts.map(a=>({filename:a.filename,content:a.content}));
 
   const btn=$('#sendBtn');btn.disabled=true;btn.classList.add('busy');$('#sendTxt').textContent='传输中';
