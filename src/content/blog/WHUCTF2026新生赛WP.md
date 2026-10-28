@@ -15,13 +15,13 @@ category: "tech"
 
 **crypto**
 
-- [AESbank_revenge](#AESbank_revenge)
+- [AESbank_revenge](#aesbank_revenge)
 
 - [chemistry](#chemistry)
 
 - [gauss_power](#gauss_power)
 
-- [WHEEL](#WHEEL)
+- [WHEEL](#wheel)
 
 **misc**
 
@@ -29,7 +29,7 @@ category: "tech"
 
 - [凡猫修仙传](#凡猫修仙传)
 
-- [有内鬼，终止磕盐](#有内鬼，终止磕盐)
+- [有内鬼，终止磕盐](#有内鬼终止磕盐)
 
 **pwn**
 
@@ -45,11 +45,11 @@ category: "tech"
 
 - [crisc](#crisc)
 
-- [LostTable](#LostTable)
+- [LostTable](#losttable)
 
 - [move_on](#move_on)
 
-- [Project-Reverse](#Project-Reverse)
+- [Project-Reverse](#project-reverse)
 
 - [v1m](#v1m)
 
