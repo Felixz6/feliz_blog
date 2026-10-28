@@ -42,7 +42,8 @@ test("built Pagefind indexes canonical articles but not their theme aliases", {
     assert.ok(!/<article\b[^>]*\bdata-pagefind-body(?:\s|>|=)/.test(aliasHtml), aliasUrl);
     assert.ok(/<body\b[^>]*\bdata-pagefind-ignore(?:\s|>|=)/.test(aliasHtml), aliasUrl);
     assert.ok(/<meta name="robots" content="noindex,follow"\s*\/?>/.test(aliasHtml), aliasUrl);
-    assert.ok(aliasHtml.includes(`<link rel="canonical" href="https://felizx.com${primaryUrl}">`), aliasUrl);
+    const canonicalHref = `https://felizx.com${encodeURI(primaryUrl)}`;
+    assert.ok(aliasHtml.includes(`<link rel="canonical" href="${canonicalHref}">`), aliasUrl);
     assert.ok(indexedUrls.has(primaryUrl), `${primaryUrl} must remain searchable`);
     assert.ok(!indexedUrls.has(aliasUrl), `${aliasUrl} must not appear in search`);
   }
