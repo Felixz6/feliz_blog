@@ -9,7 +9,7 @@ tags: ["WHUCTF", "CTF", "Writeup", "新生赛"]
 category: "tech"
 ---
 
-# **参赛者ID**：feliz
+**参赛者ID**：feliz
 
 ## 解出题目
 
@@ -61,7 +61,7 @@ category: "tech"
 
 - [大猫嚼嚼嚼](#大猫嚼嚼嚼)
 
-# AESbank_revenge
+## AESbank_revenge
 
 ### 先看看
 
@@ -445,7 +445,7 @@ WHUCTF{b33ef4fd-7a3c-2097-3d75-d50d51011f59}
 <div style="page-break-before: always;"></div>
 
 
-# chemistry
+## chemistry
 
 ### 先看看
 
@@ -564,7 +564,7 @@ WHUCTF{ch3m1stry_1s_ju5t_l1n34r_algebra}
 <div style="page-break-before: always;"></div>
 
 
-# gauss_power
+## gauss_power
 
 ### 先看看
 
@@ -712,7 +712,7 @@ whuctf{Gauss_1s_v3ry_p0w3rfu1}
 <div style="page-break-before: always;"></div>
 
 
-# WHEEL
+## WHEEL
 
 ### 先看看
 
@@ -958,7 +958,7 @@ whuctf{every_wheel_has_its_origin}
 <div style="page-break-before: always;"></div>
 
 
-# rickroll
+## rickroll
 
 ### 先看看
 
@@ -1279,7 +1279,7 @@ whuctf{h4il_t0_thee}
 <div style="page-break-before: always;"></div>
 
 
-# 凡猫修仙传
+## 凡猫修仙传
 
 ### 先看看
 
@@ -1488,7 +1488,7 @@ flag{ImNotAnAI-didj5b3nshgdkwienc}
 <div style="page-break-before: always;"></div>
 
 
-# 有内鬼，终止磕盐
+## 有内鬼，终止磕盐
 
 ### 先看看
 
@@ -1639,7 +1639,7 @@ flag{dcfca1c73686f0200caa6589a022224c}
 <div style="page-break-before: always;"></div>
 
 
-# nc签到
+## nc签到
 
 ### 先看看
 
@@ -1681,7 +1681,7 @@ flag{7438fd03-78f0-82bb-8419-b817b223ca3c}
 <div style="page-break-before: always;"></div>
 
 
-# ret2libc
+## ret2libc
 
 ### 先看看
 
@@ -1834,7 +1834,7 @@ flag{b39181ce-632e-5153-c678-2a93fe3abfe5}
 <div style="page-break-before: always;"></div>
 
 
-# ret2text
+## ret2text
 
 ### 先看看
 
@@ -1962,7 +1962,7 @@ flag{199181ce-352e-5153-d578-2a939e3abfe5}
 <div style="page-break-before: always;"></div>
 
 
-# 你想何出怎样的意味
+## 你想何出怎样的意味
 
 ### 先看看
 
@@ -2101,7 +2101,7 @@ flag{aeda7a03-fbc2-1d9d-5ffe-d2458ac90584}
 <div style="page-break-before: always;"></div>
 
 
-# crisc
+## crisc
 
 ### 先看看
 
@@ -2496,7 +2496,7 @@ whuctf{RISC-V_32b1t_instRucti0n_1s_d1ffiCult_to_Mem0riz3_1F605}
 <div style="page-break-before: always;"></div>
 
 
-# LostTable
+## LostTable
 
 ### 先看看
 
@@ -2798,7 +2798,7 @@ flag{y0u_r3bu1lt_th3_shuffl3d_b64_t4bl3}
 <div style="page-break-before: always;"></div>
 
 
-# move_on
+## move_on
 
 ### 先看看
 
@@ -2966,7 +2966,7 @@ WHUCTF{0mnipot3n7_m0v!!https://drwho.virtadpt.net/files/mov.pdf}
 <div style="page-break-before: always;"></div>
 
 
-# Project-Reverse
+## Project-Reverse
 
 ### 先看看
 
@@ -3076,7 +3076,7 @@ WHUCTF{W31C0ME_TO_THE_R3V3RS3_SEKAI!}
 <div style="page-break-before: always;"></div>
 
 
-# v1m
+## v1m
 
 ### 先看看
 
@@ -3201,7 +3201,7 @@ whuctf{bR41nFu*k_1ik3?_v1M5Cr1p7_Vm_15_s0_E45y!}
 <div style="page-break-before: always;"></div>
 
 
-# checkin
+## checkin
 
 ### 先看看
 
@@ -3377,7 +3377,7 @@ WHUCTF{fb6a35fa-9abb-fec4-6ebc-f39878afc1ec}
 <div style="page-break-before: always;"></div>
 
 
-# VOCALOID LEGEND ARCHIVE
+## VOCALOID LEGEND ARCHIVE
 
 ### 先看看
 
@@ -3555,7 +3555,7 @@ WHUCTF{Lu0Ti@nY1_lS_mY_f@VourItE-51NgER-1077c}
 <div style="page-break-before: always;"></div>
 
 
-# 大猫嚼嚼嚼
+## 大猫嚼嚼嚼
 
 ### 先看看
 
@@ -3643,7 +3643,7 @@ flag{37f30abefe4d7e0419e1f99d06f45151}
 <div style="page-break-before: always;"></div>
 
 
-# AI使用说明
+## AI使用说明
 
 解题主要靠 Codex（gpt-6-luna），加上自己搭的 CTF 技能和工作流，详见 https://github.com/Felixz6/whuctf-solver-workflow
 
