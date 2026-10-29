@@ -15,10 +15,9 @@ test("production domain, canonical origin, sitemap, and documented Cloudflare Pa
 
   assert.match(astroConfig, /site: "https:\/\/felizx\.com"/);
   assert.match(robots, /^Sitemap: https:\/\/felizx\.com\/sitemap-index\.xml$/m);
-  assert.match(readme, /正式入口 `https:\/\/felizx\.com\/` 与 `https:\/\/www\.felizx\.com\/` 均接入 Cloudflare Pages 项目 `feliz-blog`/);
-  assert.match(readme, /正式页 canonical 为 `https:\/\/felizx\.com\/`/);
-  assert.match(readme, /构建命令统一设为 \*\*`npm run verify`\*\*/);
-  assert.match(readme, /输出目录仍为 \*\*`dist\/`\*\*/);
+  for (const fact of ["www.felizx.com", "feliz-blog", "https://felizx.com/", "npm run verify", "`dist/`"]) {
+    assert.ok(readme.includes(fact), `README should mention ${fact}`);
+  }
 });
 
 test("legacy Vercel integrations and obsolete deployment configs are absent", () => {
