@@ -111,34 +111,6 @@
       }
     ]
   },
-  "/blog-covers/cover-05.webp": {
-    "width": 1400,
-    "height": 2207,
-    "hash": "a382fe8c",
-    "opaque": true,
-    "variants": [
-      {
-        "width": 320,
-        "src": "/blog-covers/responsive/cover-05-320-26c71e9b.webp",
-        "bytes": 38950
-      },
-      {
-        "width": 480,
-        "src": "/blog-covers/responsive/cover-05-480-26c71e9b.webp",
-        "bytes": 70480
-      },
-      {
-        "width": 640,
-        "src": "/blog-covers/responsive/cover-05-640-26c71e9b.webp",
-        "bytes": 104476
-      },
-      {
-        "width": 768,
-        "src": "/blog-covers/responsive/cover-05-768-26c71e9b.webp",
-        "bytes": 131080
-      }
-    ]
-  },
   "/blog-covers/cover-06.webp": {
     "width": 1319,
     "height": 2000,
