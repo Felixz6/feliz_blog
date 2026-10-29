@@ -141,7 +141,8 @@ verify
 
 ### Cloudflare Pages
 
-- 正式入口 `https://felizx.com/` 与 `https://www.felizx.com/` 均接入 Cloudflare Pages 项目 `feliz-blog`（`https://feliz-blog.pages.dev/`）。正式页 canonical 为 `https://felizx.com/`。生产与预览构建命令统一设为 **`npm run verify`**，输出目录仍为 **`dist/`**。域名、生产分支和触发器在 Cloudflare 控制台里配置，仓库配置不会自动同步，发布前请核对。
+- `felizx.com` 和 `www.felizx.com` 接到 Pages 项目 `feliz-blog`（`feliz-blog.pages.dev`），canonical 为 `https://felizx.com/`。
+- 生产与预览构建命令均为 `npm run verify`，输出目录 `dist/`。域名、生产分支和触发器在 Cloudflare 控制台里配置，仓库配置不会自动同步，发布前请核对。
 - 使用支持 `.nvmrc` 的 v3 构建镜像；旧的 `NODE_VERSION` 覆盖值应清除或设为 `24.21.0`。用 `npm ci` 装完整依赖，不要加 `--omit=dev` 或 `NODE_ENV=production`。
 - 页面是 Astro `output: "static"`。仓库没有 Vercel、EdgeOne 或 GitHub Pages 的发布配置。
 - `RUM_DB`、`RUM_ENVIRONMENT` 需在 Pages 对应环境单独绑定；生产与预览使用不同的物理数据库。
