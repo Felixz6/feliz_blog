@@ -63,7 +63,10 @@ export default defineConfig({
   integrations: [
     expressiveCode(expressiveCodeOptions),
     sitemap({
-      filter: (page) => !new URL(page).pathname.startsWith("/themes/")
+      filter: (page) => {
+        const pathname = new URL(page).pathname;
+        return !pathname.startsWith("/themes/") && pathname !== "/message/";
+      }
     }),
     icon({
       include: {
