@@ -192,7 +192,7 @@ docs/                 测量文档
 ## 维护文档
 
 - [真实体验测量](docs/real-experience-measurement.md)
-- [项目开发记录](DEVELOPMENT_NOTES.md)：按阶段记录的维护历史，不代表实时部署状态
+- [项目开发记录](DEVELOPMENT_NOTES.md)：目录职责、不变量和发布门禁。更早的长篇记录在 [docs/archive/DEVELOPMENT_NOTES.legacy.md](docs/archive/DEVELOPMENT_NOTES.legacy.md)，不代表当前行为
 - [主题开发记录](src/themes/fuyukawa-kagari/DEVELOPMENT_NOTES.md)
 - [第三方素材说明](THIRD_PARTY_ASSETS.md)
 

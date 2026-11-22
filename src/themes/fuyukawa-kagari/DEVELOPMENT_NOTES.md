@@ -3,8 +3,9 @@
 ## Scope
 
 Theme-local supplement to the repository's `DEVELOPMENT_NOTES.md`. This file owns
-only the September 2026 Fuyukawa presentation refresh; shared architecture and
-repository-wide history remain in the root note.
+only the September 2026 Fuyukawa presentation refresh. Current repository
+invariants stay in the root note; the older long history is
+`docs/archive/DEVELOPMENT_NOTES.legacy.md`.
 
 ## Current State
 
