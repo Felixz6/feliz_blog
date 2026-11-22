@@ -112,14 +112,14 @@ test("SRC research and recon projects are listed under Web Security", () => {
   assert.doesNotMatch(projectsPage, /下一步会把相关笔记/);
   assert.doesNotMatch(projectsPage, /works-card-status p/);
 
-  const srcPage = readFileSync(new URL("../src/pages/projects/src-skill/index.astro", import.meta.url), "utf8");
-  const reconPage = readFileSync(new URL("../src/pages/projects/recon-mcp/index.astro", import.meta.url), "utf8");
-  assert.match(srcPage, /projectMetadata\["src-skill"\]/);
-  assert.match(srcPage, /title=\{project\.name\}/);
-  assert.match(srcPage, /MCP 服务源码/);
-  assert.match(reconPage, /projectMetadata\["recon-mcp"\]/);
-  assert.match(reconPage, /title=\{project\.name\}/);
-  assert.match(reconPage, /asset_search/);
+  const page = readFileSync(new URL("../src/pages/projects/[project]/index.astro", import.meta.url), "utf8");
+  const details = readFileSync(new URL("../src/core/data/project-details.ts", import.meta.url), "utf8");
+  assert.match(page, /getStaticPaths/);
+  assert.match(page, /title=\{project\.name\}/);
+  assert.match(details, /"src-skill"/);
+  assert.match(details, /MCP 服务源码/);
+  assert.match(details, /"recon-mcp"/);
+  assert.match(details, /asset_search/);
 });
 
 test("Web Development category and Personal Blog placeholder are removed", () => {

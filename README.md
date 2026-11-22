@@ -32,8 +32,9 @@ Feliz Lab 是用 Astro 6 和 TypeScript 写的个人博客，主题为 Fuyukawa 
 | `/blog/risc-v-xv6-learning-notes/`、`/risc-v-notes/<slug>/` | RISC-V / xv6 学习目录与章节 |
 | `/about/` | ME：个人资料、技术方向、Anime Shelf |
 | `/tools/transmit/` | 邮件发送终端，访客填写自己的 Resend API Key |
+| `/message/` | 访客留言，提交到 `/api/message` |
 | `/friends/` | 旧入口，重定向到 `/about/` |
-| `/api/rum`、`/api/send` | Pages Functions：RUM 上报、邮件转发 |
+| `/api/rum`、`/api/send`、`/api/message` | Pages Functions：RUM 上报、邮件转发、留言 |
 
 主站有樱花雨、阅读进度、返回顶部、音乐播放器和页面快捷菜单。自动播放仍受浏览器策略限制。
 
