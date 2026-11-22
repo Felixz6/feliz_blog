@@ -1,0 +1,109 @@
+---
+import BaseLayout from "@/themes/fuyukawa-kagari/layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="访客留言 // MESSAGE PAYLOAD" description="给站长留言。API Key 不会暴露在浏览器中。">
+  <main class="message-shell">
+    <a class="message-back" href="/about/">← 返回 ME</a>
+    <section class="message-panel" aria-labelledby="payload-title">
+      <header class="message-heading">
+        <h1 id="payload-title">留言编写</h1>
+        <small>MESSAGE PAYLOAD</small>
+      </header>
+      <form class="message-form" id="message-form">
+        <div class="message-field">
+          <label class="message-label" for="subject">主题 SUBJECT</label>
+          <input type="text" id="subject" name="subject" maxlength="120" value="访客留言" placeholder="留言主题" required>
+        </div>
+        <div class="message-honeypot" aria-hidden="true">
+          <label for="website">留空</label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="message-templates" aria-label="预设模板">
+          <span>预设模板 //</span>
+          <button type="button" data-subject="想和你交流一下" data-body="你好！&#10;&#10;我想和你聊聊：">交流</button>
+          <button type="button" data-subject="关于博客的一点反馈" data-body="你好！&#10;&#10;我想反馈：">反馈</button>
+          <button type="button" data-subject="来自博客访客的留言" data-body="你好！&#10;&#10;">纯文本</button>
+        </div>
+        <input type="hidden" id="mode" name="mode" value="text">
+        <div class="message-tabs" role="group" aria-label="正文格式">
+          <button class="tab" type="button" data-mode="html" aria-pressed="false">HTML</button>
+          <button class="tab" type="button" data-mode="text" aria-pressed="true">TEXT</button>
+        </div>
+        <label class="message-label" for="body">正文 BODY</label>
+        <textarea id="body" name="body" maxlength="10000" placeholder="在此编写留言正文…" required></textarea>
+        <div class="message-attachments">
+          <label class="message-attach">＋ 添加附件<input type="file" id="attachments" multiple></label>
+          <span id="file-names" aria-live="polite">尚未选择附件</span>
+        </div>
+        <button class="message-send" type="submit">发送留言 <small>SUBMIT</small></button>
+        <p class="message-hint">留言将发送给站长；API Key 不会暴露在浏览器中。单个附件最多 3 MB（最多 3 个）。</p>
+        <p class="message-status" id="send-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+  <script is:inline>
+    const form = document.querySelector("#message-form");
+    const subject = document.querySelector("#subject");
+    const body = document.querySelector("#body");
+    const mode = document.querySelector("#mode");
+    const status = document.querySelector("#send-status");
+    const templates = document.querySelectorAll(".message-templates button");
+    const tabs = document.querySelectorAll(".tab");
+    const attachments = document.querySelector("#attachments");
+    const fileNames = document.querySelector("#file-names");
+    templates.forEach((button) => button.addEventListener("click", () => { subject.value = button.dataset.subject; body.value = button.dataset.body; body.focus(); }));
+    tabs.forEach((button) => button.addEventListener("click", () => { mode.value = button.dataset.mode; tabs.forEach((tab) => tab.setAttribute("aria-pressed", String(tab === button))); }));
+    const sendButton = form.querySelector(".message-send");
+    const encodeBase64 = async (file) => {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+      return { filename: file.name, content: btoa(binary) };
+    };
+    attachments.addEventListener("change", () => { fileNames.textContent = attachments.files.length ? Array.from(attachments.files, (file) => file.name).join("、") : "尚未选择附件"; });
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const files = Array.from(attachments.files);
+      if (files.length > 3 || files.reduce((sum, file) => sum + file.size, 0) > 3 * 1024 * 1024) { status.textContent = "最多添加 3 个附件，合计不超过 3 MB。"; return; }
+      sendButton.disabled = true;
+      status.textContent = "正在发送留言…";
+      try {
+        const response = await fetch("/api/message", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject: subject.value, body: body.value, mode: mode.value, website: form.elements.website.value, attachments: await Promise.all(files.map(encodeBase64)) }) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || "发送失败，请稍后重试。");
+        status.textContent = "留言已发送，谢谢！";
+        form.reset();
+        mode.value = "text";
+        tabs.forEach((tab) => tab.setAttribute("aria-pressed", String(tab.dataset.mode === "text")));
+        fileNames.textContent = "尚未选择附件";
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : "发送失败，请稍后重试。";
+      } finally { sendButton.disabled = false; }
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .message-shell { width: min(960px, calc(100% - 32px)); margin: 112px auto 72px; }
+  .message-back { display: inline-flex; margin-bottom: 16px; color: var(--accent); font-weight: 720; text-decoration: none; }
+  .message-panel { border: 1px solid var(--line); background: rgba(255,255,255,.86); box-shadow: 4px 5px 0 #eaf1f8; }
+  .message-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 22px 28px; border-bottom: 1px solid var(--line); }
+  .message-heading h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.2rem); }
+  .message-heading small { color: var(--ink-soft); font: 700 .75rem/1.4 ui-monospace, monospace; letter-spacing: .12em; }
+  .message-form { display: grid; gap: 14px; padding: 28px; }
+  .message-label { display: block; margin-bottom: 8px; color: var(--ink-soft); font: 700 .75rem/1.4 ui-monospace, monospace; letter-spacing: .08em; }
+  .message-form input[type="text"], .message-form textarea { width: 100%; color: var(--ink); background: white; border: 1px solid var(--line); font: 500 1rem/1.6 inherit; }
+  .message-form input[type="text"] { min-height: 52px; padding: 12px 14px; }
+  .message-form textarea { min-height: 280px; padding: 14px; resize: vertical; }
+  .message-templates, .message-tabs, .message-attachments { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .message-templates button, .message-tabs .tab, .message-attach { min-height: 40px; padding: 7px 14px; color: var(--ink); background: transparent; border: 1px solid var(--ink); cursor: pointer; }
+  .message-tabs .tab[aria-pressed="true"] { color: white; background: var(--ink); }
+  .message-attach input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .message-send { min-height: 52px; color: var(--ink); background: #ffe100; border: 0; font-weight: 800; letter-spacing: .12em; cursor: pointer; }
+  .message-hint, #file-names { margin: 0; color: var(--ink-soft); }
+  .message-status { min-height: 1.5em; margin: 0; color: #8b3b26; }
+  .message-honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  @media (max-width: 760px) { .message-shell { margin-top: 92px; } .message-heading, .message-form { padding: 18px; } }
+</style>

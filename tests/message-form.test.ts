@@ -14,7 +14,7 @@ test("ME places the guest-message link below recent activity and points to the c
 });
 
 test("guest page submits the payload composer to the contact endpoint", () => {
-  const page = read("public/message/index.html");
+  const page = read("src/pages/message.astro");
   assert.match(page, /<input[^>]+id="subject"/);
   assert.match(page, /<textarea[^>]+id="body"/);
   assert.match(page, /data-mode="html"/);
