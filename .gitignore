@@ -10,6 +10,9 @@ __pycache__/
 # Published tracks live under public/themes/fuyukawa-kagari/music/.
 /MUSIC/
 
+# Local agent scratch notes. Not part of the site.
+/.codex-artifacts/
+
 # Local source materials already copied/processed into public assets or content.
 /Profile.jpg
 !/public/themes/fuyukawa-kagari/assets/profile.jpg
