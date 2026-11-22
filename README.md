@@ -43,7 +43,7 @@ Feliz Lab 是用 Astro 6 和 TypeScript 写的个人博客，主题为 Fuyukawa 
 
 ## 快速开始
 
-需要 Node.js 24.21.0 和 npm（版本以 `.nvmrc` 为准，`.npmrc` 开启了 `engine-strict`）。
+开发使用 `.nvmrc` 里的 Node.js 24.21.0 和 npm。`engines.node` 是 `>=24`，`.npmrc` 的 `engine-strict` 会拒绝更低版本。
 
 ```bash
 nvm install && nvm use
