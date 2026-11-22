@@ -2,7 +2,6 @@ import { defineConfig } from "astro/config";
 import expressiveCode from "astro-expressive-code";
 import sitemap from "@astrojs/sitemap";
 import icon from "astro-icon";
-import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExpressiveCode from "rehype-expressive-code";
@@ -138,7 +137,6 @@ export default defineConfig({
   markdown: {
     syntaxHighlight: false,
     gfm: true,
-    remarkPlugins: [remarkGfm],
     rehypePlugins: [
       rehypeSlug,
       [
