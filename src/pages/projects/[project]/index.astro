@@ -1,0 +1,65 @@
+---
+import { Icon } from "astro-icon/components";
+import { projectIds, projectMetadata, type ProjectId } from "@/core/data/project-metadata";
+import { projectDetails } from "@/core/data/project-details";
+import ProjectDetail from "@/themes/fuyukawa-kagari/components/ProjectDetail.astro";
+
+export function getStaticPaths() {
+  return projectIds.map((project) => ({ params: { project } }));
+}
+
+const id = Astro.params.project as ProjectId;
+const project = projectMetadata[id];
+const detail = projectDetails[id];
+---
+
+<ProjectDetail title={project.name} kicker={detail.kicker} description={detail.description} tags={detail.tags}>
+  {detail.blocks.map((block) => {
+    if (block.kind === "tiles" && block.title) {
+      return (
+        <section class="project-detail-section">
+          <h2>{block.title}</h2>
+          <div class="project-detail-grid">
+            {block.tiles.map((tile) => <article class="project-detail-tile"><strong>{tile.title}</strong> <p>{tile.text}</p></article>)}
+          </div>
+        </section>
+      );
+    }
+    if (block.kind === "tiles") {
+      return (
+        <section class="project-detail-grid" aria-label={block.label}>
+          {block.tiles.map((tile) => <article class="project-detail-tile"><strong>{tile.title}</strong> <p>{tile.text}</p></article>)}
+        </section>
+      );
+    }
+    if (block.kind === "docs") {
+      return (
+        <section class="project-detail-section">
+          <h2>{block.title}</h2>
+          <p>{block.paragraph}</p>
+          <a class="project-detail-doc-link" href={project.docsHref}>{block.label}</a>
+        </section>
+      );
+    }
+    if (block.kind === "repo") {
+      return (
+        <a class="project-detail-section project-detail-repo-card" href={block.href} target="_blank" rel="noopener noreferrer" aria-label={block.ariaLabel}>
+          <span class="project-detail-repo-mark" aria-hidden="true"><Icon name="simple-icons:github" /></span>
+          <span class="project-detail-repo-copy">
+            <span class="project-detail-repo-kicker">GITHUB REPOSITORY</span>
+            <strong>{block.name}</strong>
+            <span class="project-detail-repo-description">{block.description}</span>
+          </span>
+          <Icon class="project-detail-repo-arrow" name="tabler:external-link" aria-hidden="true" />
+        </a>
+      );
+    }
+    return (
+      <section class="project-detail-section">
+        <h2>{block.title}</h2>
+        {block.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+        {block.code ? <pre><code>{block.code}</code></pre> : null}
+      </section>
+    );
+  })}
+</ProjectDetail>

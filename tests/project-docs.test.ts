@@ -21,15 +21,15 @@ test("the four project primary Markdown documents are copied into the site conte
 });
 
 test("project detail pages link to their rendered Markdown document indexes or source repositories", () => {
-  const srcPage = read("../src/pages/projects/src-skill/index.astro");
-  const reconPage = read("../src/pages/projects/recon-mcp/index.astro");
-  assert.match(srcPage, /projectMetadata\["src-skill"\]/);
-  assert.match(srcPage, /href=\{project\.docsHref\}/);
-  assert.match(srcPage, /浏览 3 份主文档/);
-  assert.match(reconPage, /href="https:\/\/github\.com\/Felixz6\/recon-mcp"/);
-  assert.match(reconPage, /GITHUB REPOSITORY/);
-  assert.match(reconPage, /Felixz6 \/ recon-mcp/);
-  assert.doesNotMatch(reconPage, /项目文档|阅读 README/);
+  const page = read("../src/pages/projects/[project]/index.astro");
+  const details = read("../src/core/data/project-details.ts");
+  assert.match(page, /projectMetadata\[id\]/);
+  assert.match(page, /href=\{project\.docsHref\}/);
+  assert.match(details, /浏览 3 份主文档/);
+  assert.match(details, /href: "https:\/\/github\.com\/Felixz6\/recon-mcp"/);
+  assert.match(page, /GITHUB REPOSITORY/);
+  assert.match(details, /Felixz6 \/ recon-mcp/);
+  assert.doesNotMatch(details.slice(details.indexOf('"recon-mcp"')), /项目文档|阅读 README/);
 });
 
 test("previous SRC Skill URLs redirect to the renamed project and documents", () => {
