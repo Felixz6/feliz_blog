@@ -228,7 +228,7 @@ const createRadioPlayer = (document, window) => {
         if (!player.tracks.length) {
           updateMusicUi();
           if (player.elements.track) player.elements.track.textContent = "暂无歌曲";
-          if (player.elements.note) player.elements.note.textContent = "请把 MP3 放入 MUSIC 文件夹。";
+          if (player.elements.note) player.elements.note.textContent = "请把 MP3 放入 public/themes/fuyukawa-kagari/music/。";
           return true;
         }
 

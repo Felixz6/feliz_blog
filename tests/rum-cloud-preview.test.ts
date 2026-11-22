@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { createRemoteQuery, assertDatabaseIdentity, cloudMain, exportConsistent, quote } from '../scripts/rum-cloud.mjs';
@@ -11,7 +12,7 @@ test('authorized preview: actual cloud D1 persistence, concurrent export, synthe
  const manifest=JSON.parse(await readFile(new URL('../config/rum.cloud.json',import.meta.url),'utf8'));
  const origin=process.env.RUM_PREVIEW_URL || '';
  assert.match(origin,/^https:\/\/[a-f0-9]{8}\.feliz-blog\.pages\.dev$/);
- const artifact=resolve(process.env.RUM_CLOUD_ARTIFACT_DIR || '.codex-artifacts/rum-cloud-preview-20261001/cloud');await mkdir(artifact,{recursive:true,mode:0o700});
+ const artifact=resolve(process.env.RUM_CLOUD_ARTIFACT_DIR || join(tmpdir(), 'feliz-rum-cloud-preview'));await mkdir(artifact,{recursive:true,mode:0o700});
  const options={account:manifest.accountId,database:manifest.environments.preview.databaseId,environment:'preview'};
  const prodOptions={...options,database:manifest.environments.production.databaseId,environment:'production'};
  const preview=await createRemoteQuery(options),production=await createRemoteQuery(prodOptions);

@@ -33,7 +33,7 @@ test("verification checks application and test types before the existing build g
   const config = JSON.parse(read("tsconfig.json"));
   assert.equal(config.extends, "astro/tsconfigs/strict");
   assert.deepEqual(config.include, [".astro/types.d.ts", "**/*"]);
-  assert.deepEqual(config.exclude, ["dist", "node_modules", ".codex-artifacts"]);
+  assert.deepEqual(config.exclude, ["dist", "node_modules"]);
   for (const gate of ["generate:assets", "prepare:covers", "prune:media", "check:links", "check:modules", "check:performance", "check:built-tests"]) {
     assert.ok(pkg.scripts.build.includes(`npm run ${gate}`));
   }
