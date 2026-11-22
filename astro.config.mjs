@@ -155,6 +155,7 @@ export default defineConfig({
           }
         }
       ],
+      // astro-expressive-code() 会再挂一次同一插件；后一次看到的 code 子节点已不是纯文本，所以不会嵌套框架或重复复制按钮。
       [rehypeExpressiveCode, expressiveCodeOptions],
       rehypeRemoveExpressiveCodeCopyData
     ]
