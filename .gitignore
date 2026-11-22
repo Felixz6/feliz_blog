@@ -7,6 +7,9 @@ Thumbs.db
 __pycache__/
 *.pyc
 
+# Published tracks live under public/themes/fuyukawa-kagari/music/.
+/MUSIC/
+
 # Local source materials already copied/processed into public assets or content.
 /Profile.jpg
 !/public/themes/fuyukawa-kagari/assets/profile.jpg
