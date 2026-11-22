@@ -1,10 +1,9 @@
-import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { deflateSync } from "node:zlib";
 
 const outDir = new URL("../public/themes/fuyukawa-kagari/assets/", import.meta.url);
 await mkdir(outDir, { recursive: true });
 
-const sourceMusicDir = new URL("../MUSIC/", import.meta.url);
 const publicMusicDir = new URL("../public/themes/fuyukawa-kagari/music/", import.meta.url);
 const audioExtensions = new Set([".mp3", ".flac", ".wav", ".ogg", ".m4a"]);
 
@@ -21,29 +20,32 @@ async function syncMusicLibrary() {
   let entries = [];
 
   try {
-    entries = await readdir(sourceMusicDir, { withFileTypes: true });
+    entries = await readdir(publicMusicDir, { withFileTypes: true });
   } catch {
     await mkdir(publicMusicDir, { recursive: true });
     await writeFile(new URL("manifest.json", publicMusicDir), "[]\n");
     return;
   }
 
-  await mkdir(publicMusicDir, { recursive: true });
+  // macOS exposes these filenames as NFD. Linux checkouts keep the NFC bytes
+  // stored in git. Normalizing here keeps the published id/src strings stable.
   const tracks = entries
     .filter((entry) => entry.isFile() && audioExtensions.has(extensionOf(entry.name)))
-    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN", { sensitivity: "base" }));
+    .map((entry) => entry.name.normalize("NFD"))
+    .sort((a, b) => a.localeCompare(b, "zh-CN", { sensitivity: "base" }));
 
-  await Promise.all(
-    tracks.map((entry) => copyFile(new URL(entry.name, sourceMusicDir), new URL(entry.name, publicMusicDir)))
-  );
+  if (tracks.length === 0) {
+    await writeFile(new URL("manifest.json", publicMusicDir), "[]\n");
+    return;
+  }
 
-  const manifest = tracks.map((entry) => {
-    const title = entry.name.replace(/\.[^.]+$/, "");
+  const manifest = tracks.map((name) => {
+    const title = name.replace(/\.[^.]+$/, "");
     return {
-      id: `track-${encodeURIComponent(entry.name)}`,
+      id: `track-${encodeURIComponent(name)}`,
       title,
-      file: entry.name,
-      src: publicMusicPath(entry.name)
+      file: name,
+      src: publicMusicPath(name)
     };
   });
 
