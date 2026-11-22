@@ -14,7 +14,7 @@ const pkg = JSON.parse(read("package.json")) as {
 
 test("local and Pages Node pins agree and installation rejects other versions", () => {
   assert.equal(read(".nvmrc").trim(), "24.21.0");
-  assert.equal(pkg.engines.node, read(".nvmrc").trim());
+  assert.equal(pkg.engines.node, ">=24");
   assert.match(read(".npmrc"), /^engine-strict=true$/m);
   const lock = JSON.parse(read("package-lock.json"));
   assert.equal(lock.packages[""].engines.node, pkg.engines.node);

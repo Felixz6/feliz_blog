@@ -27,7 +27,7 @@ Feliz Lab 是 Astro 6 静态博客，只使用 Fuyukawa Kagari 主题。页面�
 
 ## 常用命令
 
-需要 Node.js 24.21.0（`.nvmrc`，`engine-strict`）。
+`.nvmrc` 固定开发用的 Node.js 24.21.0。`engines.node` 是 `>=24`，`engine-strict` 会拒绝更低版本。
 
 ```bash
 npm ci

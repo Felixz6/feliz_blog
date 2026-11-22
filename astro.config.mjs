@@ -2,7 +2,6 @@ import { defineConfig } from "astro/config";
 import expressiveCode from "astro-expressive-code";
 import sitemap from "@astrojs/sitemap";
 import icon from "astro-icon";
-import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExpressiveCode from "rehype-expressive-code";
@@ -74,17 +73,13 @@ export default defineConfig({
           "code",
           "user-heart",
           "search",
-          "brand-github",
-          "brand-bilibili",
           "sparkles",
           "heart",
           "movie",
           "pin",
           "terminal-2",
           "flower",
-          "mood-smile",
           "chevron-down",
-          "palette",
           "x",
           "arrow-up",
           "home",
@@ -93,40 +88,21 @@ export default defineConfig({
           "arrow-right",
           "link",
           "copy",
-          "file-text",
           "player-play",
           "player-pause",
-          "flask-2",
-          "user-scan",
-          "arrow-back-up",
-          "activity-heartbeat",
           "refresh",
           "player-skip-forward",
-          "arrow-down",
-          "chevron-left",
-          "chevron-right",
           "external-link",
           "zoom-in",
           "zoom-out",
-          "blade",
-          "blender",
-          "chef-hat",
-          "glass-full",
-          "hand-finger",
-          "hand-grab",
-          "tools-kitchen-2",
-          "trash",
           "shield-lock",
           "flag-3"
         ],
         "simple-icons": [
           "unity",
-          "blender",
-          "unrealengine",
           "github",
           "bilibili",
           "steam",
-          "thefinals",
           "php",
           "linux",
           "git"
@@ -138,7 +114,6 @@ export default defineConfig({
   markdown: {
     syntaxHighlight: false,
     gfm: true,
-    remarkPlugins: [remarkGfm],
     rehypePlugins: [
       rehypeSlug,
       [
@@ -155,6 +130,7 @@ export default defineConfig({
           }
         }
       ],
+      // astro-expressive-code() 会再挂一次同一插件；后一次看到的 code 子节点已不是纯文本，所以不会嵌套框架或重复复制按钮。
       [rehypeExpressiveCode, expressiveCodeOptions],
       rehypeRemoveExpressiveCodeCopyData
     ]
