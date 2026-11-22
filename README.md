@@ -61,7 +61,7 @@ npm run dev
 | `npm run build` | 生成资源、静态构建、Pagefind 索引及全部构建后检查 |
 | `npm run verify` | 发布门禁：类型检查 → 测试 → 完整构建 |
 | `npm run preview` | 预览 `dist/`（不含 Functions / D1） |
-| `npm run generate:assets` | 从 `MUSIC/` 同步歌曲并重写清单 |
+| `npm run generate:assets` | 读取 `public/themes/fuyukawa-kagari/music/` 并只重写 `manifest.json` |
 | `npm run prepare:covers` | 生成响应式封面与映射 |
 | `npm run optimize:images` | 扫描 `public/` 图片生成 WebP（不在默认构建链内） |
 
@@ -122,7 +122,7 @@ draft: false
 - **封面**：放 `public/blog-covers/`，`cover` 写 `/blog-covers/...`。`prepare:covers` 为 `cover-数字.webp` 生成 `responsive/` 下带哈希的派生图和 `src/core/content/responsive-covers.json`，`build` 会自动执行。
 - **主题图片**：放 `public/themes/fuyukawa-kagari/assets/`，由 `assets.ts` 或 `mangaArt.ts` 引用。
 - **`prune:media`**：只从 `dist/` 排除 `scripts/lib/media-publish-policy.mjs` 列出的文件，不删除源素材。
-- **音乐**：源文件放根目录 `MUSIC/`，`generate:assets` 按文件名排序复制 `.mp3`、`.flac`、`.wav`、`.ogg`、`.m4a` 并重写 `manifest.json`。不要只手改清单；删歌后检查公开目录是否残留旧音频。
+- **音乐**：文件放在 `public/themes/fuyukawa-kagari/music/`。`generate:assets` 只按文件名排序重写 `manifest.json`（`.mp3`、`.flac`、`.wav`、`.ogg`、`.m4a`）。不要只手改清单。删歌时删除该目录中的音频，再运行 `generate:assets`。
 
 ## 构建与部署
 
@@ -176,7 +176,7 @@ src/
 └── content.config.ts 内容集合 schema
 
 public/               静态资源与 Pages 规则（blog-covers、blog-assets、blog-content、demos、themes）
-MUSIC/                音乐源文件
+public/themes/fuyukawa-kagari/music/  音乐文件；generate:assets 只重写 manifest.json
 scripts/              构建、资源、校验与 RUM 管理脚本
 functions/api/        Pages Functions（rum.ts、send.ts）
 server/               RUM 校验与存储、Resend 转发
