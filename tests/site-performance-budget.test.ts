@@ -33,7 +33,7 @@ test("production build enforces active route, CSS, and responsive-media budgets"
   assert.equal(scripts["check:links"], "node scripts/check-internal-links.mjs");
   assert.equal(scripts["check:modules"], "node --experimental-vm-modules scripts/check-built-modules.mjs");
   assert.equal(scripts["check:performance"], "node scripts/check-performance-budgets.mjs");
-  assert.match(scripts.test, /src\/themes\/fuyukawa-kagari\/tests\/utilities\.test\.mjs/);
+  assert.match(scripts.test, /src\/\*\*\/tests\/\*\*\/\*\.test\.mjs/);
   assert.match(budgetSource, /Fuyukawa Home HTML/);
   assert.match(budgetSource, /Fuyukawa Projects CSS/);
 });
